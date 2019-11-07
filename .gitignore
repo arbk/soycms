@@ -25,3 +25,7 @@ user.config.php
 mysql.php
 cms/soyshop/webapp/conf/shop/*.conf.php
 shop_id.php
+
+#CMS以外のディレクトリ
+/package/
+/script/
