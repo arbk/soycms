@@ -1,158 +1,160 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="<?php echo SOYCMS_ADMIN_HTML_LANG; ?>">
 
 <head soy:page="_common.HeaderPage" isOverWrite="true">
 </head soy:page="_common.HeaderPage">
 
 <body>
 
-	<div id="wrapper">
-		<!-- Navigation -->
-		<nav  class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0" soy:page="_common.UpperMenuPage"><!-- --></nav>
-		<div id="page-wrapper">
-			<div class="row">
-				<div class="col-lg-12">
-					<h1 class="page-header"><small><a soy:link="Page">ページ</a> &gt;</small> モジュール管理</h1>
-				</div>
-				<!-- /.col-lg-12 -->
-			</div>
+    <div id="wrapper">
+        <!-- Navigation -->
+        <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0" soy:page="_common.UpperMenuPage"></nav>
+        <div id="page-wrapper">
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header"><small><a soy:link="Page">ページ</a> &gt;</small> モジュール管理</h1>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
 
-			<div soy:page="_common.MessagePanel" isOverWrite="true"></div>
+            <div soy:page="_common.MessagePanel" isOverWrite="true"></div>
 
-			<div class="row">
-				<div class="col-lg-12">
-					<div class="panel panel-default">
-						<div class="panel-body">
-							<a class="btn btn-default" soy:link="Page.Create" onclick="return common_click_to_layer(this,{height:540});">ページ新規作成</a>
-							<a class="btn btn-default" soy:link="Blog">ブログ一覧</a>
-							<!-- soy:display="is_page_template_enabled" --><a class="btn btn-default" soy:link="Template">ページ雛型管理</a><!-- /soy:display="is_page_template_enabled" -->
-							<div class="btn-group">
-								<a class="btn btn-default active" soy:link="Module">モジュール管理</a>
-								<button type="button" class="btn btn-default dropdown-toggle active" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-									<span class="caret"></span>
-									<span class="sr-only">Toggle Dropdown</span>
-								</button>
-								<ul class="dropdown-menu">
-									<li soy:id="allow_php_module"><a soy:link="Module.Create">モジュールの新規作成</a></li>
-									<li><a soy:link="Module.HTML.Create">HTMLモジュールの新規作成</a></li>
-								</ul>
-							</div>
-						</div>
-					</div>
-				</div>
-				<!-- /.col-lg-12 -->
-			</div>
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="panel panel-default">
+                        <div class="panel-body">
+                            <a class="btn btn-default" soy:link="Page.Create" onclick="return common_click_to_layer(this,{height:540});">ページ新規作成</a>
+                            <a class="btn btn-default" soy:link="Blog">ブログ一覧</a>
+                            <!-- soy:display="is_page_template_enabled" --><a class="btn btn-default" soy:link="Template">ページ雛型管理</a><!-- /soy:display="is_page_template_enabled" -->
+                            <div class="btn-group">
+                                <a class="btn btn-default active" soy:link="Module">モジュール管理</a>
+                                <button type="button" class="btn btn-default dropdown-toggle active" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <span class="caret"></span>
+                                    <span class="sr-only">Toggle Dropdown</span>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li soy:id="allow_php_module"><a soy:link="Module.Create">モジュールの新規作成</a></li>
+                                    <li><a soy:link="Module.HTML.Create">HTMLモジュールの新規作成</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
 
-			<div class="row">
-				<!-- soy:id="allow_php_module*" -->
-				<div class="col-lg-6">
-					<div class="panel panel-green">
-						<div class="panel-heading">
-							モジュール一覧
-							<div class="pull-right">
-								<a class="btn btn-default btn-xs" soy:link="Module.Create">新規作成</a>
-							</div>
-						</div>
+            <div class="row">
+                <!-- soy:id="allow_php_module*" -->
+                <div class="col-lg-6">
+                    <div class="panel panel-green">
+                        <div class="panel-heading">
+                            モジュール一覧
+                            <div class="pull-right">
+                                <a class="btn btn-default btn-xs" soy:link="Module.Create">新規作成</a>
+                            </div>
+                        </div>
 
-						<div class="panel-body" soy:id="no_module">
-							モジュールがありません。
-						</div>
+                        <div class="panel-body" soy:id="no_module">
+                            モジュールがありません。
+                        </div>
 
-						<div class="table-responsive" soy:id="has_module">
-							<table class="table table-striped">
-								<thead>
-									<tr>
-										<th>モジュールID</th>
-										<th class="title">モジュール名</th>
-										<th class="status">
-											操作&nbsp;
-											<a class="btn btn-default btn-sm" href="javascript:void(0);" onclick="$(this).hide();$('.module_delete_btn').css('visibility','visible');">削除</a>
-										</th>
-									</tr>
-								</thead>
-								<tbody class="entry_list">
-									<!-- soy:id="module_list" -->
-									<tr>
-										<td soy:id="module_id">parts.module</td>
-										<td>
-											<a soy:id="module_name">タイトル...</a>
-										</td>
-										<td>
-											<a class="btn btn-primary" soy:id="module_link">編集</a>&nbsp;
-											<a soy:id="remove_link" href="#" class="btn btn-danger module_delete_btn" onclick="return confirm('削除してもよろしいですか？')">削除</a>
-										</td>
-									</tr>
-									<!-- /soy:id="module_list" -->
-								</tbody>
-							</table>
-						</div soy:id="has_module">
-					 </div>
-				</div>
-				<!-- /.col-lg-6 -->
-				<!-- /soy:id="allow_php_module*" -->
+                        <div class="table-responsive" soy:id="has_module">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>モジュールID</th>
+                                        <th class="title">モジュール名</th>
+                                        <th class="status">
+                                            操作&nbsp;
+                                            <a class="btn btn-default" href="javascript:void(0);" onclick="$(this).hide();$('.module_delete_btn').css('visibility','visible');">削除</a>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody class="entry_list">
+                                    <!-- soy:id="module_list" -->
+                                    <tr>
+                                        <td soy:id="module_id">parts.module</td>
+                                        <td>
+                                            <a soy:id="module_name">タイトル...</a>
+                                        </td>
+                                        <td>
+                                            <a class="btn btn-default" soy:id="module_link">編集</a>&nbsp;
+                                            <a soy:id="remove_link" href="#" class="btn btn-primary module_delete_btn" onclick="return confirm('削除してもよろしいですか？')">削除</a>
+                                        </td>
+                                    </tr>
+                                    <!-- /soy:id="module_list" -->
+                                </tbody>
+                            </table>
+                        </div soy:id="has_module">
+                    </div>
+                </div>
+                <!-- /.col-lg-6 -->
+                <!-- /soy:id="allow_php_module*" -->
 
-				<div class="col-lg-6">
-					<div class="panel panel-green">
-						<div class="panel-heading">
-							HTMLモジュール一覧
-							<div class="pull-right">
-								<a class="btn btn-default btn-xs" soy:link="Module.HTML.Create">新規作成</a>
-							</div>
-						 </div>
+                <div class="col-lg-6">
+                    <div class="panel panel-green">
+                        <div class="panel-heading">
+                            HTMLモジュール一覧
+                            <div class="pull-right">
+                                <a class="btn btn-default btn-xs" soy:link="Module.HTML.Create">新規作成</a>
+                            </div>
+                        </div>
 
-						<div class="panel-body" soy:id="no_html_module">
-							HTMLモジュールがありません。
-						</div>
+                        <div class="panel-body" soy:id="no_html_module">
+                            HTMLモジュールがありません。
+                        </div>
 
-						<div class="table-responsive" soy:id="has_html_module">
-							<table class="table table-striped">
-								<thead>
-									<tr>
-										<th>モジュールID</th>
-										<th class="title">モジュール名</th>
-										<th class="status">
-											操作&nbsp;
-											<a class="btn btn-default btn-sm" href="javascript:void(0);" onclick="$(this).hide();$('.html_module_delete_btn').css('visibility','visible');">削除</a>
-										</th>
-									</tr>
-								</thead>
-								<tbody class="entry_list">
-									<!-- soy:id="html_module_list" -->
-									<tr>
-										<td soy:id="module_id">module</td>
-										<td>
-											<a soy:id="module_name">タイトル...</a>
-										</td>
-										<td>
-											<a class="btn btn-primary" soy:id="module_link">編集</a>&nbsp;
-											<a soy:id="remove_link" href="#" class="btn btn-danger html_module_delete_btn" onclick="return confirm('削除してもよろしいですか？')">削除</a>
-										</td>
-									</tr>
-									<!-- /soy:id="html_module_list" -->
-								</tbody>
-							</table>
-						</div soy:id="has_html_module">
-					</div>
-				</div>
-				<!-- /.col-lg-6 -->
-			</div>
-			<!-- /.row -->
-		</div>
-		<!-- /#page-wrapper -->
-		<!-- soy:page="_common.FooterPage" /-->
-	</div>
-	<!-- /#wrapper -->
-	<style type="text/css">
-	.delete_btn{
-		visibility:hidden;
-	}
-	.module_delete_btn{
-		visibility:hidden;
-	}
-	.html_module_delete_btn{
-		visibility:hidden;
-	}
-	</style>
+                        <div class="table-responsive" soy:id="has_html_module">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>モジュールID</th>
+                                        <th class="title">モジュール名</th>
+                                        <th class="status">
+                                            操作&nbsp;
+                                            <a class="btn btn-default" href="javascript:void(0);" onclick="$(this).hide();$('.html_module_delete_btn').css('visibility','visible');">削除</a>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody class="entry_list">
+                                    <!-- soy:id="html_module_list" -->
+                                    <tr>
+                                        <td soy:id="module_id">module</td>
+                                        <td>
+                                            <a soy:id="module_name">タイトル...</a>
+                                        </td>
+                                        <td>
+                                            <a class="btn btn-default" soy:id="module_link">編集</a>&nbsp;
+                                            <a soy:id="remove_link" href="#" class="btn btn-primary html_module_delete_btn" onclick="return confirm('削除してもよろしいですか？')">削除</a>
+                                        </td>
+                                    </tr>
+                                    <!-- /soy:id="html_module_list" -->
+                                </tbody>
+                            </table>
+                        </div soy:id="has_html_module">
+                    </div>
+                </div>
+                <!-- /.col-lg-6 -->
+            </div>
+            <!-- /.row -->
+        </div>
+        <!-- /#page-wrapper -->
+        <!-- soy:page="_common.FooterPage" /-->
+    </div>
+    <!-- /#wrapper -->
+    <style type="text/css">
+        .delete_btn {
+            visibility: hidden;
+        }
+
+        .module_delete_btn {
+            visibility: hidden;
+        }
+
+        .html_module_delete_btn {
+            visibility: hidden;
+        }
+    </style>
 </body>
 
 </html>

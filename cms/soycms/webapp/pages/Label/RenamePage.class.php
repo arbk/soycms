@@ -2,22 +2,23 @@
 /**
  * 使われていない
  */
-class RenamePage extends CMSWebPageBase{
+class RenamePage extends CMSWebPageBase
+{
+    public function __construct()
+    {
+        //使われていないようだが念のためふさいでおく
+        if (soy2_check_token()) {
+            $action = SOY2ActionFactory::createInstance("Label.RenameAction");
+            $result = $action->run();
 
-	function __construct() {
-		//使われていないようだが念のためふさいでおく
-		if(soy2_check_token()){
-			$action = SOY2ActionFactory::createInstance("Label.RenameAction");
-			$result = $action->run();
-
-			if($result->success()){
-				$this->addMessage("LABEL_RENAME_SUCCESS");
-			}else{
-				$this->addErrorMessage("LABEL_RENAME_FAILED");
-			}
-		}else{
-			$this->addErrorMessage("LABEL_RENAME_FAILED");
-		}
-		$this->jump("Label");
-	}
+            if ($result->success()) {
+                $this->addMessage("LABEL_RENAME_SUCCESS");
+            } else {
+                $this->addErrorMessage("LABEL_RENAME_FAILED");
+            }
+        } else {
+            $this->addErrorMessage("LABEL_RENAME_FAILED");
+        }
+        $this->jump("Label");
+    }
 }

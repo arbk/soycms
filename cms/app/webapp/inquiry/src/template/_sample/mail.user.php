@@ -14,16 +14,16 @@
 /**
 $lines = explode("\n", $mailBody[1]);
 if(count($lines)){
-	$contents = array();
-	foreach($lines as $line){
-		//内容が空の場合はスルー
-		$c = trim(substr($line, strpos($line, ":") + 1));
-		if(!strlen($c)) continue;
+    $contents = array();
+    foreach($lines as $line){
+        //内容が空の場合はスルー
+        $c = trim(substr($line, strpos($line, ":") + 1));
+        if(!strlen($c)) continue;
 
-		$line = trim(str_replace(array(" ", "　"), "", $line));
-		$contents[] = $line;
-	}
+        $line = trim(str_replace(array(" ", "　"), "", $line));
+        $contents[] = $line;
+    }
 
-	$mailBody[1] = implode("\n", $contents);
+    $mailBody[1] = implode("\n", $contents);
 }
 **/

@@ -1,71 +1,72 @@
 <?php
-class ChangePasswordPage extends CMSUpdatePageBase{
+class ChangePasswordPage extends CMSUpdatePageBase
+{
+    private $error_str;
 
-	private $error_str;
+    public function setError_str($str)
+    {
+        $this->error_str = $str;
+    }
 
-	public function setError_str($str){
-		$this->error_str = $str;
-	}
+    public function doPost()
+    {
+        if (soy2_check_token()) {
+            $result = SOY2ActionFactory::createInstance("Administrator.ChangePasswordAction")->run();
 
-	public function doPost(){
+            $form = $result->getAttribute("form");
 
-		if(soy2_check_token()){
-			$result = SOY2ActionFactory::createInstance("Administrator.ChangePasswordAction")->run();
+            if ($result->success()) {
+                $this->jump("Account", array("passwordChanged"=>true));
+            } else {
+                if ($form->hasError()) {
+                    $str = CMSMessageManager::get("ADMIN_NEW_PASSWORD_FORMAT_WRONG");
+                } elseif ($form->newPassword != $form->newPasswordConfirm) {
+                    $str = CMSMessageManager::get("ADMIN_NEW_PASSWORDS_NOT_SAME");
+                } else {
+                    $str = CMSMessageManager::get("ADMIN_OLD_PASSWORD_WRONG");
+                }
 
-			$form = $result->getAttribute("form");
+                $this->jump("Account.ChangePassword", array("error_str" => $str));
+            }
+        }
+    }
 
-			if($result->success()){
-				$this->jump("Account", array("passwordChanged"=>true));
-			}else{
+    public function __construct()
+    {
+        parent::__construct();
 
-				if($form->hasError()){
-					$str = CMSMessageManager::get("ADMIN_NEW_PASSWORD_FORMAT_WRONG");
-				}else if($form->newPassword != $form->newPasswordConfirm){
-					$str = CMSMessageManager::get("ADMIN_NEW_PASSWORDS_NOT_SAME");
-				}else{
-					$str = CMSMessageManager::get("ADMIN_OLD_PASSWORD_WRONG");
-				}
+        $this->addForm("changeform");
+        $this->buildForm();
+    }
 
-				$this->jump("Account.ChangePassword", array("error_str" => $str));
-			}
-		}
-	}
+    private function buildForm()
+    {
+        $this->addInput("password", array(
+            "name" => "newPassword",
+            "value" => "",
+            "type" => "password",
+            "required" => true,
+        ));
 
-	function __construct(){
-		parent::__construct();
+        $this->addInput("password_confirm", array(
+            "name" => "newPasswordConfirm",
+            "value" => "",
+            "type" => "password",
+            "required" => true,
+        ));
 
-		$this->addForm("changeform");
-		$this->buildForm();
-	}
+        $this->addInput("old_password", array(
+            "name"=>"oldPassword",
+            "value"=>"",
+            "type"=>"password",
+            "required" => true,
+        ));
 
-	private function buildForm(){
-
-		$this->addInput("password", array(
-			"name" => "newPassword",
-			"value" => "",
-			"type" => "password",
-			"required" => true,
-		));
-
-		$this->addInput("password_confirm", array(
-			"name" => "newPasswordConfirm",
-			"value" => "",
-			"type" => "password",
-			"required" => true,
-		));
-
-		$this->addInput("old_password", array(
-			"name"=>"oldPassword",
-			"value"=>"",
-			"type"=>"password",
-			"required" => true,
-		));
-
-		$this->addLabel("error_msg", array(
-				"text"=>$this->error_str,
-		));
-		$this->addModel("has_error", array(
-				"visible"=>(strlen($this->error_str))
-		));
-	}
+        $this->addLabel("error_msg", array(
+            "text"=>$this->error_str,
+        ));
+        $this->addModel("has_error", array(
+                "visible"=>(strlen($this->error_str))
+        ));
+    }
 }

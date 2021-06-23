@@ -4,19 +4,20 @@
  * @init pageId
  * @attribute historyList
  */
-class HistoryListAction extends SOY2Action {
+class HistoryListAction extends SOY2Action
+{
+    private $pageId;
 
-	private $pageId;
-	
-	function setPageId($pageId){
-		$this->pageId = $pageId;
-	}
+    public function setPageId($pageId)
+    {
+        $this->pageId = $pageId;
+    }
 
-	protected function execute(SOY2ActionRequest &$request,SOY2ActionForm &$form,SOY2ActionResponse &$response){
-		$logic = SOY2Logic::createInstance("logic.site.Page.PageLogic");
-		$list = $logic->getHistoryList($this->pageId);
-		$this->setAttribute("historyList",$list);
-		return SOY2Action::SUCCESS;
+    protected function execute(SOY2ActionRequest &$request, SOY2ActionForm &$form, SOY2ActionResponse &$response)
+    {
+        $logic = SOY2Logic::createInstance("logic.site.Page.PageLogic");
+        $list = $logic->getHistoryList($this->pageId);
+        $this->setAttribute("historyList", $list);
+        return SOY2Action::SUCCESS;
     }
 }
-?>

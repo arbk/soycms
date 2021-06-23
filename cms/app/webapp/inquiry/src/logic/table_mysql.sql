@@ -1,42 +1,33 @@
 CREATE TABLE soyinquiry_form (
-  id INTEGER primary key AUTO_INCREMENT,
-  form_id VARCHAR(128) unique,
+  id INTEGER PRIMARY KEY AUTO_INCREMENT,
+  form_id VARCHAR(128) UNIQUE,
   name VARCHAR(255),
   config LONGTEXT
 )ENGINE = InnoDB;
 
 CREATE TABLE soyinquiry_column(
-  id INTEGER primary key AUTO_INCREMENT,
+  id INTEGER PRIMARY KEY AUTO_INCREMENT,
   form_id VARCHAR(255),
   column_id VARCHAR(255),
   label VARCHAR(255),
   column_type VARCHAR(255),
   config TEXT,
-  is_require TINYINT default 0,
-  display_order INTEGER default 0
+  is_require TINYINT DEFAULT 0,
+  display_order INTEGER DEFAULT 0
 )ENGINE = InnoDB;
 
 CREATE TABLE soyinquiry_inquiry (
-  id INTEGER primary key AUTO_INCREMENT,
+  id INTEGER PRIMARY KEY AUTO_INCREMENT,
   tracking_number VARCHAR(255),
-  form_id VARCHAR(255),
-  ip_address VARCHAR(40) NOT NULL,
+  form_id VARCHAR(255) NOT NULL,
+  ip_address VARCHAR(128),
   content TEXT,
   data TEXT,
-  flag TINYINT default 1,
+  flag TINYINT DEFAULT 1,
   create_date INTEGER NOT NULL,
-  form_url VARCHAR(255),
+  form_url TEXT,
   UNIQUE(form_id, create_date)
 )ENGINE = InnoDB;
-
-CREATE TABLE soyinquiry_entry_relation (
-	inquiry_id INTEGER NOT NULL,
-	site_id INTEGER,
-	page_id INTEGER,
-	entry_id INTEGER NOT NULL,
-	UNIQUE(inquiry_id, entry_id)
-)ENGINE = InnoDB;
-
 CREATE INDEX soyinquiry_tracking_number_idx on soyinquiry_inquiry(tracking_number);
 
 CREATE TABLE soyinquiry_serverconfig(
@@ -44,8 +35,8 @@ CREATE TABLE soyinquiry_serverconfig(
 )ENGINE = InnoDB;
 
 CREATE TABLE soyinquiry_comment (
-	id INTEGER primary key AUTO_INCREMENT,
-	inquiry_id INTEGER not null,
+	id INTEGER PRIMARY KEY AUTO_INCREMENT,
+	inquiry_id INTEGER NOT NULL,
 	title VARCHAR(255),
 	author VARCHAR(255),
 	content TEXT,
@@ -60,6 +51,6 @@ CREATE TABLE soyinquiry_data_sets(
 ) ENGINE=InnoDB;
 
 CREATE TABLE soyinquiry_ban_ip_address(
-	ip_address VARCHAR(40) NOT NULL UNIQUE,
+	ip_address VARCHAR(128) NOT NULL UNIQUE,
 	log_date INTEGER
 ) ENGINE=InnoDB;

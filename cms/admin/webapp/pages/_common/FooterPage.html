@@ -1,12 +1,11 @@
 <footer>
-	<div class="pull-right" id="copyright"><!-- soy:id="cms_name" -->SOY CMS<!-- /soy:id="cms_name" --> <!-- soy:id="version" /--> on <a href="https://secure.php.net/" target="_blank" rel="noreferrer">PHP</a> <!-- soy:id="php-version" /-->. <!-- soy:id="copyright" -->CopyRight<!-- /soy:id="copyright" --> <!-- soy:id="developer_name" -->Brassica, Inc.<!-- /soy:id="developer_name" --> </div>
+    <div class="pull-right" id="copyright">
+        <!-- soy:id="cms_name" -->SOY CMS<!-- /soy:id="cms_name" --> <!-- soy:id="version" /--> on PHP <!-- soy:id="php-version" /-->. <!-- soy:id="copyright" -->©<!-- /soy:id="copyright" --> <!-- soy:id="developer_name" -->Brassica, Inc.<!-- /soy:id="developer_name" -->
+    </div>
 </footer>
 
 <!-- jQuery -->
 <script soy:id="jQuery" src="/admin/webapp/pages/files/vendor/jquery/jquery.min.js"></script>
-
-<!-- Widget -->
-<!-- soy:id="memo_widget" /-->
 
 <!-- Bootstrap Core JavaScript -->
 <script soy:id="bootstrap" src="/admin/webapp/pages/files/vendor/bootstrap/js/bootstrap.min.js"></script>
@@ -26,23 +25,23 @@
 <script soy:id="jquery-cookie"></script>
 
 <script type="text/javascript">
-$(function(){
-	$("#toggle-side-menu").click(function(){
-		if($("#side-menu li a span").is(":hidden")){
-			$("#page-wrapper").css({'margin-left': '250px'});
-			$("#side-menu li a span").show();
-			$(".sidebar").css({'width': '250px'});
-			$("#toggle-side-menu i").removeClass("fa-angle-right").addClass("fa-angle-left");
-			$("#toggle-side-menu").removeClass("active").blur();
-			$.cookie('admin-hide-side-menu', false);
-		}else{
-			$("#page-wrapper").css({'margin-left': '50px'});
-			$("#side-menu li a span").hide();
-			$(".sidebar").css({'width': '50px'});
-			$("#toggle-side-menu i").removeClass("fa-angle-left").addClass("fa-angle-right");
-			$("#toggle-side-menu").removeClass("active").blur();
-			$.cookie('admin-hide-side-menu', true);
-		}
-	});
-});
+    $(function () {
+        $("#toggle-side-menu").click(function () {
+            if ($("#side-menu li a span").is(":hidden")) {
+                $("#page-wrapper").css({ 'margin-left': '250px' });
+                $("#side-menu li a span").show();
+                $(".sidebar").css({ 'width': '250px' });
+                $("#toggle-side-menu i").removeClass("fa-angle-right").addClass("fa-angle-left");
+                $("#toggle-side-menu").removeClass("active").blur();
+                $.cookie('admin-hide-side-menu', false);
+            } else {
+                $("#page-wrapper").css({ 'margin-left': '50px' });
+                $("#side-menu li a span").hide();
+                $(".sidebar").css({ 'width': '50px' });
+                $("#toggle-side-menu i").removeClass("fa-angle-left").addClass("fa-angle-right");
+                $("#toggle-side-menu").removeClass("active").blur();
+                $.cookie('admin-hide-side-menu', true);
+            }
+        });
+    });
 </script>

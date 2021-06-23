@@ -1,0 +1,42 @@
+<div style="margin-left:0.5em;">
+    <p>CSS と JavaScript と HTML から 空白 や 改行, コメント など余分な要素を削除して, コードを軽量化（圧縮）します.<br>
+        ファイル種別は URI の拡張子で判定します. （CSS: .css, JavaScript: .js, XML: .xml, HTML: その他全て）</p>
+</div>
+
+<h5 style="margin-bottom:2px;">ファイル生成機能について</h5>
+<div style="margin-left:0.5em;">
+    <p>
+        ファイル生成は 標準ページ のみ対象です.<br>
+        ファイル生成をONにすると, ページ更新時に CSS／JavaScript ページの 実ファイル を生成します.<br>
+        ファイルは URI（ページのアドレス）に対応するディレクトリに生成し, 以後, 実ファイルが優先して読み込まれます.<br>
+        <small>* 対応するディレクトリが存在しない場合には ファイルを生成しません. 事前に FTP 等で作成してください.</small>
+    </p>
+</div>
+
+<form method="post" soy:id="minify_resource_form">
+    <fieldset>
+        <legend>設定</legend>
+        <table>
+            <tr>
+                <td><input soy:id="min_css" /></td>
+                <td><input soy:id="gen_css" /></td>
+            </tr>
+            <tr>
+                <td><input soy:id="min_js" /></td>
+                <td><input soy:id="gen_js" /></td>
+            </tr>
+            <tr>
+                <td><input soy:id="min_xml" /></td>
+                <td><input soy:id="gen_xml" /></td>
+            </tr>
+            <tr>
+                <td><input soy:id="min_html" /></td>
+                <td> </td>
+            </tr>
+            <tr>
+                <td><input type="submit" name="save" value="設定" /></td>
+                <td> </td>
+            </tr>
+        </table>
+    </fieldset>
+</form soy:id="minify_resource_form">

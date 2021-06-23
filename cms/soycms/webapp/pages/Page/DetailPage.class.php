@@ -1,296 +1,306 @@
 <?php
 
-class DetailPage extends CMSWebPageBase{
+class DetailPage extends CMSWebPageBase
+{
+    private $id;
 
-	private $id;
+    public function doPost()
+    {
+        if (soy2_check_token()) {
+            $result = $this->run("Page.UpdateAction", array("id"=>$this->id, "updateConfig"=>true));
 
-	function doPost(){
+            if ($result->success()) {
+                $this->addMessage("PAGE_UPDATE_SUCCESS");
+            } else {
+                $this->addErrorMessage("PAGE_UPDATE_FAILED");
+            }
+            $this->jump("Page.Detail." . $this->id);
+            exit();
+        }
+    }
 
-		if(soy2_check_token()){
-			$result = $this->run("Page.UpdateAction",array(
-				"id" => $this->id,
-				"updateConfig" => true
-			));
+    public function __construct($arg)
+    {
+        if (!isset($arg[0])) {
+            $this->jump("Page");
+        }
+        $this->id = (int)$arg[0];
 
-			if($result->success()){
-				$this->addMessage("PAGE_UPDATE_SUCCESS");
-			}else{
-				$this->addErrorMessage("PAGE_UPDATE_FAILED");
-			}
-			$this->jump("Page.Detail.".$this->id);
-			exit;
-		}
-	}
+        parent::__construct();
 
-	function __construct($arg){
-		if(!isset($arg[0])) $this->jump("Page");
-		$this->id = (int)$arg[0];
+        // 新規作成してから来たときのメッセージ表示
+        if (isset($_GET["msg"]) && $_GET["msg"] == "create") {
+            $this->addMessage("PAGE_CREATE_SUCCESS");
+            $this->jump("Page.Detail." . $this->id);
+        }
 
-		parent::__construct();
+        $page = $this->getPageObject($this->id);
 
-		//新規作成してから来たときのメッセージ表示
-		if(isset($_GET["msg"]) && $_GET["msg"] == "create"){
-			$this->addMessage("PAGE_CREATE_SUCCESS");
-			$this->jump("Page.Detail.".$this->id);
-		}
+        switch ($page->getPageType()) {
+            case Page::PAGE_TYPE_BLOG:  //ブログだった場合はブログページへ
+                $this->jump("Blog." . $this->id);
+                break;
+//          case Page::PAGE_TYPE_MOBILE:  //mobileページだった時はそっちに
+//              $this->jump("Page.Mobile.Detail." . $this->id);
+//              break;
+            case Page::PAGE_TYPE_APPLICATION:  //applicationページだった場合
+                $this->jump("Page.Application.Detail." . $this->id);
+                break;
+            case Page::PAGE_TYPE_ERROR:  //404ページだった場合の処理
+                DisplayPlugin::hide("openperiod_section");
+                break;
+            default:
+                DisplayPlugin::hide("error_submit_button");
+        }
 
-		$page = $this->getPageObject($this->id);
+        $this->addInput("title", array(
+        "value"=>$page->getTitle(),
+        "name"=>"title"
+        ));
 
-		switch($page->getPageType()){
-			case Page::PAGE_TYPE_BLOG:	//ブログだった場合はブログページへ
-				$this->jump("Blog." . $this->id);
-				break;
-			case Page::PAGE_TYPE_MOBILE:	//mobileページだった時はそっちに
-				$this->jump("Page.Mobile.Detail." . $this->id);
-				break;
-			case Page::PAGE_TYPE_APPLICATION:	//applicationページだった場合
-				$this->jump("Page.Application.Detail." . $this->id);
-				break;
-			case Page::PAGE_TYPE_ERROR:	//404ページだった場合の処理
-				DisplayPlugin::hide("openperiod_section");
-				break;
-			default:
-				DisplayPlugin::hide("error_submit_button");
-		}
+        $this->addInput("uri", array(
+          "value"=>$page->getUri(),
+          "name"=>"uri"
+        ));
 
-		$this->addInput("title", array(
-			"value" => $page->getTitle(),
-			"name" => "title"
-		));
+        $this->addImage("page_icon_show", array(
+          "src"=>$page->getIconUrl(),
+          "onclick"=>"javascript:changeImageIcon(" . $page->getId() . ");"
+        ));
 
-		$this->addInput("uri", array(
-			"value" => $page->getUri(),
-			"name" => "uri"
-		));
+        $this->addInput("page_icon", array(
+          "value"=>$page->getIcon()
+        ));
 
-		$this->addImage("page_icon_show", array(
-			"src" => $page->getIconUrl(),
-			"onclick" => "javascript:changeImageIcon(".$page->getId().");"
-		));
-
-		$this->addInput("page_icon", array(
-			"value" => $page->getIcon()
-		));
-
-		$this->addInput("title_format", array(
-			"value" => $page->getPageTitleFormat(),
-			"name" => "pageTitleFormat"
-		));
-
-
-		$this->addLabel("uri_prefix", array(
-			"text" => $this->getURIPrefix($this->id)
-		));
-
-		$this->addSelect("parent_page", array(
-			"selected" => $page->getParentPageId(),
-			"options" => $this->getPageList(),
-			"indexOrder" => true,
-			"name" => "parentPageId"
-		));
-
-		//CSS保存のボタン
-		$this->addLabel("save_css_button", array(
-			"visible" => function_exists("json_encode")
-		));
-
-		//template保存のボタン追加
-		$this->addModel("save_template_button", array(
-			"id" => "save_template_button",
-			"onclick" => "javascript:save_template('".SOY2PageController::createLink("Page.Editor.SaveTemplate." . $page->getId())."',this);",
-			"visible" => function_exists("json_encode")
-		));
-
-		$this->addTextArea("template", array(
-			"text" => $page->getTemplate(),
-			"name" => "template"
-		));
-
-		$this->addModel("template_editor", array(
-				//"_src"=>SOY2PageController::createRelativeLink("./webapp/pages/files/vendor/soycms/template-editor/template-editor.html"),
-				"_src"=>SOY2PageController::createRelativeLink("./js/editor/template_editor.html"),
-		));
-
-		$this->addCheckBox("state_draft", array(
-			"selected"=>!$page->getIsPublished(),
-			"name" => "isPublished",
-			"value" => 0,
-			"label" => $this->getMessage("SOYCMS_DRAFT")
-		));
-		$this->addCheckBox("state_public", array(
-			"selected" => $page->getIsPublished(),
-			"name" => "isPublished",
-			"value" => 1,
-			"label" => $this->getMessage("SOYCMS_PUBLISHED")
-		));
-
-		$start = $page->getOpenPeriodStart();
-		$end   = $page->getOpenPeriodEnd();
+        $this->addInput("title_format", array(
+          "value"=>$page->getPageTitleFormat(),
+          "name"=>"pageTitleFormat"
+        ));
 
 
-		//公開期間フォームの表示
-		$this->addInput("start_date", array(
-			"value"=>(is_null($start)) ? "" : date('Y-m-d H:i:s',$start),
-			"name" => "openPeriodStart"
-		));
-		$this->addInput("end_date", array(
-			"value"=>(is_null($end)) ? "" : date('Y-m-d H:i:s',$end),
-			"name" => "openPeriodEnd"
-		));
+        $this->addLabel("uri_prefix", array(
+        "text" => $this->getURIPrefix($this->id)
+        ));
 
-		$this->addLabel("open_period_show", array(
-			"html" => CMSUtil::getOpenPeriodMessage($start, $end)
-		));
+        $this->addSelect("parent_page", array(
+          "selected"=>$page->getParentPageId(),
+          "options"=>$this->getPageList(),
+          "indexOrder"=>true,
+          "name"=>"parentPageId"
+        ));
 
-		$this->addScript("PanelManager.js",array(
-			"src" => SOY2PageController::createRelativeLink("./js/cms/PanelManager.js")
-		));
+//      //CSS保存のボタン
+//      $this->addLabel("save_css_button", array(
+//        "visible" => function_exists("json_encode")
+//      ));
 
-		$this->addScript("TemplateEditor",array(
-			"src" => SOY2PageController::createRelativeLink("./js/editor/template_editor.js")
-		));
+        // template保存のボタン追加
+        $this->addModel("save_template_button", array(
+          "id"=>"save_template_button",
+          "onclick"=>"javascript:save_template('" . SOY2PageController::createLink("Page.Editor.SaveTemplate." . $page->getId()) . "',this);",
+          "visible"=>function_exists("json_encode")
+        ));
 
-		HTMLHead::addLink("editor",array(
-			"rel" => "stylesheet",
-			"type" => "text/css",
-			"href" => SOY2PageController::createRelativeLink("./css/editor/editor.css")
-		));
+        $this->addTextArea("template", array(
+          "text"=>$page->getTemplate(),
+          "name"=>"template"
+        ));
 
-		HTMLHead::addLink("section",array(
-			"rel" => "stylesheet",
-			"type" => "text/css",
-			"href" => SOY2PageController::createRelativeLink("./css/form.css")
-		));
+//      $this->addModel("template_editor", array(
+//        //"_src"=>SOY2PageController::createRelativeLink("./webapp/pages/files/vendor/soycms/template-editor/template-editor.html"),
+//          "_src"=>SOY2PageController::createRelativeLink("./js/editor/template_editor.html"),
+//      ));
 
-		HTMLHead::addLink("form", array(
-			"rel" => "stylesheet",
-			"type" => "text/css",
-			"href" => SOY2PageController::createRelativeLink("./js/cms/PanelManager.css")
-		));
+        $this->addCheckBox("state_draft", array(
+          "selected"=>!$page->getIsPublished(),
+          "name"=>"isPublished",
+          "value"=>0,
+          "label"=>$this->getMessage("SOYCMS_DRAFT")
+        ));
+        $this->addCheckBox("state_public", array(
+          "selected"=>$page->getIsPublished(),
+          "name"=>"isPublished",
+          "value"=>1,
+          "label"=>$this->getMessage("SOYCMS_PUBLISHED")
+        ));
 
+        $start = $page->getOpenPeriodStart();
+        $end = $page->getOpenPeriodEnd();
 
-		$this->addForm("page_detail_form", array(
-			"name" => "main_form"
-		));
+        // 公開期間フォームの表示
+        $this->addInput("start_date", array(
+          "value"=>((null===$start)) ? "" : date('Y-m-d H:i:s', $start),
+          "name"=>"openPeriodStart"
+        ));
+        $this->addInput("end_date", array(
+          "value"=>((null===$end)) ? "" : date('Y-m-d H:i:s', $end),
+          "name"=>"openPeriodEnd"
+        ));
 
-		//ブロック
-		$this->createAdd("page_block_info","Block.BlockListPage",array(
-			"pageId" => $this->id
-		));
+        $this->addLabel("open_period_show", array(
+          "html"=>CMSUtil::getOpenPeriodMessage($start, $end)
+        ));
 
-		//見出しに現在編集しているページ名を表示
-		$this->addLabel("page_name", array(
-			"text" => $page->getTitle()
-		));
-		$this->addScript("cssmenu",array(
-				"src" => SOY2PageController::createRelativeLink("js/editor/cssMenu.js")
-			));
+        $this->addScript("PanelManager.js", array(
+          "src"=>SOY2PageController::createRelativeLink("./js/cms/PanelManager.js")
+        ));
 
-		//CSS保存先URLをJavaScriptに埋め込みます
-		$this->addScript("cssurl",array(
-			"script"=>'var cssURL = "'.SOY2PageController::createLink("Page.Editor").'";' .
-					  'var siteId="'.UserInfoUtil::getSite()->getSiteId().'";' .
-					  //'var editorLink = "'.SOY2PageController::createLink("Page.Editor").'";'.
-					  'var siteURL = "'.UserInfoUtil::getSiteUrl().'";'
-		));
+        $this->addScript("TemplateEditor", array(
+          "src"=>SOY2PageController::createRelativeLink("./js/editor/template_editor.js")
+        ));
 
-		$this->addLink("insertLink",array(
-			"link" => SOY2PageController::createLink("Page.Editor.InsertLink"),
-		));
-		$this->addLink("fileUpload",array(
-			"link" => SOY2PageController::createLink("Page.Editor.FileUpload"),
-		));
+        HTMLHead::addLink("editor", array(
+          "rel"=>"stylesheet",
+          "type"=>"text/css",
+          "href"=>SOY2PageController::createRelativeLink("./css/editor/editor.css")
+        ));
 
-		//絵文字入力用
-		$this->addScript("mceSOYCMSEmojiURL",array(
-			"script" => 'var mceSOYCMSEmojiURL = "'.SOYCMSEmojiUtil::getEmojiInputPageUrl().'";',
-			"visible" => SOYCMSEmojiUtil::isInstalled(),
-		));
+        HTMLHead::addLink("section", array(
+          "rel"=>"stylesheet",
+          "type"=>"text/css",
+          "href"=>SOY2PageController::createRelativeLink("./css/form.css")
+        ));
 
-		$this->addModel("is_emoji_enabled",array(
-			"visible" => SOYCMSEmojiUtil::isInstalled(),
-		));
-
-		//アイコンリスト
-		$this->createAdd("image_list","_component.Label.LabelIconListComponent",array(
-			"list" => $this->getLabelIconList()
-		));
-
-
-		//ファイルツリーをつかいます。
-		CMSToolBox::enableFileTree();
-
-		CMSToolBox::addLink($this->getMessage("SOYCMS_CREATE_NEW_WEBPAGE"),SOY2PageController::createLink("Page.Create"),true);
-		CMSToolBox::addLink($this->getMessage("SOYCMS_TEMPLATE_HISTORY"),SOY2PageController::createLink("Page.TemplateHistory.".$this->id),true);
-		CMSToolBox::addLink($this->getMessage("SOYCMS_DYNAMIC_EDIT"),SOY2PageController::createLink("Page.Preview.".$this->id),false,"this.target = '_blank'");
-		if($page->isActive() == Page::PAGE_ACTIVE){
-			CMSToolBox::addLink($this->getMessage("SOYCMS_SHOW_WEBPAGE"),CMSUtil::getSiteUrl().$page->getUri(),false,"this.target = '_blank'");
-		}
-		CMSToolBox::addLink($this->getMessage("SOYCMS_DOWNLOAD_TEMPLATE"),SOY2PageController::createLink("Page.ExportTemplate.".$this->id),false);
-		if(CMSUtil::isPageTemplateEnabled()){
-			CMSToolBox::addLink($this->getMessage("SOYCMS_APPLY_WEBPAGE_TEMPLATEPACK"),SOY2PageController::createLink("Page.ApplyTemplate.".$page->getId()),true);
-		}
-		CMSToolBox::addPageJumpBox();
+        HTMLHead::addLink("form", array(
+          "rel"=>"stylesheet",
+          "type"=>"text/css",
+          "href"=>SOY2PageController::createRelativeLink("./js/cms/PanelManager.css")
+        ));
 
 
-		//短縮URLのフィールドの呼び出し
-		//url_shortener_display, url_shortener_input
-		CMSPlugin::callLocalPluginEventFunc("onPageEdit","UrlShortener",array("page" => $this));
+        $this->addForm("page_detail_form", array(
+          "name"=>"main_form"
+        ));
 
-	}
+        // ブロック
+        $this->createAdd("page_block_info", "Block.BlockListPage", array(
+        "pageId" => $this->id
+        ));
 
-	/**
-	 * このページIDに対する呼び出しURIの定型部分を取得
-	 */
-	function getURIPrefix($pageId){
-		return CMSUtil::getSiteUrl();
-	}
+        // 見出しに現在編集しているページ名を表示
+        $this->addLabel("page_name", array(
+          "text"=>$page->getTitle()
+        ));
+  //  $this->addScript("cssmenu",array(
+  //      "src" => SOY2PageController::createRelativeLink("js/editor/cssMenu.js")
+  //  ));
 
-	/**
-	 * IDに対するページオブジェクトを取得する
-	 */
-	function getPageObject($id){
-		return SOY2ActionFactory::createInstance("Page.DetailAction",array(
-			"id" => $id
-		))->run()->getAttribute("Page");
-	}
+        $this->addScript("siteinfo", array(
+        "script"=>'var siteId="'.UserInfoUtil::getSite()->getSiteId().'";' .
+        'var siteURL = "'.UserInfoUtil::getSiteUrl().'";'
+        ));
 
-	/**
-	 * ページIDをキーとするリストを取得
-	 */
-	function getPageList(){
-		return SOY2ActionFactory::createInstance("Page.PageListAction",array(
-			"buildTree" => true
-		))->run()->getAttribute("PageTree");
-	}
+        // // CSS保存先URLをJavaScriptに埋め込みます
+        // $this->addScript("cssurl", array(
+        // "script"=>//'var cssURL = "'.SOY2PageController::createLink("Page.Editor").'";' .
+        //           'var siteId="' . UserInfoUtil::getSite()->getSiteId() . '";' .
+        //     //'var editorLink = "'.SOY2PageController::createLink("Page.Editor").'";'.
+        //           'var siteURL = "' . UserInfoUtil::getSiteUrl() . '";'
+        // ));
 
-	/**
-	 * ページに使えるアイコンの一覧を返す
-	 */
-	function getLabelIconList(){
+        $this->addLink("insertLink", array(
+        "link" => SOY2PageController::createLink("Page.Editor.InsertLink"),
+        ));
+        $this->addLink("fileUpload", array(
+        "link" => SOY2PageController::createLink("Page.Editor.FileUpload"),
+        ));
 
-		$dir = CMS_PAGE_ICON_DIRECTORY;
+  //  //絵文字入力用
+  //  $this->addScript("mceSOYCMSEmojiURL",array(
+  //    "script" => 'var mceSOYCMSEmojiURL = "'.SOYCMSEmojiUtil::getEmojiInputPageUrl().'";',
+  //    "visible" => SOYCMSEmojiUtil::isInstalled(),
+  //  ));
 
-		$files = scandir($dir);
+  //  $this->addModel("is_emoji_enabled",array(
+  //    "visible" => SOYCMSEmojiUtil::isInstalled(),
+  //  ));
 
-		$return = array();
-
-		foreach($files as $file){
-			if($file[0] == ".")continue;
-
-			if(!preg_match('/^page_/',$file))continue;
-
-			$return[] = (object)array(
-				"filename" => $file,
-				"url" => CMS_PAGE_ICON_DIRECTORY_URL . $file,
-			);
-		}
+        // アイコンリスト
+        $this->createAdd("image_list", "_component.Label.LabelIconListComponent", array(
+          "list"=>$this->getLabelIconList()
+        ));
 
 
-		return $return;
-	}
+        // ファイルツリーをつかいます。
+        CMSToolBox::enableFileTree();
 
-	function getId(){
-		return $this->id;
-	}
+        CMSToolBox::addLink($this->getMessage("SOYCMS_CREATE_NEW_WEBPAGE"), SOY2PageController::createLink("Page.Create"), true);
+        CMSToolBox::addLink($this->getMessage("SOYCMS_TEMPLATE_HISTORY"), SOY2PageController::createLink("Page.TemplateHistory." . $this->id), true);
+//      CMSToolBox::addLink($this->getMessage("SOYCMS_DYNAMIC_EDIT"), SOY2PageController::createLink("Page.Preview." . $this->id), false, "this.target = '_blank'");
+        if ($page->isActive() == Page::PAGE_ACTIVE) {
+            CMSToolBox::addLink($this->getMessage("SOYCMS_SHOW_WEBPAGE"), CMSUtil::getSiteUrl() . $page->getUri(), false, "this.target = '_blank'");
+        }
+        CMSToolBox::addLink($this->getMessage("SOYCMS_DOWNLOAD_TEMPLATE"), SOY2PageController::createLink("Page.ExportTemplate." . $this->id), false);
+        if (CMSUtil::isPageTemplateEnabled()) {
+            CMSToolBox::addLink($this->getMessage("SOYCMS_APPLY_WEBPAGE_TEMPLATEPACK"), SOY2PageController::createLink("Page.ApplyTemplate." . $page->getId()), true);
+        }
+        CMSToolBox::addPageJumpBox();
+
+
+        // 短縮URLのフィールドの呼び出し
+        //url_shortener_display, url_shortener_input
+        CMSPlugin::callLocalPluginEventFunc("onPageEdit", "UrlShortener", array("page" => $this));
+    }
+
+    /**
+     * このページIDに対する呼び出しURIの定型部分を取得
+     */
+    public function getURIPrefix($pageId)
+    {
+        return CMSUtil::getSiteUrl();
+    }
+
+    /**
+     * IDに対するページオブジェクトを取得する
+     */
+    public function getPageObject($id)
+    {
+        return SOY2ActionFactory::createInstance("Page.DetailAction", array(
+        "id" => $id
+        ))->run()->getAttribute("Page");
+    }
+
+    /**
+     * ページIDをキーとするリストを取得
+     */
+    public function getPageList()
+    {
+        return SOY2ActionFactory::createInstance("Page.PageListAction", array(
+        "buildTree" => true
+        ))->run()->getAttribute("PageTree");
+    }
+
+    /**
+     * ページに使えるアイコンの一覧を返す
+     */
+    public function getLabelIconList()
+    {
+        $dir = CMS_PAGE_ICON_DIRECTORY;
+
+        $files = scandir($dir);
+
+        $return = array();
+
+        foreach ($files as $file) {
+            if ($file[0] == ".") {
+                continue;
+            }
+
+            if (!preg_match('/^page_/', $file)) {
+                continue;
+            }
+
+            $return[] = (object)array(
+            "filename" => $file,
+            "url" => CMS_PAGE_ICON_DIRECTORY_URL . $file,
+            );
+        }
+
+        return $return;
+    }
+
+    public function getId()
+    {
+        return $this->id;
+    }
 }

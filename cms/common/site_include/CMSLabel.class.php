@@ -1,35 +1,36 @@
 <?php
 
-class CMSLabel extends HTMLLabel{
-
+class CMSLabel extends HTMLLabel
+{
     private $defaultSuffix = "...";
 
-    function getObject(){
+    public function getObject()
+    {
         $parent_obj = parent::getObject();
         return $this->replaceCMSLink($parent_obj);
     }
 
-    function execute(){
-
+    public function execute()
+    {
         // Use cms:alt if text is empty.
         $alt = $this->getAttribute("cms:alt");
-        if(!is_null($alt)){
-            if(is_null($this->text) || strlen($this->text) == 0){
+        if (null!==$alt) {
+            if ((null===$this->text) || strlen($this->text) == 0) {
                 $this->setText($alt);
             }
         }
 
         // Trim text to the designated length and remove html tags of text.
         $length = $this->getAttribute("cms:length");
-        if(!is_null($length) && is_numeric($length)){
+        if (null!==$length && is_numeric($length)) {
             $text = trim(SOY2HTML::ToText($this->text));
-            mb_internal_encoding("UTF-8");
-            $shortText = mb_substr($text,0,(int)$length);
+            mb_internal_encoding(SOY2::CHARSET);
+            $shortText = mb_substr($text, 0, (int)$length);
 
             $suffix = "";
-            if(strlen($shortText) < strlen($text)){
+            if (strlen($shortText) < strlen($text)) {
                 $suffix = $this->getAttribute("cms:suffix");
-                if(strlen($suffix)==0){
+                if (strlen($suffix)==0) {
                     $suffix = $this->defaultSuffix;
                 }
             }
@@ -38,22 +39,22 @@ class CMSLabel extends HTMLLabel{
         }
 
         parent::execute();
-
     }
 
-
-    public function replaceCMSLink($content){
-
+    public function replaceCMSLink($content)
+    {
         //リンクの置換え
         $plugin = new CMSPageLinkPlugin();
 
         $plugin->setSiteRoot(SOY2PageController::createLink(""));
 
-        while(true){
+        while (true) {
             list($tag,$line,$innerHTML,$outerHTML,$value,$suffix,$skipendtag) =
-                $plugin->parse("link","[0-9]+",$content);
+                $plugin->parse("link", "[0-9]+", $content);
 
-            if(!strlen($tag))break;
+            if (!strlen($tag)) {
+                break;
+            }
 
             $plugin->_attribute = array();
             $plugin->_soy2_attribute = array();
@@ -69,18 +70,18 @@ class CMSLabel extends HTMLLabel{
             //特別動作
             $plugin->executeReplace($value);
 
-            $content = $this->getContent($plugin,$content);
+            $content = $this->getContent($plugin, $content);
         }
 
         return $content;
     }
 
-
-
-    public function getDefaultSuffix() {
+    public function getDefaultSuffix()
+    {
         return $this->defaultSuffix;
     }
-    public function setDefaultSuffix($defaultSuffix) {
+    public function setDefaultSuffix($defaultSuffix)
+    {
         $this->defaultSuffix = $defaultSuffix;
     }
 }

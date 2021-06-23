@@ -1,17 +1,23 @@
-<html>
-<head soy:page="_common.HeaderPage" isOverWrite="true"></head>
+<!DOCTYPE html>
+<html lang="<?php echo SOYCMS_ADMIN_HTML_LANG; ?>">
+
+<head soy:page="_common.HeaderPage" isOverWrite="true">
+</head soy:page="_common.HeaderPage">
+
 <body class="sub">
 
-	<!-- soy:page="_common.BottomJSPage" /-->
+    <!-- soy:page="_common.BottomJSPage" /-->
 
-	<div id="layer_content">
-		<dl class="dl-horizontal">
-			<dt soy:id="block_name" style="text-align:left"></dt>
-			<dd  soy:id="block_description"></dd>
-		</dl>
+    <div id="layer_content">
+        <dl class="dl-horizontal">
+            <dt soy:id="block_name" style="text-align:left"></dt>
+            <dd soy:id="block_description"></dd>
+        </dl>
 
-		<div soy:id="block_form"></div soy:id="block_form"></div>
-	</div>
+        <div soy:id="block_form"></div soy:id="block_form">
+    </div>
+    </div>
 
 </body>
+
 </html>

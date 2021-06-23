@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="<?php echo SOYCMS_ADMIN_HTML_LANG; ?>">
 
 <head soy:page="_common.HeaderPage" isOverWrite="true">
 </head soy:page="_common.HeaderPage">
@@ -7,8 +7,8 @@
 <body>
 
     <div id="wrapper">
-		<!-- Navigation -->
-        <nav  class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0" soy:page="_common.UpperMenuPage"><!-- --></nav>
+        <!-- Navigation -->
+        <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0" soy:page="_common.UpperMenuPage"></nav>
         <div id="page-wrapper">
             <div class="row">
                 <div class="col-lg-12">
@@ -19,117 +19,103 @@
             <div soy:page="_common.MessagePanel" isOverWrite="true"></div>
             <div class="row">
                 <div class="col-lg-12">
-                	<div class="panel panel-green">
-                   	 	<div class="panel-body">
-                   	 		<a soy:link="Template" style="margin-right:10px">ページ雛形管理に戻る</a>
-							<a soy:id="operation_link" style="margin-right:10px">インストール</a>
-                   	 	</div>
-					</div>
+                    <div class="panel panel-green">
+                        <div class="panel-body">
+                            <a soy:link="Template" style="margin-right:10px">ページ雛形管理に戻る</a>
+                            <a soy:id="operation_link" style="margin-right:10px">インストール</a>
+                        </div>
+                    </div>
                 </div>
                 <!-- /.col-lg-12 -->
             </div>
             <div class="row" soy:display="installed">
                 <div class="col-lg-12">
-                	<div class="panel panel-green">
-                   	 	<div class="panel-body">
-                   	 		<p>このページ雛形はインストール済みです。</p>
-							<p>
-							以下のファイルで赤く表示されているものは、サーバー上に存在しないファイルです。<br />
-							ファイルマネージャで確認してください。
-							</p>
-                   	 	</div>
-					</div>
+                    <div class="panel panel-green">
+                        <div class="panel-body">
+                            <p>このページ雛形はインストール済みです。</p>
+                            <p>
+                                以下のファイルで赤く表示されているものは、サーバー上に存在しないファイルです。<br>
+                                ファイルマネージャで確認してください。
+                            </p>
+                        </div>
+                    </div>
                 </div>
                 <!-- /.col-lg-12 -->
-            </div  soy:display="installed">
+            </div soy:display="installed">
             <div class="row" soy:display="not_installed">
                 <div class="col-lg-12">
-                	<div class="panel panel-green">
-                   	 	<div class="panel-body">
-                   	 		<p>このページ雛形は未インストールです。</p>
-							<!-- soy:display="file_list" -->
-							<p>
-							以下のファイルで赤く表示されているものは、すでに同じファイル名のファイルが存在しています。<br />
-							ファイルマネージャで確認してください。
-							</p>
-							<!-- /soy:display="file_list" -->
-                   	 	</div>
-					</div>
+                    <div class="panel panel-green">
+                        <div class="panel-body">
+                            <p>このページ雛形は未インストールです。</p>
+                            <!-- soy:display="file_list" -->
+                            <p>
+                                以下のファイルで赤く表示されているものは、すでに同じファイル名のファイルが存在しています。<br>
+                                ファイルマネージャで確認してください。
+                            </p>
+                            <!-- /soy:display="file_list" -->
+                        </div>
+                    </div>
                 </div>
                 <!-- /.col-lg-12 -->
             </div soy:display="not_installed">
 
             <div class="row">
                 <div class="col-lg-12">
-                	<div class="panel panel-green">
-                		<div class="panel-heading">
-                			ページ雛形一覧
-                		</div>
-                   	 	<div class="panel-body">
-                   	 		<div class="table-responsive">
-				                 <table class="table" id="file_list">
-									<thead>
-										<tr>
-											<td class="function">名前</td>
-											<td class="function">説明</td>
-											<td class="function" soy:display="installed">操作</td soy:display="installed">
-										</tr>
-									</thead>
-									<tbody>
-										<tr soy:id="template_list">
-											<td>
-												<span soy:id="name">ファイルリスト</span>
-											</td>
-											<td>
-												<span soy:id="description">説明</span>
-											</td>
-											<td soy:display="installed">
-												<a soy:id="edit_link">編集</a>
-											</td soy:display="installed">
-										</tr soy:id="template_list">
-									</tbody>
-								</table>
-                   	 		</div>
-                   	 	</div>
-					</div>
+                    <div class="panel panel-green">
+                        <div class="panel-heading">ページ雛形一覧</div>
+                        <div class="panel-body">
+                            <div class="table-responsive">
+                                <table class="table" id="file_list">
+                                    <thead>
+                                        <tr>
+                                            <td class="function">名前</td>
+                                            <td class="function">説明</td>
+                                            <td class="function" soy:display="installed">操作</td soy:display="installed">
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr soy:id="template_list">
+                                            <td><span soy:id="name">ファイルリスト</span></td>
+                                            <td><span soy:id="description">説明</span></td>
+                                            <td soy:display="installed"><a soy:id="edit_link">編集</a></td soy:display="installed">
+                                        </tr soy:id="template_list">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <!-- /.col-lg-12 -->
             </div>
-            <div class="row"　soy:display="file_list">
+            <div class="row" 　soy:display="file_list">
                 <div class="col-lg-12">
-                	<div class="panel panel-green">
-                		<div class="panel-heading">
-                			ファイル一覧
-                		</div>
-                   	 	<div class="panel-body">
-                   	 		<div class="table-responsive">
-				                 <table class="table" id="file_list">
-									<thead>
-										<tr>
-											<td class="function">パス</td>
-											<td class="function">説明</td>
-										</tr>
-									</thead>
-									<tbody>
-										<tr soy:id="file_list">
-											<td>
-												<a soy:id="name" target="_blank">ファイルリスト</a>
-											</td>
-											<td>
-												<span soy:id="description">説明</span>
-											</td>
-										</tr soy:id="file_list">
-									</tbody>
-								</table>
-                   	 		</div>
-                   	 	</div>
-					</div>
+                    <div class="panel panel-green">
+                        <div class="panel-heading">ファイル一覧</div>
+                        <div class="panel-body">
+                            <div class="table-responsive">
+                                <table class="table" id="file_list">
+                                    <thead>
+                                        <tr>
+                                            <td class="function">パス</td>
+                                            <td class="function">説明</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr soy:id="file_list">
+                                            <td><a soy:id="name" target="_blank" rel="noopener">ファイルリスト</a></td>
+                                            <td><span soy:id="description">説明</span></td>
+                                        </tr soy:id="file_list">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <!-- /.col-lg-12 -->
             </div　soy:display="file_list">
         </div>
         <!-- /#page-wrapper -->
-		<!-- soy:page="_common.FooterPage" /-->
+        <!-- soy:page="_common.FooterPage" /-->
     </div>
     <!-- /#wrapper -->
 

@@ -3,97 +3,113 @@
  * @table Administrator
  * @date 2007-08-22 18:42:19
  */
-class Administrator {
+class Administrator
+{
+    /**
+     * @id identity
+     */
+    private $id;
 
-	/**
-	 * @id identity
-	 */
-	private $id;
+    /**
+     * @column user_id
+     */
+    private $userId;
 
-	/**
-	 * @column user_id
-	 */
-	private $userId;
+    /**
+     * @column user_password
+     */
+    private $userPassword;
 
-	/**
-	 * @column user_password
-	 */
-	private $userPassword;
+    /**
+     * @column default_user
+     */
+    private $isDefaultUser;
 
-	/**
-	 * @column default_user
-	 */
-	private $isDefaultUser;
+    private $email;
 
-	private $email;
+    private $name;
 
-	private $name;
+    /**
+     * @column token
+     */
+    private $token;
 
-	/**
-	 * @column token
-	 */
-	private $token;
+    /**
+     * @column token_issued_date
+     */
+    private $tokenIssuedDate;
 
-	/**
-	 * @column token_issued_date
-	 */
-	private $tokenIssuedDate;
+    public function setId($id)
+    {
+        $this->id = $id;
+    }
 
-	public function setId($id){
-		$this->id = $id;
-	}
+    public function getId()
+    {
+        return $this->id;
+    }
 
-	public function getId(){
-		return $this->id;
-	}
+    public function setUserId($userId)
+    {
+        $this->userId = $userId;
+    }
 
-	public function setUserId($userId){
-		$this->userId = $userId;
-	}
+    public function getUserId()
+    {
+        return $this->userId;
+    }
 
-	public function getUserId(){
-		return $this->userId;
-	}
+    public function setUserPassword($userPassword)
+    {
+        $this->userPassword = $userPassword;
+    }
 
-	public function setUserPassword($userPassword){
-		$this->userPassword = $userPassword;
-	}
+    public function getUserPassword()
+    {
+        return $this->userPassword;
+    }
 
-	public function getUserPassword(){
-		return $this->userPassword;
-	}
+    public function getIsDefaultUser()
+    {
+        return $this->isDefaultUser;
+    }
+    public function setIsDefaultUser($isDefaultUser)
+    {
+        $this->isDefaultUser = (int)$isDefaultUser;
+    }
 
-	function getIsDefaultUser() {
-		return $this->isDefaultUser;
-	}
-	function setIsDefaultUser($isDefaultUser) {
-		$this->isDefaultUser = (int)$isDefaultUser;
-	}
+    public function getEmail()
+    {
+        return $this->email;
+    }
+    public function setEmail($email)
+    {
+        $this->email = $email;
+    }
+    public function getName()
+    {
+        return $this->name;
+    }
+    public function setName($name)
+    {
+        $this->name = $name;
+    }
 
-	function getEmail() {
-		return $this->email;
-	}
-	function setEmail($email) {
-		$this->email = $email;
-	}
-	function getName() {
-		return $this->name;
-	}
-	function setName($name) {
-		$this->name = $name;
-	}
+    public function getToken()
+    {
+        return $this->token;
+    }
+    public function setToken($token)
+    {
+        $this->token = $token;
+    }
 
-	function getToken() {
-		return $this->token;
-	}
-	function setToken($token) {
-		$this->token = $token;
-	}
-
-	function getTokenIssuedDate() {
-		return $this->tokenIssuedDate;
-	}
-	function setTokenIssuedDate($tokenIssuedDate) {
-		$this->tokenIssuedDate = $tokenIssuedDate;
-	}
+    public function getTokenIssuedDate()
+    {
+        return $this->tokenIssuedDate;
+    }
+    public function setTokenIssuedDate($tokenIssuedDate)
+    {
+        $this->tokenIssuedDate = $tokenIssuedDate;
+    }
 }

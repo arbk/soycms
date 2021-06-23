@@ -2,101 +2,125 @@
 /**
  * @entity cms.BlogPage
  */
-class BlogPageDAO{
+class BlogPageDAO
+{
+    public function get()
+    {
+        $dao = $this->getPageDAO();
+        $pages = $dao->getByPageType(Page::PAGE_TYPE_BLOG);
 
-	function get(){
-		$dao = $this->getPageDAO();
-		$pages = $dao->getByPageType(Page::PAGE_TYPE_BLOG);
+        foreach ($pages as $key => $page) {
+            $pages[$key] = $this->cast($page);
+        }
 
-		foreach($pages as $key => $page){
-			$pages[$key] = $this->cast($page);
-		}
+        return $pages;
+    }
 
-		return $pages;
-	}
+    /**
+     * IDを指定して取得
+     */
+    public function getById($id)
+    {
+        $obj = $this->getPageDAO()->getById($id);
 
-	/**
-	 * IDを指定して取得
-	 */
-	function getById($id){
-		$obj = $this->getPageDAO()->getById($id);
-		if($obj->getPageType() != Page::PAGE_TYPE_BLOG){
-			throw new Exception("This Page is not Blog Page.");
-		}
-		return $this->cast($obj);
-	}
+        if ($obj->getPageType() != Page::PAGE_TYPE_BLOG) {
+            throw new Exception("This Page is not Blog Page.");
+        }
 
-	function cast($page){
-		$blogPage = SOY2::cast("BlogPage",$page);
+        return $this->cast($obj);
+    }
 
-		$config = $blogPage->getPageConfigObject();
+    public function cast($page)
+    {
+        $blogPage = SOY2::cast("BlogPage", $page);
 
-    	if($config){
-    		$config = unserialize($blogPage->getPageConfig());
-    		SOY2::cast($blogPage,$config);
-    	}
+        $config = $blogPage->getPageConfigObject();
 
-    	return $blogPage;
-	}
+        if ($config) {
+            $config = unserialize($blogPage->getPageConfig());
+            SOY2::cast($blogPage, $config);
+        }
 
-	/**
-	 * BlogPageを初期化する
-	 */
-	function insert(Page $page){
+        return $blogPage;
+    }
 
-		$dao = $this->getPageDAO();
-		$page = SOY2::cast("BlogPage",$page);
+    /**
+     * BlogPageを初期化する
+     */
+    public function insert(Page $page)
+    {
+        $dao = $this->getPageDAO();
+        $page = SOY2::cast("BlogPage", $page);
 
-		//初期データ
-		$page->setEntryPageUri("article");
-		$page->setRssPageUri("feed");
-		$page->setCategoryPageUri("category");
-		$page->setMonthPageUri("month");
-		$page->setTopDisplayCount(10);
-		$page->setCategoryDisplayCount(10);
-		$page->setMonthDisplayCount(10);
-		$page->setRssDisplayCount(10);
-		$page->setGenerateCategoryFlag(true);
-		$page->setGenerateEntryFlag(true);
-		$page->setGenerateTopFlag(true);
-		$page->setGenerateRssFlag(true);
-		$page->setGenerateMonthFlag(true);
-		$page->setTopTitleFormat("%BLOG%");
-		$page->setEntryTitleFormat("%ENTRY% - %BLOG%");
-		$page->setMonthTitleFormat("%YEAR%-%MONTH% - %BLOG%");
-		$page->setCategoryTitleFormat("%CATEGORY% - %BLOG%");
+        // 初期データ
+        $page->setGenerateTopFlag(true);
+        $page->setGenerateEntryFlag(true);
+        $page->setGenerateMonthFlag(true);
+        $page->setGenerateCategoryFlag(true);
+        $page->setGenerateRssFlag(true);
 
-		$configObj = $page->getConfigObj();
-		$page->setPageConfig($configObj);
+        $page->setTopDisplayCount(10);
+        $page->setMonthDisplayCount(10);
+        $page->setCategoryDisplayCount(10);
+        $page->setRssDisplayCount(10);
 
-		$id = $dao->insert($page);
+        $page->setTopPageUri("");
+        $page->setEntryPageUri("article");
+        $page->setMonthPageUri("month");
+        $page->setCategoryPageUri("category");
+        $page->setRssPageUri("feed");
 
-		return $id;
-	}
+        $page->setTopTitleFormat("%BLOG%");
+        $page->setEntryTitleFormat("%ENTRY% - %BLOG%");
+        $page->setMonthTitleFormat("%YEAR%-%MONTH% - %BLOG%");
+        $page->setCategoryTitleFormat("%CATEGORY% - %BLOG%");
+        $page->setFeedTitleFormat("%BLOG%");
 
-	/**
-	 * ページの設定を更新する
-	 */
-	function updatePageConfig(BlogPage $page){
+        $page->setTopEntrySortType(BlogPage::ORDER_TYPE_CDT);
+        $page->setTopEntrySort(BlogPage::ENTRY_SORT_DESC);
+        $page->setMonthEntrySortType(BlogPage::ORDER_TYPE_CDT);
+        $page->setMonthEntrySort(BlogPage::ENTRY_SORT_DESC);
+        $page->setCategoryEntrySortType(BlogPage::ORDER_TYPE_CDT);
+        $page->setCategoryEntrySort(BlogPage::ENTRY_SORT_DESC);
 
-		$dao = $this->getPageDAO();
-		$_page = $dao->getById($page->getId());
+        $page->setTopEntryOpdata(BlogPage::ENTRY_OPDATA_ALL);
+        $page->setMonthEntryOpdata(BlogPage::ENTRY_OPDATA_ALL);
+        $page->setCategoryEntryOpdata(BlogPage::ENTRY_OPDATA_ALL);
 
-		//テンプレートは更新しない
-		$page->setTemplate($_page->getTemplate());
+        $configObj = $page->getConfigObj();
+        $page->setPageConfig($configObj);
 
-		$configObj = $page->getConfigObj();
-		$page->setPageConfig($configObj);
-		$dao->update($page);
-		$dao->updatePageConfig($page);
-	}
+        $id = $dao->insert($page);
 
-	function update(BlogPage $page){
-		$dao = $this->getPageDAO();
-		$dao->update($page);
-	}
+        return $id;
+    }
 
-	function getPageDAO(){
-		return SOY2DAOFactory::create("cms.PageDAO");
-	}
+    /**
+     * ページの設定を更新する
+     */
+    public function updatePageConfig(BlogPage $page)
+    {
+
+        $dao = $this->getPageDAO();
+        $_page = $dao->getById($page->getId());
+
+        // テンプレートは更新しない
+        $page->setTemplate($_page->getTemplate());
+
+        $configObj = $page->getConfigObj();
+        $page->setPageConfig($configObj);
+        $dao->update($page);
+        $dao->updatePageConfig($page);
+    }
+
+    public function update(BlogPage $page)
+    {
+        $dao = $this->getPageDAO();
+        $dao->update($page);
+    }
+
+    public function getPageDAO()
+    {
+        return SOY2DAOFactory::create("cms.PageDAO");
+    }
 }

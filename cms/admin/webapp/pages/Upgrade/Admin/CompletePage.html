@@ -1,19 +1,21 @@
-<html>
+<!DOCTYPE html>
+<html lang="<?php echo SOYCMS_ADMIN_HTML_LANG; ?>">
 
 <head soy:page="_common.HeaderPage" isOverWrite="true">
 </head soy:page="_common.HeaderPage">
 
 <body>
 
-<div id="wrapper">
-	<div id="upperMenu" soy:page="_common.UpperMenuPage"><!-- --></div>
-	<div id="content">
-		<h2>CMS管理 - データベースの更新（完了）</h2>
+    <div id="wrapper">
+        <div id="upperMenu" soy:page="_common.UpperMenuPage">
+        </div>
+        <div id="content">
+            <h2>CMS管理 - データベースの更新（完了）</h2>
+            <p class="message">データベースのバージョンアップが完了しました。→<a soy:link="">トップページへ</a></p>
+        </div>
+        <div soy:page="_common.FooterPage"></div>
+    </div>
 
-		<p class="message">データベースのバージョンアップが完了しました。→<a soy:link="">トップページへ</a>
-		</p>
-		
-	</div>
-	<div soy:page="_common.FooterPage"></div>
-</div>
+</body>
+
 </html>

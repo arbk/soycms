@@ -3,144 +3,147 @@
 /**
  * メールの送信を担う
  */
-class MailLogic extends SOY2LogicBase{
+class MailLogic extends SOY2LogicBase
+{
+    private $serverConfig;
+    private $send;
+    private $receive;
 
-	private $serverConfig;
-	private $send;
-	private $receive;
+    /**
+     * メール送信準備
+     */
+    private function prepare()
+    {
+        $serverConfig = $this->serverConfig;
 
-	/**
-	 * メール送信準備
-	 */
-	private function prepare(){
-		$serverConfig = $this->serverConfig;
+        if ($serverConfig->getIsUsePopBeforeSMTP()) {
+            if ($serverConfig->getReceiveServerType() != SOY2Mail_ServerConfig::RECEIVE_SERVER_TYPE_POP
+            && $serverConfig->getReceiveServerType() != SOY2Mail_ServerConfig::RECEIVE_SERVER_TYPE_IMAP
+            ) {
+                throw new Exception("Invalid receive server type.");
+            }
 
-		if($serverConfig->getIsUsePopBeforeSMTP()){
-			if($serverConfig->getReceiveServerType() != SOY2Mail_ServerConfig::RECEIVE_SERVER_TYPE_POP
-			&& $serverConfig->getReceiveServerType() != SOY2Mail_ServerConfig::RECEIVE_SERVER_TYPE_IMAP
-			){
-				throw new Exception("Invalid receive server type.");
-			}
+            // before smtp
+            $this->receive = $serverConfig->buildReceiveMail();
+            $this->receive->open();
+            $this->receive->close();
+        }
+    }
 
-			//before smtp
-			$this->receive = $serverConfig->buildReceiveMail();
-			$this->receive->open();
-			$this->receive->close();
-		}
-	}
+    private function prepareSend()
+    {
+        $logic = SOY2LogicContainer::get("logic.mail.MailConfigLogic");
+        $serverConfig = $logic->get();
+        $this->serverConfig = $serverConfig;
 
-	private function prepareSend(){
-		$logic = SOY2LogicContainer::get("logic.mail.MailConfigLogic");
-		$serverConfig = $logic->get();
-		$this->serverConfig = $serverConfig;
+        if (strlen($this->serverConfig->getFromMailAddress()) <= 0) {
+            $this->serverConfig->setFromMailAddress("info");
+        }
 
-		if(strlen($this->serverConfig->getFromMailAddress()) <= 0){
-			$this->serverConfig->setFromMailAddress("info");
-		}
+        $this->prepare();
 
-		
-		$this->prepare();
+        // SOY2Mail
+        $this->send = $serverConfig->buildSendMail();
+    }
 
-		//SOY2Mail
-		$this->send = $serverConfig->buildSendMail();
-	}
+    /**
+     * 送信ロジック
+     */
+    public function sendMail($sendTo, $title, $body, $sendToName = "")
+    {
+        if ((null===$this->send)) {
+            $this->prepareSend();
+        }
 
-	/**
-	 * 送信ロジック
-	 */
-	public function sendMail($sendTo, $title, $body, $sendToName = ""){
+        // リセット
+        $this->reset();
 
-		if(is_null($this->send)){
-			$this->prepareSend();
-		}
-		
-		//リセット
-		$this->reset();
+        // 文字コード
+        $encoding = $this->serverConfig->getEncoding();
+        $this->send->setEncoding($encoding);
+        $this->send->setSubjectEncoding($encoding);
 
-		//文字コード
-		$encoding = $this->serverConfig->getEncoding();
-		$this->send->setEncoding($encoding);
-		$this->send->setSubjectEncoding($encoding);
+        // 件名、本文
+        $this->send->setSubject($title);
+        $this->send->setText($body);
 
-		//件名、本文
-		$this->send->setSubject($title);
-		$this->send->setText($body);
+        // 送信先
+        $this->send->addRecipient($sendTo, $sendToName);
 
-		//送信先
-		$this->send->addRecipient($sendTo, $sendToName);
+        /*
+        //管理者にコピーを送る設定の時
+        if($this->serverConfig->isSendWithAdministrator() && $sendTo != $this->serverConfig->getAdministratorMailAddress()){
+            $this->send->addBccRecipient($this->serverConfig->getAdministratorMailAddress(), $this->serverConfig->getAdministratorName());
+        }
+        */
 
-		/*
-		//管理者にコピーを送る設定の時
-		if($this->serverConfig->isSendWithAdministrator() && $sendTo != $this->serverConfig->getAdministratorMailAddress()){
-			$this->send->addBccRecipient($this->serverConfig->getAdministratorMailAddress(), $this->serverConfig->getAdministratorName());
-		}
-		*/
+        $this->send->send();
+    }
 
-		$this->send->send();
-	}
+    /**
+     * テスト送信メール
+     */
+    public function sendTestMail($sendTo)
+    {
+        if ((null===$this->send)) {
+            $this->prepareSend();
+        }
 
-	/**
-	 * テスト送信メール
-	 */
-	public function sendTestMail($sendTo) {
+//      $title = "SOY CMS テストメール ".date("Y-m-d H:i:s");
+//      $content = "これはSOY CMSから送信したテストメールです.";
+// //   $sendToName = "テストメール送信先";
 
-		if(is_null($this->send)){
-			$this->prepareSend();
-		}
+        $title = CMSUtil::getCMSName() . " テストメール " . date("Y-m-d H:i:s");
+        $content = "これは" . CMSUtil::getCMSName() . "から送信したテストメールです.";
 
-		$title = "SOY CMS テストメール ".date("Y-m-d H:i:s");
-		$content = "これはSOY CMSから送信したテストメールです。";
-		$sendToName = "テストメール送信先";
+        $this->sendMail($sendTo, $title, $content /*, $sendToName*/);
+    }
 
-		$this->sendMail($sendTo, $title, $content, $sendToName);
-	}
+    /**
+     * パスワードリセットメール
+     */
+    public function sendPasswordRemindMail($sendTo, $sendToName, $token)
+    {
+        if ((null===$this->send)) {
+            $this->prepareSend();
+        }
 
-	/**
-	 * パスワードリセットメール
-	 */
-	public function sendPasswordRemindMail($sendTo, $sendToName, $token){
+        $title = "SOYCMS パスワードの再設定";
+        $body = file_get_contents(__DIR__ . "/mail_password_remind.txt");
+        $body = str_replace("#NAME#", $sendToName, $body);
+        $body = str_replace("#URL#", SOY2PageController::createRelativeLink(F_FRCTRLER . "/ResetPassword?t=" . $token, true), $body);
+        $body = str_replace("#LOGIN_URL#", SOY2PageController::createRelativeLink("", true), $body);
 
-		if(is_null($this->send)){
-			$this->prepareSend();
-		}
+        $this->sendMail($sendTo, $title, $body, $sendToName);
+    }
 
-		$title = "SOYCMS パスワードの再設定";
-		$body = file_get_contents(dirname(__FILE__) . "/mail_password_remind.txt");
-		$body = str_replace("#NAME#", $sendToName, $body);
-		$body = str_replace("#URL#", SOY2PageController::createRelativeLink("index.php/ResetPassword?t=" . $token, true), $body);
-		$body = str_replace("#LOGIN_URL#", SOY2PageController::createRelativeLink("", true), $body);
-		
-		$this->sendMail($sendTo, $title, $body, $sendToName);
-		
-	}
+    /**
+     * 件名、本文、受信者、BCC受信者、ヘッダー、添付ファイルをリセット
+     * SOY2MailはsetTextだけではencodedTextが上書きされない
+     */
+    private function reset()
+    {
+        $this->send->clearSubject();
+        $this->send->clearText();
+        $this->send->clearRecipients();
+        $this->send->clearBccRecipients();
+        $this->send->clearHeaders();
+//      $this->send->clearAttachments();
+    }
 
-	/**
-	 * 件名、本文、受信者、BCC受信者、ヘッダー、添付ファイルをリセット
-	 * SOY2MailはsetTextだけではencodedTextが上書きされない
-	 */
-	private function reset(){
-		$this->send->clearSubject();
-		$this->send->clearText();
-		$this->send->clearRecipients();
-		$this->send->clearBccRecipients();
-		$this->send->clearHeaders();
-		//$this->send->clearAttachments();
-	}
+    /**
+     * @return boolean
+     */
+    public function isValidEmail($email)
+    {
+        return SOY2Mail_MailAddress::validation($email);
 
-	/**
-	 * @return boolean
-	 */
-	public function isValidEmail($email){
-		$ascii  = '[a-zA-Z0-9!#$%&\'*+\-\/=?^_`{|}~.]';//'[\x01-\x7F]';
-		$domain = '(?:[-a-z0-9]+\.)+[a-z]{2,10}';//'([-a-z0-9]+\.)*[a-z]+';
-		$d3     = '\d{1,3}';
-		$ip     = $d3.'\.'.$d3.'\.'.$d3.'\.'.$d3;
-		$validEmail = "^$ascii+\@(?:$domain|\\[$ip\\])$";
-
-		if(! preg_match('/'.$validEmail.'/i', $email) ) {
-			return false;
-		}
-		
-		return true;
-	}
+//      $ascii = '[a-zA-Z0-9!#$%&\'*+\-\/=?^_`{|}~.]'; // '[\x01-\x7F]';
+//      $domain = '(?:[-a-z0-9]+\.)+[a-z]{2,10}'; // '([-a-z0-9]+\.)*[a-z]+';
+//      $d3 = '\d{1,3}';
+//      $ip = $d3 . '\.' . $d3 . '\.' . $d3 . '\.' . $d3;
+//      $validEmail = "^$ascii+\@(?:$domain|\\[$ip\\])$";
+//      if( !preg_match('/' . $validEmail . '/i', $email) ){return false;}
+//      return true;
+    }
 }

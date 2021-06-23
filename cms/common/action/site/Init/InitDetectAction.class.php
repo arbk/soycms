@@ -1,19 +1,18 @@
 <?php
 
-class InitDetectAction extends SOY2Action{
+class InitDetectAction extends SOY2Action
+{
+    public function execute()
+    {
+        $dao = SOY2DAOFactory::create("cms.PageDAO");
+        $pages = $dao->getPagesWithoutErrorPage();
 
-    function execute() {
-    	$dao = SOY2DAOFactory::create("cms.PageDAO");
-    	$pages = $dao->getPagesWithoutErrorPage();
-    	
-    	if(count($pages)== 0){
-    		$this->setAttribute("detect",true);
-    	}else{
-    		$this->setAttribute("detect",false);
-    	}
-    	
-    	return SOY2Action::SUCCESS;
-    
+        if (count($pages)== 0) {
+            $this->setAttribute("detect", true);
+        } else {
+            $this->setAttribute("detect", false);
+        }
+
+        return SOY2Action::SUCCESS;
     }
 }
-?>

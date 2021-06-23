@@ -1,14 +1,14 @@
 <?php
 
-class SOYInquiry_ServerConfig {
+class SOYInquiry_ServerConfig
+{
+    const SERVER_TYPE_SMTP = 0;
+    const SERVER_TYPE_SENDMAIL = 2;
 
-	const SERVER_TYPE_SMTP = 0;
-	const SERVER_TYPE_SENDMAIL = 2;
+    const RECEIVE_SERVER_TYPE_POP  = 0;
+    const RECEIVE_SERVER_TYPE_IMAP = 1;
 
-	const RECEIVE_SERVER_TYPE_POP  = 0;
-	const RECEIVE_SERVER_TYPE_IMAP = 1;
-
-	//送信設定
+    //送信設定
     private $sendServerType = SOYInquiry_ServerConfig::SERVER_TYPE_SENDMAIL;
     private $isUseSMTPAuth = true;
     private $isUsePopBeforeSMTP = false;
@@ -41,228 +41,277 @@ class SOYInquiry_ServerConfig {
 
     private $adminUrl;
 
-    function getSendServerType() {
-    	return $this->sendServerType;
+    public function getSendServerType()
+    {
+        return $this->sendServerType;
     }
-    function setSendServerType($sendServerType) {
-    	$this->sendServerType = $sendServerType;
+    public function setSendServerType($sendServerType)
+    {
+        $this->sendServerType = $sendServerType;
     }
-    function getIsUseSMTPAuth() {
-    	return $this->isUseSMTPAuth;
+    public function getIsUseSMTPAuth()
+    {
+        return $this->isUseSMTPAuth;
     }
-    function setIsUseSMTPAuth($isUseSMTPAuth) {
-    	$this->isUseSMTPAuth = $isUseSMTPAuth;
+    public function setIsUseSMTPAuth($isUseSMTPAuth)
+    {
+        $this->isUseSMTPAuth = $isUseSMTPAuth;
     }
-    function getSendServerAddress() {
-    	return $this->sendServerAddress;
+    public function getSendServerAddress()
+    {
+        return $this->sendServerAddress;
     }
-    function setSendServerAddress($sendServerAddress) {
-    	$this->sendServerAddress = $sendServerAddress;
+    public function setSendServerAddress($sendServerAddress)
+    {
+        $this->sendServerAddress = $sendServerAddress;
     }
-    function getSendServerPort() {
-    	return $this->sendServerPort;
+    public function getSendServerPort()
+    {
+        return $this->sendServerPort;
     }
-    function setSendServerPort($sendServerPort) {
-    	$this->sendServerPort = $sendServerPort;
+    public function setSendServerPort($sendServerPort)
+    {
+        $this->sendServerPort = $sendServerPort;
     }
-    function getSendServerUser() {
-    	return $this->sendServerUser;
+    public function getSendServerUser()
+    {
+        return $this->sendServerUser;
     }
-    function setSendServerUser($sendServerUser) {
-    	$this->sendServerUser = $sendServerUser;
+    public function setSendServerUser($sendServerUser)
+    {
+        $this->sendServerUser = $sendServerUser;
     }
-    function getSendServerPassword() {
-    	return $this->sendServerPassword;
+    public function getSendServerPassword()
+    {
+        return $this->sendServerPassword;
     }
-    function setSendServerPassword($sendServerPassword) {
-    	$this->sendServerPassword = $sendServerPassword;
+    public function setSendServerPassword($sendServerPassword)
+    {
+        $this->sendServerPassword = $sendServerPassword;
     }
-    function getIsUseSSLSendServer() {
-    	return $this->isUseSSLSendServer;
+    public function getIsUseSSLSendServer()
+    {
+        return $this->isUseSSLSendServer;
     }
-    function setIsUseSSLSendServer($isUseSSLSendServer) {
-    	$this->isUseSSLSendServer = $isUseSSLSendServer;
+    public function setIsUseSSLSendServer($isUseSSLSendServer)
+    {
+        $this->isUseSSLSendServer = $isUseSSLSendServer;
     }
-    function getReceiveServerType() {
-    	return $this->receiveServerType;
+    public function getReceiveServerType()
+    {
+        return $this->receiveServerType;
     }
-    function setReceiveServerType($recieveServerType) {
-    	$this->receiveServerType = $recieveServerType;
+    public function setReceiveServerType($recieveServerType)
+    {
+        $this->receiveServerType = $recieveServerType;
     }
-    function getReceiveServerAddress() {
-    	return $this->receiveServerAddress;
+    public function getReceiveServerAddress()
+    {
+        return $this->receiveServerAddress;
     }
-    function setReceiveServerAddress($receiveServerAddress) {
-    	$this->receiveServerAddress = $receiveServerAddress;
+    public function setReceiveServerAddress($receiveServerAddress)
+    {
+        $this->receiveServerAddress = $receiveServerAddress;
     }
-    function getReceiveServerPort() {
-    	return $this->receiveServerPort;
+    public function getReceiveServerPort()
+    {
+        return $this->receiveServerPort;
     }
-    function setReceiveServerPort($receiveServerPort) {
-    	$this->receiveServerPort = $receiveServerPort;
+    public function setReceiveServerPort($receiveServerPort)
+    {
+        $this->receiveServerPort = $receiveServerPort;
     }
-    function getReceiveServerUser() {
-    	return $this->receiveServerUser;
+    public function getReceiveServerUser()
+    {
+        return $this->receiveServerUser;
     }
-    function setReceiveServerUser($receiveServerUser) {
-    	$this->receiveServerUser = $receiveServerUser;
+    public function setReceiveServerUser($receiveServerUser)
+    {
+        $this->receiveServerUser = $receiveServerUser;
     }
-    function getReceiveServerPassword() {
-    	return $this->receiveServerPassword;
+    public function getReceiveServerPassword()
+    {
+        return $this->receiveServerPassword;
     }
-    function setReceiveServerPassword($receiveServerPassword) {
-    	$this->receiveServerPassword = $receiveServerPassword;
+    public function setReceiveServerPassword($receiveServerPassword)
+    {
+        $this->receiveServerPassword = $receiveServerPassword;
     }
-    function getIsUsePopBeforeSMTP() {
-    	return $this->isUsePopBeforeSMTP;
+    public function getIsUsePopBeforeSMTP()
+    {
+        return $this->isUsePopBeforeSMTP;
     }
-    function setIsUsePopBeforeSMTP($isUsePopBeforeSMTP) {
-    	$this->isUsePopBeforeSMTP = $isUsePopBeforeSMTP;
+    public function setIsUsePopBeforeSMTP($isUsePopBeforeSMTP)
+    {
+        $this->isUsePopBeforeSMTP = $isUsePopBeforeSMTP;
     }
-    function getIsUseSSLReceiveServer() {
-    	return $this->isUseSSLReceiveServer;
+    public function getIsUseSSLReceiveServer()
+    {
+        return $this->isUseSSLReceiveServer;
     }
-    function setIsUseSSLReceiveServer($isUseSSLReceiveServer) {
-    	$this->isUseSSLReceiveServer = $isUseSSLReceiveServer;
+    public function setIsUseSSLReceiveServer($isUseSSLReceiveServer)
+    {
+        $this->isUseSSLReceiveServer = $isUseSSLReceiveServer;
     }
-    function getAdministratorName() {
-    	return $this->administratorName;
+    public function getAdministratorName()
+    {
+        return $this->administratorName;
     }
-    function setAdministratorName($administratorName) {
-    	$this->administratorName = $administratorName;
+    public function setAdministratorName($administratorName)
+    {
+        $this->administratorName = $administratorName;
     }
-    function getAdministratorMailAddress() {
-    	return $this->administratorMailAddress;
+    public function getAdministratorMailAddress()
+    {
+        return $this->administratorMailAddress;
     }
-    function setAdministratorMailAddress($administratorMailAddress) {
-    	$this->administratorMailAddress = $administratorMailAddress;
+    public function setAdministratorMailAddress($administratorMailAddress)
+    {
+        $this->administratorMailAddress = $administratorMailAddress;
     }
-    function getReturnMailAddress() {
-    	return $this->returnMailAddress;
+    public function getReturnMailAddress()
+    {
+        return $this->returnMailAddress;
     }
-    function setReturnMailAddress($returnMailAddress) {
-    	$this->returnMailAddress = $returnMailAddress;
+    public function setReturnMailAddress($returnMailAddress)
+    {
+        $this->returnMailAddress = $returnMailAddress;
     }
-    function getReturnName() {
-    	return $this->returnName;
+    public function getReturnName()
+    {
+        return $this->returnName;
     }
-    function setReturnName($returnName) {
-    	$this->returnName = $returnName;
+    public function setReturnName($returnName)
+    {
+        $this->returnName = $returnName;
     }
-    function getSignature() {
-    	return $this->signature;
+    public function getSignature()
+    {
+        return $this->signature;
     }
-    function setSignature($signature) {
-    	$this->signature = $signature;
+    public function setSignature($signature)
+    {
+        $this->signature = $signature;
     }
-    public function getEncoding() {
-    	return $this->encoding;
+    public function getEncoding()
+    {
+        return $this->encoding;
     }
-    public function setEncoding($encoding) {
-    	$this->encoding = $encoding;
+    public function setEncoding($encoding)
+    {
+        $this->encoding = $encoding;
     }
 
     /**
      * 設定からSOY2Mailオブジェクトを生成する
      */
-    function createReceiveServerObject(){
+    public function createReceiveServerObject()
+    {
 
-    	switch($this->receiveServerType){
-    		case SOYInquiry_ServerConfig::RECEIVE_SERVER_TYPE_IMAP:
+        switch ($this->receiveServerType) {
+            case SOYInquiry_ServerConfig::RECEIVE_SERVER_TYPE_IMAP:
+                $flag = null;
+                if ($this->getIsUseSSLReceiveServer()) {
+                    $flag = "ssl";
+                }
 
-    			$flag = null;
-    			if($this->getIsUseSSLReceiveServer())$flag = "ssl";
+                return SOY2Mail::create("imap", array(
+                    "imap.host" => $this->getReceiveServerAddress(),
+                    "imap.port" => $this->getReceiveServerPort(),
+                    "imap.user" => $this->getReceiveServerUser(),
+                    "imap.pass" => $this->getReceiveServerPassword(),
+                    "imap.flag" => $flag
+                ));
+                break;
 
-    			return SOY2Mail::create("imap",array(
-    				"imap.host" => $this->getReceiveServerAddress(),
-    				"imap.port" => $this->getReceiveServerPort(),
-    				"imap.user" => $this->getReceiveServerUser(),
-    				"imap.pass" => $this->getReceiveServerPassword(),
-    				"imap.flag" => $flag
-    			));
-    			break;
+            case SOYInquiry_ServerConfig::RECEIVE_SERVER_TYPE_POP:
+            default:
+                $host = $this->getReceiveServerAddress();
+                if ($this->getIsUseSSLReceiveServer()) {
+                    $host =  "ssl://" . $host;
+                }
 
-    		case SOYInquiry_ServerConfig::RECEIVE_SERVER_TYPE_POP:
-    		default:
-
-    			$host = $this->getReceiveServerAddress();
-    			if($this->getIsUseSSLReceiveServer())$host =  "ssl://" . $host;
-
-    			return SOY2Mail::create("pop",array(
-    				"pop.host" => $host,
-    				"pop.port" => $this->getReceiveServerPort(),
-    				"pop.user" => $this->getReceiveServerUser(),
-    				"pop.pass" => $this->getReceiveServerPassword()
-    			));
-    			break;
-    	}
-
+                return SOY2Mail::create("pop", array(
+                    "pop.host" => $host,
+                    "pop.port" => $this->getReceiveServerPort(),
+                    "pop.user" => $this->getReceiveServerUser(),
+                    "pop.pass" => $this->getReceiveServerPassword()
+                ));
+                break;
+        }
     }
 
     /**
      * 設定からSOY2Mailオブジェクトを生成する
      */
-    function createSendServerObject(){
+    public function createSendServerObject()
+    {
 
-    	switch($this->sendServerType){
-    		case SOYInquiry_ServerConfig::SERVER_TYPE_SMTP:
-    			$host = $this->getSendServerAddress();
-    			if($this->getIsUseSSLSendServer())$host =  "ssl://" . $host;
+        switch ($this->sendServerType) {
+            case SOYInquiry_ServerConfig::SERVER_TYPE_SMTP:
+                $host = $this->getSendServerAddress();
+                if ($this->getIsUseSSLSendServer()) {
+                    $host =  "ssl://" . $host;
+                }
 
-    			return SOY2Mail::create("smtp",array(
-    				"smtp.host" => $host,
-    				"smtp.port" => $this->getSendServerPort(),
-    				"smtp.user" => $this->getSendServerUser(),
-    				"smtp.pass" => $this->getSendServerPassword(),
-    				"smtp.auth" => ($this->getIsUseSMTPAuth()) ? true : false
-    			));
-    			break;
-    		case SOYInquiry_ServerConfig::SERVER_TYPE_SENDMAIL:
-    		default:
-    			return SOY2Mail::create("sendmail",array());
-    			break;
-    	}
-
+                return SOY2Mail::create("smtp", array(
+                    "smtp.host" => $host,
+                    "smtp.port" => $this->getSendServerPort(),
+                    "smtp.user" => $this->getSendServerUser(),
+                    "smtp.pass" => $this->getSendServerPassword(),
+                    "smtp.auth" => ($this->getIsUseSMTPAuth()) ? true : false
+                ));
+                break;
+            case SOYInquiry_ServerConfig::SERVER_TYPE_SENDMAIL:
+            default:
+                return SOY2Mail::create("sendmail", array());
+                break;
+        }
     }
 
-    function getUploadDir() {
+    public function getUploadDir()
+    {
 
-    	if(strlen($this->uploadDir)<1){
-    		$this->uploadDir = "/";
-    	}
+        if (strlen($this->uploadDir)<1) {
+            $this->uploadDir = "/";
+        }
 
-    	return $this->uploadDir;
+        return $this->uploadDir;
     }
-    function setUploadDir($uploadDir) {
-    	if(strlen($uploadDir)>0){
+    public function setUploadDir($uploadDir)
+    {
+        if (strlen($uploadDir)>0) {
+            //ルートと結合 ルートの末尾には/なし
+            if ($uploadDir[0] != "/") {
+                $uploadDir = "/" . $uploadDir;
+            }
+            $uploadDir = SOY_INQUIRY_UPLOAD_ROOT_DIR . $uploadDir;
 
-    		//ルートと結合 ルートの末尾には/なし
-    		if($uploadDir[0] != "/")$uploadDir = "/" . $uploadDir;
-    		$uploadDir = SOY_INQUIRY_UPLOAD_ROOT_DIR . $uploadDir;
+            //相対パスを解釈:存在なければ×
+            $uploadDir = realpath($uploadDir);
+            $uploadDir = str_replace("\\", "/", $uploadDir);
 
-    		//相対パスを解釈:存在なければ×
-    		$uploadDir = realpath($uploadDir);
-    		$uploadDir = str_replace("\\","/",$uploadDir);
+            //末尾に/
+            if (strlen($uploadDir)>1 && @$uploadDir[strlen($uploadDir)-1] != "/") {
+                $uploadDir .= "/";
+            }
 
-    		//末尾に/
-    		if(strlen($uploadDir)>1 && @$uploadDir[strlen($uploadDir)-1] != "/")$uploadDir .= "/";
+            //ルートを削除：ルートより上位ディレクトリには保存できない
+            $uploadDir = str_replace(SOY_INQUIRY_UPLOAD_ROOT_DIR, "", $uploadDir);
+        }
 
-    		//ルートを削除：ルートより上位ディレクトリには保存できない
-    		$uploadDir = str_replace(SOY_INQUIRY_UPLOAD_ROOT_DIR,"",$uploadDir);
-    	}
-
-    	$this->uploadDir = $uploadDir;
-    }
-
-    function getAdminUrl() {
-    	if(strlen($this->adminUrl)<1){
-    		$this->adminUrl = SOY2PageController::createLink("",true);
-    	}
-    	return $this->adminUrl;
-    }
-    function setAdminUrl($adminUrl) {
-    	$this->adminUrl = $adminUrl;
+        $this->uploadDir = $uploadDir;
     }
 
+    public function getAdminUrl()
+    {
+        if (strlen($this->adminUrl)<1) {
+            $this->adminUrl = SOY2PageController::createLink("", true);
+        }
+        return $this->adminUrl;
+    }
+    public function setAdminUrl($adminUrl)
+    {
+        $this->adminUrl = $adminUrl;
+    }
 }
-?>

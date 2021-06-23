@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="<?php echo SOYCMS_ADMIN_HTML_LANG; ?>">
 
 <head soy:page="_common.HeaderPage" isOverWrite="true">
 </head soy:page="_common.HeaderPage">
@@ -7,8 +7,8 @@
 <body>
 
     <div id="wrapper">
-		<!-- Navigation -->
-        <nav  class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0" soy:page="_common.UpperMenuPage"><!-- --></nav>
+        <!-- Navigation -->
+        <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0" soy:page="_common.UpperMenuPage"></nav>
         <div id="page-wrapper">
             <div class="row">
                 <div class="col-lg-12">
@@ -17,87 +17,80 @@
                 <!-- /.col-lg-12 -->
             </div>
             <div soy:page="_common.MessagePanel" isOverWrite="true"></div>
-               
+
             <div class="row">
                 <div class="col-lg-12">
-                	<div class="panel panel-green">
-                   	 	<div class="panel-body">
-                   	 		<a soy:link="Template" style="margin-right:10px">ページ雛形管理に戻る</a>
-                   	 	</div>
-					</div>
+                    <div class="panel panel-green">
+                        <div class="panel-body">
+                            <a soy:link="Template" style="margin-right:10px">ページ雛形管理に戻る</a>
+                        </div>
+                    </div>
                 </div>
                 <!-- /.col-lg-12 -->
             </div>
             <div class="row">
                 <div class="col-lg-12">
-                	<div class="panel panel-green">
-                		<div class="panel-heading">
-                			<span soy:id="template_name">ページ雛形名</span>』をインストールします。
-                		</div>
-                   	 	<div class="panel-body">
-                   	 		<!-- soy:display="file_list" -->
-							<p>インストールするファイルを選択し、「インストール」ボタンを押して下さい。</p>
-							<p>
-							※配置先に既にファイルが存在している場合は<span style="color:red;">赤字</span>で表示されます。<br />
-							※インストール先に既にファイルが存在していた場合は上書きされます。
-							</p>
-							<!-- /soy:display="file_list" -->
-                   	 	</div>
-					</div>
+                    <div class="panel panel-green">
+                        <div class="panel-heading">
+                            <span soy:id="template_name">ページ雛形名</span>』をインストールします。
+                        </div>
+                        <div class="panel-body">
+                            <!-- soy:display="file_list" -->
+                            <p>インストールするファイルを選択し、「インストール」ボタンを押して下さい。</p>
+                            <p>
+                                ※配置先に既にファイルが存在している場合は<span style="color:red;">赤字</span>で表示されます。<br>
+                                ※インストール先に既にファイルが存在していた場合は上書きされます。
+                            </p>
+                            <!-- /soy:display="file_list" -->
+                        </div>
+                    </div>
                 </div>
                 <!-- /.col-lg-12 -->
             </div>
 
             <div class="row">
                 <div class="col-lg-12">
-                	<div class="panel panel-green">
-                		<div class="panel-heading">
-                			ページ雛形一覧
-                		</div>
-                   	 	<div class="panel-body">
-                   	 		<div class="table-responsive">
-				                 <form soy:id="form">
-									
-									<!-- soy:display="file_list" -->
-									<table class="table" id="file_list">
-										<tr>
-											<th>
-												<input type="checkbox" onclick="change_checkbox(this.checked);" checked="checked" />
-												パス
-											</th>
-											<th>説明</th>					
-										</tr>
-										<tr soy:id="file_list">
-											<td>
-												<input type="checkbox" soy:id="check" class="file_list_checkbox" />
-												<label soy:id="name">ファイルリスト</label>
-											</td>
-											<td>
-												<span soy:id="description">説明</span>
-											</td>
-										</tr soy:id="file_list">			
-									</table>
-									<!-- /soy:display="file_list" -->
-						
-										<input type="submit" value="インストール" class="submit_button" />
-									</form soy:id="form">
-									<script type="text/javascript">
-									function change_checkbox(value){
-										$(".file_list_checkbox").each(function(){
-									    $(this).prop("checked", value);
-										});
-									}
-									</script>
-                   	 		</div>
-                   	 	</div>
-					</div>
+                    <div class="panel panel-green">
+                        <div class="panel-heading">ページ雛形一覧</div>
+                        <div class="panel-body">
+                            <div class="table-responsive">
+                                <form soy:id="form">
+
+                                    <!-- soy:display="file_list" -->
+                                    <table class="table" id="file_list">
+                                        <tr>
+                                            <th><input type="checkbox" onclick="change_checkbox(this.checked);" checked="checked" /> パス</th>
+                                            <th>説明</th>
+                                        </tr>
+                                        <tr soy:id="file_list">
+                                            <td>
+                                                <input type="checkbox" soy:id="check" class="file_list_checkbox" />
+                                                <label soy:id="name">ファイルリスト</label>
+                                            </td>
+                                            <td><span soy:id="description">説明</span></td>
+                                        </tr soy:id="file_list">
+                                    </table>
+                                    <!-- /soy:display="file_list" -->
+
+                                    <input type="submit" value="インストール" class="submit_button" />
+                                </form soy:id="form">
+                                <script type="text/javascript">
+                                    function change_checkbox(value) {
+                                        $(".file_list_checkbox").each(function () {
+                                            $(this).prop("checked", value);
+                                        });
+                                    }
+                                </script>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <!-- /.col-lg-12 -->
             </div>
-        
+
         </div>
         <!-- /#page-wrapper -->
-		<!-- soy:page="_common.FooterPage" /-->
+        <!-- soy:page="_common.FooterPage" /-->
     </div>
     <!-- /#wrapper -->
 

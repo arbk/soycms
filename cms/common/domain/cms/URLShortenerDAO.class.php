@@ -3,59 +3,56 @@
 /**
  * @entity cms.URLShortener
  */
-abstract class URLShortenerDAO extends SOY2DAO{
-	
-	/**
-	 * @return id
-	 * @trigger onInsert
-	 */
-	abstract function insert(URLShortener $bean);
-	
-	/**
-	 * @trigger onUpdate
-	 */
-	abstract function update(URLShortener $bean);
-	
-	abstract function delete($id);
-	
-	/**
-	 * @return object
-	 */
-	abstract function getById($id);
-	
-	abstract function get();
-	
-	/**
-	 * @return object
-	 */
-	abstract function getByFrom($from);
+abstract class URLShortenerDAO extends SOY2DAO
+{
+    /**
+     * @return id
+     * @trigger onInsert
+     */
+    abstract public function insert(URLShortener $bean);
 
-	/**
-	 * @return object
-	 * @query #targetType# = :targetType AND #targetId# = :targetId
-	 */
-	abstract function getByTargetTypeANDTargetId($targetType, $targetId);
+    /**
+     * @trigger onUpdate
+     */
+    abstract public function update(URLShortener $bean);
 
-	
-	/**
-	 * @final
-	 */
-	function onInsert($query,$binds){
-		$binds[':cdate'] = time();
-		$binds[':udate'] = time();
-		return array($query,$binds);
-	}
+    abstract public function delete($id);
 
-	/**
-	 * @final
-	 */
-	function onUpdate($query,$binds){
-		$binds[':udate'] = time();
-		return array($query,$binds);
-	}
-	
-	
-	
+    /**
+     * @return object
+     */
+    abstract public function getById($id);
 
+    abstract public function get();
+
+    /**
+     * @return object
+     */
+    abstract public function getByFrom($from);
+
+    /**
+     * @return object
+     * @query #targetType# = :targetType AND #targetId# = :targetId
+     */
+    abstract public function getByTargetTypeANDTargetId($targetType, $targetId);
+
+
+    /**
+     * @final
+     */
+    public function onInsert($query, $binds)
+    {
+        $binds[':cdate'] = SOYCMS_NOW;
+        $binds[':udate'] = SOYCMS_NOW;
+        return array($query,$binds);
+    }
+
+    /**
+     * @final
+     */
+    public function onUpdate($query, $binds)
+    {
+        $binds[':udate'] = SOYCMS_NOW;
+        return array($query,$binds);
+    }
 }
-?>

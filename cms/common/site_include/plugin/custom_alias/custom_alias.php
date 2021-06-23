@@ -1,192 +1,231 @@
 <?php
 
-CustomAliasPlugin::register();
+class CustomAliasPlugin
+{
+    const PLUGIN_ID = "CustomAlias";
 
-class CustomAliasPlugin{
+    public function getId()
+    {
+        return self::PLUGIN_ID;
+    }
 
-	const PLUGIN_ID = "CustomAlias";
-	private $useId;
- 	private $prefix;
-	private $postfix;
-	private $mode;
+    public $useId;
+    public $prefix;
+    public $postfix;
+    public $labelId;
 
-	function getId(){
-		return self::PLUGIN_ID;
-	}
+    public function init()
+    {
+        CMSPlugin::addPluginMenu(self::PLUGIN_ID, array(
+        "name"=>"カスタムエイリアス",
+        "description"=>"ブログの記事ページのURLの記事毎に変わる部分（エイリアス）を指定できるようにします.",
+            "author"=>"株式会社Brassica",
+            "url"=>"https://brassica.jp/",
+        "mail"=>"soycms@soycms.net",
+        "version"=>"1.3-trv0",
+        "icon"=>__DIR__ . "/icon.gif",
+        ));
+        CMSPlugin::addPluginConfigPage(self::PLUGIN_ID, array($this,"config_page"));
 
-	function init(){
-		CMSPlugin::addPluginMenu(self::PLUGIN_ID, array(
-			"name"=>"カスタムエイリアス",
-			"description"=>"ブログの記事ページのURLの記事毎に変わる部分（エイリアス）を指定できるようにします。<br>SOY CMS 1.2.4以上で動作します。",
-			"author"=>"株式会社Brassica",
-			"url"=>"https://brassica.jp/",
-			"mail"=>"soycms@soycms.net",
-			"version"=>"1.12.1"
-		));
+        if (CMSPlugin::activeCheck(self::PLUGIN_ID)) {
+            CMSPlugin::setEvent("onEntryCreate", self::PLUGIN_ID, array($this,"onEntryUpdate"));
+            CMSPlugin::setEvent("onEntryUpdate", self::PLUGIN_ID, array($this,"onEntryUpdate"));
+            CMSPlugin::setEvent("onEntryCopy", self::PLUGIN_ID, array($this,"onEntryCopy"));
+            CMSPlugin::addCustomFieldFunction(self::PLUGIN_ID, "Entry.Detail", array($this,"onCallCustomField"));
+            CMSPlugin::addCustomFieldFunction(self::PLUGIN_ID, "Blog.Entry", array($this,"onCallCustomField_inBlog"));
+        }
+    }
 
-		CMSPlugin::addPluginConfigPage(self::PLUGIN_ID, array(
-			$this,"config_page"
-		));
+    public static function register()
+    {
+      //このプラグインは管理モードでのみ動作する
+        if (!CMSPlugin::adminModeCheck()) {
+            return;
+        }
 
-		if(CMSPlugin::activeCheck(self::PLUGIN_ID)){
-			if(defined("_SITE_ROOT_")){
-				//無駄な処理を避けて、サイトの表示速度の高速化
-			}else{
-				SOY2::import("site_include.plugin.custom_alias.util.CustomAliasUtil");
-				CMSPlugin::setEvent("onEntryCreate", self::PLUGIN_ID, array($this, "onEntryUpdate"));
-				CMSPlugin::setEvent("onEntryUpdate", self::PLUGIN_ID, array($this, "onEntryUpdate"));
-				CMSPlugin::setEvent("onEntryCopy", self::PLUGIN_ID, array($this, "onEntryCopy"));
-				CMSPlugin::addCustomFieldFunction(self::PLUGIN_ID, "Entry.Detail", array($this, "onCallCustomField"));
-				CMSPlugin::addCustomFieldFunction(self::PLUGIN_ID, "Blog.Entry", array($this, "onCallCustomField_inBlog"));
-			}
-		}
-	}
+        require_once(__DIR__ . "/config_form.php");
+        $obj = CMSPlugin::loadPluginConfig(self::PLUGIN_ID);
+        if ((null===$obj)) {
+            $obj = new CustomAliasPlugin();
+        }
+        CMSPlugin::addPlugin(self::PLUGIN_ID, array($obj,"init"));
+    }
 
-	function onEntryCopy($ids){
-		$mode = self::_mode();
-		switch($mode){
-			case CustomAliasUtil::MODE_ID:
-			case CustomAliasUtil::MODE_HASH:
-				$newId = $ids[1];
-				$entry = CustomAliasUtil::getEntryById($newId);
-				$alias = self::_generateAlias($entry, $mode, $newId);
-				if(strlen($alias)){
-					$entry->setAlias($alias);
-					$logic = SOY2Logic::createInstance("logic.site.Entry.EntryLogic");
-					$logic->update($entry);
-				}
-				break;
-			default:
-				//何もしない
-		}
-	}
+    public function config_page($message)
+    {
+        $form = SOY2HTMLFactory::createInstance("CustomAliasPluginFormPage");
+        $form->setPluginObj($this);
+        $form->execute();
+        return $form->getObject();
+    }
 
-	function onEntryUpdate($arg){
-		$mode = self::_mode();
-		$alias = null;
-		$entry = &$arg["entry"];
-		switch($mode){
-			case CustomAliasUtil::MODE_ID:
-			case CustomAliasUtil::MODE_HASH:
-				$alias = self::_generateAlias($entry, $mode);
-				break;
-			default:
-				if(isset($_POST["alias"]) && strlen($_POST["alias"])) $alias = trim($_POST["alias"]);
-		}
+    public function onEntryCopy($ids)
+    {
+        $oldId = $ids[0];
+        $newId = $ids[1];
 
-		if(isset($alias) && strlen($alias)){
-			$entry->setAlias($alias);
-			$logic = SOY2Logic::createInstance("logic.site.Entry.EntryLogic");
-			$logic->update($entry);
-		}
-	}
+        if ($this->useId) {
+            $entry = $this->getEntry($newId);
+            if ($entry) {
+                if ($entry->isEmptyAlias() || $entry->getId() != $entry->getAlias()) {
+                    $entry->setAlias($entry->getId());
+                    $logic = SOY2Logic::createInstance("logic.site.Entry.EntryLogic");
+                    $logic->update($entry);
+                }
+            }
+        }
+    }
 
-	private function _generateAlias(Entry $entry, $mode, $newId=null){
-		switch($mode){
-			case CustomAliasUtil::MODE_ID:
-				$cnf = CustomAliasUtil::getAdvancedConfig(CustomAliasUtil::MODE_ID);
-				//記事複製時を加味
-				$alias = (is_numeric($newId) && $newId > 0) ? $newId : $entry->getId();
-				if(isset($cnf["prefix"]) && strlen($cnf["prefix"])){
-					$alias = $cnf["prefix"] . $alias;
-				}
+    public function onEntryUpdate($arg)
+    {
+        $entry = $arg["entry"];
+        if ($this->useId) {
+            if ($entry->isEmptyAlias() || $entry->getId() != $entry->getAlias()) {
+                $entry->setAlias($entry->getId());
+                $logic = SOY2Logic::createInstance("logic.site.Entry.EntryLogic");
+                $logic->update($entry);
+            }
+        }
+    }
 
-				if(isset($cnf["postfix"]) && strlen($cnf["postfix"])){
-					$alias .= $cnf["postfix"];
-				}
-			 	return $alias;
+    private function buildForm($inBlog = false)
+    {
+        if ($this->useId) {
+            return "";
+        }
 
-			case CustomAliasUtil::MODE_HASH:
-				// @ToDo ハッシュ関数を選択できるようにしたい
-				return md5($entry->getTitle());
-		}
-		return null;
-	}
+        $arg = SOY2PageController::getArguments();
+        if (!isset($arg[0])) {
+            return "";
+        }
 
-	function onCallCustomField(){
-		$mode = self::_mode();
-		switch($mode){
-			case CustomAliasUtil::MODE_ID:
-			case CustomAliasUtil::MODE_HASH:
-				return "";
-			default:
-				$arg = SOY2PageController::getArguments();
-				$entryId = (isset($arg[0]) && is_numeric($arg[0])) ? (int)$arg[0] : null;
+        $tval = array("alias"=>"", "pageUri"=>"", "entryUri"=>"");
 
-				SOY2::import("site_include.plugin.custom_alias.component.CustomAliasFormComponent");
-				return CustomAliasFormComponent::buildForm($mode, $entryId);
-		}
-	}
+        if ($inBlog) {
+          // pageId = arg[0], entryId = arg[1]
+            $page = $this->getBlogPage($arg[0]);
+            if ((null===$page) || !isset($arg[1])) {
+                return "";
+            }
+            $tval["alias"] = $this->getAlias($arg[1]);
+            $tval["pageUri"] = CMSUtil::getSiteUrl() . $page->getEntryPageURL();
+            $tval["entryUri"] = $tval["pageUri"] . rawurlencode($tval["alias"]);
+        } else {
+          // entryId = arg[0]
+            $tval["alias"] = $this->getAlias($arg[0]);
+            $tval["pageUri"] = CMSUtil::getSiteUrl() . "{blog}/{entry}/";
+        }
 
-	function onCallCustomField_inBlog(){
-		$arg = SOY2PageController::getArguments();
-		$pageId = (isset($arg[0]) && is_numeric($arg[0])) ? (int)$arg[0] : null;
-		$page = CustomAliasUtil::getBlogPageById($pageId);
-		if(is_null($page->getId())) return "";
+        $html  = "<div class=\"section custom_alias" . ($this->labelId ? " toggled_by_label_" . soy2_h($this->labelId) . "\" style=\"display:none;" : "") . "\">";
+        $html .= "<p class=\"sub\"><label for=\"custom_alias_input\">カスタムエイリアス（ブログのエントリーページのURL）</label></p>";
+        $html .= soy2_h($tval["pageUri"]);
+        $html .= "<input value=\"" . soy2_h($tval["alias"]) . "\" id=\"custom_alias_input\" name=\"alias\" type=\"text\" style=\"min-width:300px; ";
+        if ($inBlog) {
+            $html .= "width:57%; \"> <a href=\"" . soy2_h($tval["entryUri"]) . "\" target=\"_blank\">確認</a>";
+        } else {
+            $html .= "width:60%; \">";
+        }
+        $html .= "</div>";
 
-		$entryPageUri = CMSUtil::getSiteUrl().$page->getEntryPageURL();
-		$entryId = (isset($arg[1]) && is_numeric($arg[1])) ? (int)$arg[1] : null;
+        return $html;
+    }
 
-		$mode = self::_mode();
-		switch($mode){
-			case CustomAliasUtil::MODE_ID:
-			case CustomAliasUtil::MODE_HASH:
-				SOY2::import("site_include.plugin.custom_alias.component.CustomAliasConfirmUrlComponent");
-				return CustomAliasConfirmUrlComponent::buildForm($entryId, $entryPageUri);
-			default:
-				SOY2::import("site_include.plugin.custom_alias.component.CustomAliasFormComponent");
-				return CustomAliasFormComponent::buildForm($mode, $entryId, $entryPageUri);
-		}
-	}
+    public function onCallCustomField()
+    {
+        return $this->buildForm();
+//      if($this->useId){
+//          $html = "";
+//      }else{
+//          $arg = SOY2PageController::getArguments();
+//          $entryId = (isset($arg[0]) && is_numeric($arg[0])) ? (int)$arg[0] : null;
+//          $alias = $this->getAlias($entryId);
+//
+//          $html = "<div style=\"margin:-0.5ex 0px 0.5ex 1em;\">";
+//          $html .= "<p class=\"sub\"><label for=\"custom_alias_input\">カスタムエイリアス（ブログのエントリーページのURL）</label></p>";
+//          $html .= "<input value=\"".soy2_h($alias)."\" id=\"custom_alias_input\" name=\"alias\" type=\"text\" style=\"width:400px\" />";
+//          $html .= "</div>";
+//      }
+//      return $html;
+    }
 
-	//互換性を持たせる為のヘルパー
-	private function _mode(){
-		if(is_null($this->mode)){
-			if($this->useId) return CustomAliasUtil::MODE_ID;
-			return CustomAliasUtil::MODE_MANUAL;
-		}
-		return $this->mode;
-	}
+    public function onCallCustomField_inBlog()
+    {
+        return $this->buildForm(true);
 
-	function config_page($message){
-		SOY2::import("site_include.plugin.custom_alias.config.CustomAliasPluginFormPage");
-		$form = SOY2HTMLFactory::createInstance("CustomAliasPluginFormPage");
-		$form->setPluginObj($this);
-		$form->execute();
-		return $form->getObject();
-	}
+//      if($this->useId){
+//          $html = "";
+//      }else{
+//          $arg = SOY2PageController::getArguments();
+//          $pageId = (isset($arg[0]) && is_numeric($arg[0])) ? (int)$arg[0] : null;
+//          $entryId = (isset($arg[1]) && is_numeric($arg[1])) ? (int)$arg[1] : null;
+//
+//          $page = $this->getBlogPage($pageId);
+//          $alias = $this->getAlias($entryId);
+//
+//          $html = "";
+//          if($page){
+//              $entryPageUri = CMSUtil::getSiteUrl().$page->getEntryPageURL();
+//              $entryUri = $entryPageUri.rawurlencode($alias);
+//
+//              $html = "<div style=\"margin:-0.5ex 0px 0.5ex 1em;\">";
+//              $html .= "<p class=\"sub\"><label for=\"custom_alias_input\">カスタムエイリアス（ブログのエントリーページのURL）</label></p>";
+//              $html .= $entryPageUri;
+//              $html .= "<input value=\"".soy2_h($alias)."\" id=\"custom_alias_input\" name=\"alias\" type=\"text\" style=\"width:300px\" />";
+//              $html .= "<a href=\"".soy2_h($entryUri)."\" target=\"_blank\">確認</a>";
+//              $html .= "</div>";
+//          }
+//      }
+//      return $html;
+    }
 
-	function getUseId(){
-		return $this->useId;
-	}
-	function setUseId($useId){
-		$this->useId = $useId;
-	}
+    public function getEntry($entryId)
+    {
+        try {
+            $dao = SOY2DAOFactory::create("cms.EntryDAO");
+            $entry = $dao->getById($entryId);
+        } catch (Exception $e) {
+            return null;
+        }
+        return $entry;
+    }
 
-	function getPrefix(){
-		return $this->prefix;
-	}
-	function setPrefix($prefix){
-		$this->prefix = $prefix;
-	}
+    public function getAlias($entryId)
+    {
+        $entry = $this->getEntry($entryId);
+        if ($entry) {
+            return $entry->getAlias();
+        } else {
+            return $entryId;
+        }
+    }
 
-	function getPostfix(){
-		return $this->postfix;
-	}
-	function setPostfix($postfix){
-		$this->postfix = $postfix;
-	}
+    public function getBlogPage($pageId)
+    {
+        $dao = SOY2DAOFactory::create("cms.BlogPageDAO");
+        try {
+            $page = $dao->getById($pageId);
+        } catch (Exception $e) {
+            return null;
+        }
+        return $page;
+    }
 
-	function getMode(){
-		return $this->mode;
-	}
-	function setMode($mode){
-		$this->mode = $mode;
-	}
-
-	public static function register(){
-		$obj = CMSPlugin::loadPluginConfig(self::PLUGIN_ID);
-		if(is_null($obj)) $obj = new CustomAliasPlugin();
-		CMSPlugin::addPlugin(self::PLUGIN_ID,array($obj, "init"));
-	}
+    public function setUseId($useId)
+    {
+        $this->useId = $useId;
+    }
+    public function setPrefix($prefix)
+    {
+        $this->prefix = $prefix;
+    }
+    public function setPostfix($postfix)
+    {
+        $this->postfix = $postfix;
+    }
+    public function setLabelId($labelId)
+    {
+        $this->labelId = is_numeric($labelId) ?  $labelId : "";
+    }
 }
+
+CustomAliasPlugin::register();

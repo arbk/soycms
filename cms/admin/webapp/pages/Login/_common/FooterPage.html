@@ -19,36 +19,37 @@
 <script soy:id="jquery-cookie"></script>
 
 <script type="text/javascript">
-$(function(){
-	$("#toggle-side-menu").click(function(){
-		if($("#side-menu li a span").is(":hidden")){
-			$("#page-wrapper").css({'margin-left': '250px'});
-			$("#side-menu li a span").show();
-			$(".sidebar").css({'width': '250px'});
-			$("#toggle-side-menu i").removeClass("fa-angle-right").addClass("fa-angle-left");
-			$("#toggle-side-menu").removeClass("active").blur();
-			$.cookie('admin-hide-side-menu', false);
-		}else{
-			$("#page-wrapper").css({'margin-left': '50px'});
-			$("#side-menu li a span").hide();
-			$(".sidebar").css({'width': '50px'});
-			$("#toggle-side-menu i").removeClass("fa-angle-left").addClass("fa-angle-right");
-			$("#toggle-side-menu").removeClass("active").blur();
-			$.cookie('admin-hide-side-menu', true);
-		}
-	});
-});
+    $(function () {
+        $("#toggle-side-menu").click(function () {
+            if ($("#side-menu li a span").is(":hidden")) {
+                $("#page-wrapper").css({ 'margin-left': '250px' });
+                $("#side-menu li a span").show();
+                $(".sidebar").css({ 'width': '250px' });
+                $("#toggle-side-menu i").removeClass("fa-angle-right").addClass("fa-angle-left");
+                $("#toggle-side-menu").removeClass("active").blur();
+                $.cookie('admin-hide-side-menu', false);
+            } else {
+                $("#page-wrapper").css({ 'margin-left': '50px' });
+                $("#side-menu li a span").hide();
+                $(".sidebar").css({ 'width': '50px' });
+                $("#toggle-side-menu i").removeClass("fa-angle-left").addClass("fa-angle-right");
+                $("#toggle-side-menu").removeClass("active").blur();
+                $.cookie('admin-hide-side-menu', true);
+            }
+        });
+    });
 </script>
 <style>
-.main-div {
-  background: #ffffff none repeat scroll 0 0;
-  border-radius: 2px;
-  margin: 50px auto 5px;
-  max-width: 60%;
-  /**padding: 50px 70px 70px 71px;**/
-}
-.form-control{
-	font-size:30px;
-	height:50px;
-}
+    .main-div {
+        background: #ffffff none repeat scroll 0 0;
+        border-radius: 2px;
+        margin: 50px auto 5px;
+        max-width: 60%;
+        /**padding: 50px 70px 70px 71px;**/
+    }
+
+    .form-control {
+        font-size: 30px;
+        height: 50px;
+    }
 </style>

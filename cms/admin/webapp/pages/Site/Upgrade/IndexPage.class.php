@@ -1,101 +1,104 @@
 <?php
 SOY2::import("domain.admin.Site");
 
-class IndexPage extends CMSWebPageBase{
+class IndexPage extends CMSWebPageBase
+{
+    public function __construct()
+    {
+        //初期管理者のみ
+        if (!UserInfoUtil::isDefaultUser()) {
+            SOY2PageController::jump("");
+        }
 
-	function __construct(){
+        /*
+         * アップグレード対象のサイトだけ抽出
+         */
+        $logic = SOY2LogicContainer::get("logic.db.UpdateDBLogic", array(
+            "target" => "site"
+        ));
 
-		//初期管理者のみ
-		if(!UserInfoUtil::isDefaultUser()){
-			SOY2PageController::jump("");
-		}
+        $sites = $this->getSiteOnly();
+        foreach ($sites as $id => $site) {
+            //切り替え
+            SOY2DAOConfig::Dsn($site->getDataSourceName());
 
-		/*
-		 * アップグレード対象のサイトだけ抽出
-		 */
-		$logic = SOY2LogicContainer::get("logic.db.UpdateDBLogic", array(
-			"target" => "site"
-		));
+            if (!$logic->hasUpdate()) {
+                unset($sites[$id]);
+            }
+        }
+        //戻す
+        SOY2DAOConfig::Dsn(ADMIN_DB_DSN);
 
-		$sites = $this->getSiteOnly();
-		foreach($sites as $id => $site){
-			//切り替え
-			SOY2DAOConfig::Dsn($site->getDataSourceName());
+        //なければサイト菅理へ
+        if (count($sites)<1) {
+            SOY2PageController::jump("Site");
+        }
 
-			if(!$logic->hasUpdate()){
-				unset($sites[$id]);
-			}
-		}
-		//戻す
-		SOY2DAOConfig::Dsn(ADMIN_DB_DSN);
+        parent::__construct();
 
-		//なければサイト菅理へ
-		if(count($sites)<1){
-			SOY2PageController::jump("Site");
-		}
+        $this->createAdd("list", "SiteList", array(
+            "list" => $sites
+        ));
+    }
 
-		parent::__construct();
-
-		$this->createAdd("list", "SiteList", array(
-			"list" => $sites
-		));
-	}
-
-	/**
-	 * 「サイト」のみを取得
-	 */
-	function getSiteOnly(){
-		$SiteLogic = SOY2Logic::createInstance("logic.admin.Site.SiteLogic");
-		return $SiteLogic->getSiteOnly();
-	}
+    /**
+     * 「サイト」のみを取得
+     */
+    public function getSiteOnly()
+    {
+        $SiteLogic = SOY2Logic::createInstance("logic.admin.Site.SiteLogic");
+        return $SiteLogic->getSiteOnly();
+    }
 }
 
-class SiteList extends HTMLList{
+class SiteList extends HTMLList
+{
+    public function replaceTooLongHost($url)
+    {
+        $array = parse_url($url);
 
-	function replaceTooLongHost($url){
+        $host = $array["host"];
+        if (isset($array["port"])) {
+            $host .=   ":" . $array["port"];
+        }
 
-		$array = parse_url($url);
+        if (strlen($host) > 30) {
+            $host = mb_strimwidth($host, 0, 30, "...");
+        }
 
-		$host = $array["host"];
-		if(isset($array["port"])) $host .=   ":" . $array["port"];
+        $url = $array["scheme"] . "://" . $host . $array["path"];
 
-		if(strlen($host) > 30){
-			$host = mb_strimwidth($host, 0, 30, "...");
-		}
+        return $url;
+    }
 
-		$url = $array["scheme"] . "://" . $host . $array["path"];
+    protected function populateItem($entity)
+    {
+        $siteName = $entity->getSiteName();
+        if ($entity->getIsDomainRoot()) {
+            $siteName = "*" . $siteName;
+        }
 
-		return $url;
-	}
+        $this->addLabel("site_name", array(
+            "text" => $siteName
+        ));
 
-	protected function populateItem($entity){
+        $siteLink = (isset($_SERVER["HTTPS"]) ? "https://" : "http://"). $_SERVER['HTTP_HOST'] . '/' . $entity->getSiteId();
+        $this->addLink("site_link", array(
+            "link" => $entity->getUrl(),
+            "text" => $this->replaceTooLongHost($entity->getUrl())
+        ));
 
-		$siteName = $entity->getSiteName();
-		if($entity->getIsDomainRoot()){
-			$siteName = "*" . $siteName;
-		}
+        $rootLink = UserInfoUtil::getSiteURLBySiteId("");
+        $this->addLink("domain_root_site_url", array(
+            "link" => $rootLink,
+            "text" => $this->replaceTooLongHost($rootLink),
+            "visible" => $entity->getIsDomainRoot()
+        ));
 
-		$this->addLabel("site_name", array(
-			"text" => $siteName
-		));
-
-		$siteLink = (isset($_SERVER["HTTPS"]) ? "https://" : "http://"). $_SERVER['HTTP_HOST'] . '/' . $entity->getSiteId();
-		$this->addLink("site_link", array(
-			"link" => $entity->getUrl(),
-			"text" => $this->replaceTooLongHost($entity->getUrl())
-		));
-
-		$rootLink = UserInfoUtil::getSiteURLBySiteId("");
-		$this->addLink("domain_root_site_url", array(
-			"link" => $rootLink,
-			"text" => $this->replaceTooLongHost($rootLink),
-			"visible" => $entity->getIsDomainRoot()
-		));
-
-		$this->addLink("site_detail_link", array(
-			"link" => SOY2PageController::createLink("Site.Detail." . $entity->getId()),
-			"visible" => ($entity->getSiteType()!=Site::TYPE_SOY_SHOP)
-		));
-	}
+        $this->addLink("site_detail_link", array(
+            "link" => SOY2PageController::createLink("Site.Detail." . $entity->getId()),
+            "visible" => true
+//          "visible" => ($entity->getSiteType()!=Site::TYPE_SOY_SHOP)
+        ));
+    }
 }
-?>

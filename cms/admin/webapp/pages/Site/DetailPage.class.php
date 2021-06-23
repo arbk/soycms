@@ -1,187 +1,185 @@
 <?php
 
-class DetailPage extends CMSUpdatePageBase{
+class DetailPage extends CMSUpdatePageBase
+{
+    public $id;
 
-	var $id;
+    public function doPost()
+    {
+        if (soy2_check_token() && isset($_POST["siteUrl"])) {
+            $siteDAO = SOY2DAOFactory::create("admin.SiteDAO");
+            try {
+                $site = $siteDAO->getById($this->id);
+            } catch (Exception $e) {
+              /**
+               * @ToDo エラーメッセージを追加しないと
+               */
+                $this->jump("Site.Detail." . $this->id);
+            }
 
-	function doPost(){
+            $site->setUrl($_POST["siteUrl"]);
 
-		if(soy2_check_token() && isset($_POST["siteUrl"])){
+            try {
+                $siteDAO->update($site);
 
-			$siteDAO = SOY2DAOFactory::create("admin.SiteDAO");
-			try{
-				$site = $siteDAO->getById($this->id);
-			}catch(Exception $e){
-				/**
-				 * @ToDo エラーメッセージを追加しないと
-				 */
-				$this->jump("Site.Detail." . $this->id);
-			}
+                //ファイルDBの更新　SOY CMS3系統ではファイルDBの更新を廃止したため、下記のコードは不要
+//              $this->updateFileDB();
 
-			$site->setUrl($_POST["siteUrl"]);
+                //キャッシュ削除
+                CMSUtil::unlinkAllIn($site->getPath().SOYCMS_CACHE_DIRNAME."/", true);
 
-			try{
-				$siteDAO->update($site);
+                $this->addMessage("UPDATE_SUCCESS");
+            } catch (Exception $e) {
+              //
+            }
 
-				//ファイルDBの更新　SOY CMS3系統ではファイルDBの更新を廃止したため、下記のコードは不要
-				//$this->updateFileDB();
+            //サイトURLを、サイト用DB SiteConfigに挿入
+            $dsn = SOY2DAOConfig::Dsn();
+            SOY2DAOConfig::Dsn($site->getDataSourceName());
+            $siteConfigDao = SOY2DAOFactory::create("cms.SiteConfigDAO");
 
-				//キャッシュ削除
-				CMSUtil::unlinkAllIn($site->getPath() . ".cache/");
+            try {
+                $siteConfig = $siteConfigDao->get();
+            } catch (Exception $e) {
+              //
+            }
 
-				$this->addMessage("UPDATE_SUCCESS");
+            //ルート設定していることを考慮して、設定にあったリンク用のサイトURLを出力してサイト側のsiteConfigに放り込む
+            $defaultUrl = UserInfoUtil::getSiteURLBySiteId($site->getSiteId());
+            if ($site->getIsDomainRoot() && strpos($defaultUrl, $site->getUrl()) !== false) {
+                $siteUrl = UserInfoUtil::getSiteURLBySiteId("");
+            } else {
+                $siteUrl = $site->getUrl();
+            }
 
-			}catch(Exception $e){
-				//
-			}
+            $siteConfig->setConfigValue("url", $siteUrl);
+            try {
+                $siteConfigDao->updateSiteConfig($siteConfig);
+            } catch (Exception $e) {
+              //
+            }
 
-			//サイトURLを、サイト用DB SiteConfigに挿入
-			$dsn = SOY2DAOConfig::Dsn();
-			SOY2DAOConfig::Dsn($site->getDataSourceName());
-			$siteConfigDao = SOY2DAOFactory::create("cms.SiteConfigDAO");
+            SOY2DAOConfig::Dsn($dsn);
+        }
 
-			try{
-				$siteConfig = $siteConfigDao->get();
-			}catch(Exception $e){
-				//
-			}
+        $this->jump("Site.Detail." . $this->id);
+    }
 
-			//ルート設定していることを考慮して、設定にあったリンク用のサイトURLを出力してサイト側のsiteConfigに放り込む
-			$defaultUrl = UserInfoUtil::getSiteURLBySiteId($site->getSiteId());
-			if($site->getIsDomainRoot() && strpos($defaultUrl, $site->getUrl()) !== false){
-				$siteUrl = UserInfoUtil::getSiteURLBySiteId("");
-			}else{
-				$siteUrl = $site->getUrl();
-			}
+    public function __construct($args)
+    {
+        if (!UserInfoUtil::isDefaultUser() || count($args) < 1) {
+          //デフォルトユーザのみ変更可能
+            $this->jump("Site");
+            exit;
+        }
 
-			$siteConfig->setConfigValue("url", $siteUrl);
-			try{
-				$siteConfigDao->updateSiteConfig($siteConfig);
-			}catch(Exception $e){
-				//
-			}
+        $this->id = (isset($args[0])) ? $args[0] : null;
 
-			SOY2DAOConfig::Dsn($dsn);
-		}
+        parent::__construct();
 
-		$this->jump("Site.Detail." . $this->id);
-	}
+        $this->addForm("update_site_form");
 
-	function __construct($args) {
+        $SiteLogic = SOY2Logic::createInstance("logic.admin.Site.SiteLogic");
+        $site = $SiteLogic->getById($this->id);
 
-    	if(!UserInfoUtil::isDefaultUser() || count($args) < 1){
-    		//デフォルトユーザのみ変更可能
-    		$this->jump("Site");
-    		exit;
-    	}
+        if (!$site) {
+            $this->jump("Site");
+        }
 
-    	$this->id = (isset($args[0])) ? $args[0] : null;
+        $this->addLabel("site_name_title", array(
+        "text" => $site->getSiteName()
+        ));
 
-    	parent::__construct();
+        $this->addLabel("site_name", array(
+        "text" => $site->getSiteName()
+        ));
 
-		$this->addForm("update_site_form");
+        $this->addLabel("site_id", array(
+        "text" => $site->getSiteId()
+        ));
 
-		$SiteLogic = SOY2Logic::createInstance("logic.admin.Site.SiteLogic");
-		$site = $SiteLogic->getById($this->id);
+        //SOY CMS
+        $this->addInput("site_url_soycms", array(
+        "value" => $site->getUrl(),
+        "name" => "siteUrl"
+        ));
 
-		if(!$site){
-			$this->jump("Site");
-		}
-
-		$this->addLabel("site_name_title", array(
-			"text" => $site->getSiteName()
-		));
-
-		$this->addLabel("site_name", array(
-			"text" => $site->getSiteName()
-		));
-
-		$this->addLabel("site_id", array(
-			"text" => $site->getSiteId()
-		));
-
-		//SOY CMS
-		$this->addInput("site_url_soycms", array(
-			"value" => $site->getUrl(),
-			"name" => "siteUrl"
-		));
-
-		$this->addModel("display_soycms", array(
-			"visible" => ($site->getSiteType() == Site::TYPE_SOY_CMS)
-		));
+        $this->addModel("display_soycms", array(
+        "visible" => ($site->getSiteType() == Site::TYPE_SOY_CMS)
+        ));
 
 
-		//SOY Shop
-		$this->addInput("site_url_shop", array(
-			"value" => $site->getUrl(),
-			"name" => "siteUrl",
-			"disabled" => "disabled"
-		));
+//      //SOY Shop
+//      $this->addInput("site_url_shop", array(
+//      "value" => $site->getUrl(),
+//      "name" => "siteUrl",
+//      "disabled" => "disabled"
+//      ));
 
-		$this->addModel("display_soyshop", array(
-			"visible" => ($site->getSiteType() == Site::TYPE_SOY_SHOP)
-		));
+//      $this->addModel("display_soyshop", array(
+//      "visible" => ($site->getSiteType() == Site::TYPE_SOY_SHOP)
+//      ));
 
-		$this->addLabel("default_url", array(
-			"text" => UserInfoUtil::getSiteURLBySiteId($site->getSiteId())
-		));
+        $this->addLabel("default_url", array(
+        "text" => UserInfoUtil::getSiteURLBySiteId($site->getSiteId())
+        ));
 
-		$messages = CMSMessageManager::getMessages();
-    	$this->addLabel("message", array(
-			"text" => implode($messages),
-			"visible" => (count($messages) > 0)
-		));
+        $messages = CMSMessageManager::getMessages();
+        $this->addLabel("message", array(
+        "text" => implode($messages),
+        "visible" => (count($messages) > 0)
+        ));
 
-		$messages = CMSMessageManager::getMessages();
-		$errors = CMSMessageManager::getErrorMessages();
-    	$this->addLabel("message", array(
-			"text" => implode($messages),
-			"visible" => (count($messages) > 0)
-		));
-		$this->addLabel("error", array(
-			"text" => implode($errors),
-			"visible" => (count($errors) > 0)
-		));
-		$this->addModel("has_message_or_error", array(
-				"visible" => count($messages) || count($errors),
-		));
+        $messages = CMSMessageManager::getMessages();
+        $errors = CMSMessageManager::getErrorMessages();
+        $this->addLabel("message", array(
+        "text" => implode($messages),
+        "visible" => (count($messages) > 0)
+        ));
+        $this->addLabel("error", array(
+        "text" => implode($errors),
+        "visible" => (count($errors) > 0)
+        ));
+        $this->addModel("has_message_or_error", array(
+          "visible" => count($messages) || count($errors),
+        ));
 
 
-		//サブメニュー
-		$this->addActionLink("clear_cache",array(
-			"link" => SOY2PageController::createLink("Site.ClearCachePage." . $this->id),
-			"visible" => UserInfoUtil::isDefaultUser(),
-		));
+      //サブメニュー
+        $this->addActionLink("clear_cache", array(
+        "link" => SOY2PageController::createLink("Site.ClearCachePage." . $this->id),
+        "visible" => UserInfoUtil::isDefaultUser(),
+        ));
 
-		$this->addActionLink("regenerate_link", array(
-			"link"    => SOY2PageController::createLink("Site.CreateController." . $this->id),
-			"visible" => UserInfoUtil::isDefaultUser()
-		));
+        $this->addActionLink("regenerate_link", array(
+        "link"    => SOY2PageController::createLink("Site.CreateController." . $this->id),
+        "visible" => UserInfoUtil::isDefaultUser()
+        ));
 
-		$this->addLink("edit_indexphp", array(
-			"link"    => SOY2PageController::createLink("Site.EditController." . $this->id),
-			"visible" => UserInfoUtil::isDefaultUser()
-		));
+        $this->addLink("edit_indexphp", array(
+        "link"    => SOY2PageController::createLink("Site.EditController." . $this->id),
+        "visible" => UserInfoUtil::isDefaultUser()
+        ));
 
-		$this->addLink("edit_htaccess", array(
-			"link"    => SOY2PageController::createLink("Site.EditHtaccess." . $this->id),
-			"visible" => UserInfoUtil::isDefaultUser()
-		));
-	}
+        $this->addLink("edit_htaccess", array(
+        "link"    => SOY2PageController::createLink("Site.EditHtaccess." . $this->id),
+        "visible" => UserInfoUtil::isDefaultUser()
+        ));
+    }
 
-	function updateFileDB(){
-		SOY2::import("util.CMSFileManager");
-
-		CMSFileManager::deleteAll();
-
-		$SiteLogic = SOY2Logic::createInstance("logic.admin.Site.SiteLogic");
-		$sites = $SiteLogic->getSiteList();
-
-		foreach($sites as $site){
-			$url = (UserInfoUtil::getSiteURLBySiteId($site->getId()) != $site->getUrl() ) ? $site->getUrl() : null;
-			CMSFileManager::setSiteInformation($site->getId(), $url, $site->getPath());
-			CMSFileManager::insertAll($site->getPath());
-		}
-	}
+//  public function updateFileDB()
+//  {
+//      SOY2::import("util.CMSFileManager");
+//
+//      CMSFileManager::deleteAll();
+//
+//      $SiteLogic = SOY2Logic::createInstance("logic.admin.Site.SiteLogic");
+//      $sites = $SiteLogic->getSiteList();
+//
+//      foreach ($sites as $site) {
+//          $url = (UserInfoUtil::getSiteURLBySiteId($site->getId()) != $site->getUrl() ) ? $site->getUrl() : null;
+//          CMSFileManager::setSiteInformation($site->getId(), $url, $site->getPath());
+//          CMSFileManager::insertAll($site->getPath());
+//      }
+//  }
 }
-?>

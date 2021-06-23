@@ -3,4 +3,3 @@
  * ダミーです。
  */
 CMSUtil::Text(array());
-?>

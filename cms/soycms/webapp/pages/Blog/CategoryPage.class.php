@@ -1,178 +1,264 @@
 <?php
 
-class CategoryPage extends CMSWebPageBase{
+class CategoryPage extends CMSWebPageBase
+{
+    private $pageId;
 
-	private $pageId;
+    public function doPost()
+    {
+        if (soy2_check_token() && isset($_POST["caption"]) && strlen($_POST["caption"])) {
+            $labelDao = SOY2DAOFactory::create("cms.LabelDAO");
+            $label = new Label();
+            $label->setCaption($_POST["caption"]);
 
-	function doPost(){
+            $logic = SOY2Logic::createInstance("logic.site.Label.LabelLogic");
+            if (!$logic->checkDuplicateCaption($label->getCaption())) {
+                $this->addErrorMessage("BLOG_CATEGORY_ADD_FAILED");
+                $this->jump("Blog.Category.".$this->pageId);
+            }
 
-		if(soy2_check_token() && isset($_POST["caption"]) && strlen($_POST["caption"])){
-			$labelDao = SOY2DAOFactory::create("cms.LabelDAO");
-			$label = new Label();
-			$label->setCaption($_POST["caption"]);
+            //並び順補正
+            $label->setDisplayOrder(Label::ORDER_MAX);
 
-			$logic = SOY2Logic::createInstance("logic.site.Label.LabelLogic");
-			if(!$logic->checkDuplicateCaption($label->getCaption())){
-				$this->addErrorMessage("BLOG_CATEGORY_ADD_FAILED");
-				$this->jump("Blog.Category.".$this->pageId);
-			}
+            $labelDao->begin();
+            try {
+                $id = $logic->create($label);
+            } catch (Exception $e) {
+                $this->addErrorMessage("BLOG_CATEGORY_ADD_FAILED");
+                $this->jump("Blog.Category.".$this->pageId);
+            }
 
-			//並び順補正
-			$label->setDisplayOrder(Label::ORDER_MAX);
+            $pageDao = SOY2DAOFactory::create("cms.BlogPageDAO");
+            try {
+                $blogPage = $pageDao->getById($this->pageId);
+            } catch (Exception $e) {
+                $this->addErrorMessage("BLOG_CATEGORY_ADD_FAILED");
+                $this->jump("Blog.Category.".$this->pageId);
+            }
 
-			$labelDao->begin();
-			try{
-				$id = $logic->create($label);
-			}catch(Exception $e){
-				$this->addErrorMessage("BLOG_CATEGORY_ADD_FAILED");
-				$this->jump("Blog.Category.".$this->pageId);
-			}
+            $categoryLabelList = $blogPage->getCategoryLabelList();
+//          array_push($categoryLabelList, $id);
+            $categoryLabelList[] = $id;
+            $blogPage->setCategoryLabelList($categoryLabelList);
 
-			$pageDao = SOY2DAOFactory::create("cms.BlogPageDAO");
-			try{
-				$blogPage = $pageDao->getById($this->pageId);
-			}catch(Exception $e){
-				$this->addErrorMessage("BLOG_CATEGORY_ADD_FAILED");
-				$this->jump("Blog.Category.".$this->pageId);
-			}
+            try {
+                $pageDao->updatePageConfig($blogPage);
+            } catch (Exception $e) {
+                $this->addErrorMessage("BLOG_CATEGORY_ADD_FAILED");
+                $this->jump("Blog.Category.".$this->pageId);
+            }
 
-			$categoryLabelList = $blogPage->getCategoryLabelList();
-			array_push($categoryLabelList, $id);
-			$blogPage->setCategoryLabelList($categoryLabelList);
+            $labelDao->commit();
 
-			try{
-				$pageDao->updatePageConfig($blogPage);
-			}catch(Exception $e){
-				$this->addErrorMessage("BLOG_CATEGORY_ADD_FAILED");
-				$this->jump("Blog.Category.".$this->pageId);
-			}
+            $this->addMessage("BLOG_CATEGORY_ADD_SUCCESS");
+        }
+    }
 
-			$labelDao->commit();
+    public function __construct($arg)
+    {
+        //記事管理者以外がこのページを開いた時
+        if ((null===$arg[0]) || UserInfoUtil::hasSiteAdminRole()) {
+            $this->jump('Blog');//どっかに飛ばす
+        }
+        $this->pageId = (int)$arg[0];
 
-			$this->addMessage("BLOG_CATEGORY_ADD_SUCCESS");
-		}
-	}
+        parent::__construct();
 
-	function __construct($arg) {
-		//記事管理者以外がこのページを開いた時
-		if(is_null($arg[0]) || UserInfoUtil::hasSiteAdminRole()){
-			$this->jump('Blog');//どっかに飛ばす
-		}
-		$this->pageId = (int)$arg[0];
+        $labels = $this->getLabelLists();
+        $this->createAdd("label_lists", "LabelLists", array(
+            "list" => $labels,
+            "pageId" => $this->pageId
+        ));
 
-		parent::__construct();
+        $this->createAdd("update_display_order", "HTMLInput", array(
+            "type" => "submit",
+            "name" => "update_display_order",
+            "value" => CMSMessageManager::get("SOYCMS_DISPLAYORDER"),
+            "tabindex" => LabelList::$tabIndex++
+        ));
 
-		$labels = $this->getLabelLists();
-		$this->createAdd("label_lists", "_component.Blog.LabelListsComponent", array(
-			"list" => $labels,
-			"pageId" => $this->pageId
-		));
+//      $this->createAdd("no_label_message","Label._LabelBlankPage",array(
+//          "visible" => (count($labels)<1)
+//      ));
 
-		$this->addInput("update_display_order", array(
-			"type" => "submit",
-			"name" => "update_display_order",
-			"value" => CMSMessageManager::get("SOYCMS_DISPLAYORDER"),
-			"tabindex" => CategoryListComponent::$tabIndex++
-		));
+        if (count($labels)<1) {
+            DisplayPlugin::hide("must_exist_label");
+        }
 
-		// $this->createAdd("no_label_message","Label._LabelBlankPage",array(
-		// 	"visible" => (count($labels)<1)
-		// ));
+        $this->createAdd("create_label", "HTMLForm");
+        $this->addModel("create_label_caption", array(
+            "placeholder" => $this->getMessage("SOYCMS_LABEL_CREATE_PLACEHOLDER"),//ラベル名 または 分類名/ラベル名
+        ));
 
-		if(count($labels) < 1) DisplayPlugin::hide("must_exist_label");
+        $this->createAdd("reNameForm", "HTMLForm", array(
+            "action"=>SOY2PageController::createLink("Label.Rename")
+        ));
 
-		$this->addForm("create_label");
-		$this->addModel("create_label_caption", array(
-			"placeholder" => $this->getMessage("SOYCMS_LABEL_CREATE_PLACEHOLDER"),//ラベル名 または 分類名/ラベル名
-		));
+        $this->createAdd("BlogMenu", "Blog.BlogMenuPage", array(
+            "arguments" => array($this->pageId)
+        ));
 
+        HTMLHead::addScript("root", array(
+            "script"=>'var reNameLink = "'.SOY2PageController::createLink("Blog.Rename.".$this->pageId).'";' .
+                    'var reDesciptionLink = "'.SOY2PageController::createLink("Blog.ReDescription.".$this->pageId).'";' .
+                    'var ChangeLabelIconLink = "'.SOY2PageController::createLink("Blog.ChangeLabelIcon.".$this->pageId).'";'
+        ));
 
-		$this->addForm("reNameForm", array(
-			"action"=>SOY2PageController::createLink("Label.Rename")
-		));
+        // アイコンリスト
+        $this->createAdd("image_list", "LabelIconList", array(
+            "list" => $this->getLabelIconList()
+        ));
 
-		$this->createAdd("BlogMenu","Blog.BlogMenuPage",array(
-			"arguments" => array($this->pageId)
-		));
+        // 表示順更新フォーム
+        $this->createAdd("update_display_order_form", "HTMLForm");
 
+        // CSS
+        HTMLHead::addLink("labelcss", array(
+            "rel" => "stylesheet",
+            "type" => "text/css",
+            "href" => SOY2PageController::createRelativeLink("./css/label/label.css")
+        ));
+    }
 
-		HTMLHead::addScript("root",array(
-			"script"=>'var reNameLink = "'.SOY2PageController::createLink("Blog.Rename.".$this->pageId).'";' .
-					'var reDesciptionLink = "'.SOY2PageController::createLink("Blog.ReDescription.".$this->pageId).'";' .
-					'var ChangeLabelIconLink = "'.SOY2PageController::createLink("Blog.ChangeLabelIcon.".$this->pageId).'";'
-		));
+    /**
+     *  ラベルオブジェクトのリストのリストを返す
+     * @param Boolean $classified ラベルを分けるかどうか
+     */
+    public function getLabelLists($classified = true)
+    {
+        /**
+         * actionクラスを介さず直接ブログに設定されているカテゴリを取得
+         */
 
-		//アイコンリスト
-		$this->createAdd("image_list", "_component.Blog.LabelIconListComponent",array(
-			"list" => self::_getLabelIconList()
-		));
+        //ブログページを取得
+        try {
+            $blogPage = SOY2DAOFactory::create("cms.BlogPageDAO")->getById($this->pageId);
+        } catch (Exception $e) {
+            return array();
+        }
 
-		//表示順更新フォーム
-		$this->addForm("update_display_order_form");
+        $categoryLabelList = $blogPage->getCategoryLabelList();
+        if (!count($categoryLabelList)) {
+            return array();
+        }
 
-		//CSS
-		HTMLHead::addLink("labelcss",array(
-			"rel" => "stylesheet",
-			"type" => "text/css",
-			"href" => SOY2PageController::createRelativeLink("./css/label/label.css")
-		));
-	}
+        $labelDao = SOY2DAOFactory::create("cms.LabelDAO");
+        $labels = array();
+        foreach ($categoryLabelList as $labelId) {
+            try {
+                $labels[] = $labelDao->getById($labelId);
+            } catch (Exception $e) {
+                continue;
+            }
+        }
 
-	/**
-	 *  ラベルオブジェクトのリストのリストを返す
-	 * @param Boolean $classified ラベルを分けるかどうか
-	 */
-	function getLabelLists($classified = true){
-		/**
-		 * actionクラスを介さず直接ブログに設定されているカテゴリを取得
-		 */
+        return array("" => $labels);
+    }
 
-		//ブログページを取得
-		try{
-			$blogPage = SOY2DAOFactory::create("cms.BlogPageDAO")->getById($this->pageId);
-		}catch(Exception $e){
-			return array();
-		}
+    /**
+     * ラベルに使えるアイコンの一覧を返す
+     */
+    public function getLabelIconList()
+    {
+        $dir = CMS_LABEL_ICON_DIRECTORY;
 
-		$categoryLabelList = $blogPage->getCategoryLabelList();
-		if(!count($categoryLabelList)) return array();
+        $files = scandir($dir);
 
-		$labelDao = SOY2DAOFactory::create("cms.LabelDAO");
-		$labels = array();
-		foreach($categoryLabelList as $labelId){
-			try{
-				$labels[] = $labelDao->getById($labelId);
-			}catch(Exception $e){
-				continue;
-			}
-		}
+        $return = array();
 
-		return array("" => $labels);
-	}
+        foreach ($files as $file) {
+            if ($file[0] == ".") {
+                continue;
+            }
+            if (!preg_match('/jpe?g|gif|png$/i', $file)) {
+                continue;
+            }
+            if ($file == "default.gif") {
+                continue;
+            }
 
-	/**
-	 * ラベルに使えるアイコンの一覧を返す
-	 */
-	private function _getLabelIconList(){
+            $return[] = (object)array(
+                "filename" => $file,
+                "url" => CMS_LABEL_ICON_DIRECTORY_URL . $file,
+            );
+        }
 
-		$dir = CMS_LABEL_ICON_DIRECTORY;
+        return $return;
+    }
+}
 
-		$files = scandir($dir);
+class LabelLists extends HTMLList
+{
+    private $pageId;
 
-		$return = array();
+    public function populateItem($entity, $key)
+    {
+        $this->addLabel("category_name", array(
+            "text" => $key,
+            "visible" => !is_int($key) && strlen($key),
+        ));
+        $this->createAdd("list", "LabelList", array(
+            "list" => $entity,
+            "pageId" => $this->pageId
+        ));
 
-		foreach($files as $file){
-			if($file[0] == ".")continue;
-			if(!preg_match('/jpe?g|gif|png$/i',$file))continue;
-			if($file == "default.gif")continue;
+        return ( count($entity) > 0 );
+    }
 
-			$return[] = (object)array(
-				"filename" => $file,
-				"url" => CMS_LABEL_ICON_DIRECTORY_URL . $file,
-			);
-		}
+    public function setPageId($pageId)
+    {
+        $this->pageId = $pageId;
+    }
+}
 
+class LabelList extends HTMLList
+{
+    public static $tabIndex = 0;
+    private $pageId;
 
-		return $return;
-	}
+    public function populateItem($entity)
+    {
+        $this->createAdd("label_icon", "HTMLImage", array(
+            "src" => $entity->getIconUrl(),
+            "onclick" => "javascript:changeImageIcon(".$entity->getId().");"
+        ));
+
+        $this->createAdd("label_name", "HTMLLabel", array(
+            "text"=> $entity->getBranchName(),
+            "style"=> "cursor:pointer;color:#" . sprintf("%06X", $entity->getColor()).";background-color:#" . sprintf("%06X", $entity->getBackgroundColor()) . ";margin:5px",
+            "onclick"=>'postReName('.$entity->getId().',"'.addslashes($entity->getDescription()).'")'
+        ));
+
+        $this->createAdd("remove_link", "HTMLActionLink", array(
+            "link" => SOY2PageController::createLink("Blog.Remove." .$this->pageId . "." .$entity->getId()),
+            "visible" => UserInfoUtil::hasEntryPublisherRole(),
+        ));
+
+        $this->createAdd("description", "HTMLLabel", array(
+            "text"=> (trim($entity->getDescription())) ? $entity->getDescription() : CMSMessageManager::get("SOYCMS_CLICK_AND_EDIT"),
+            "onclick"=>'postDescription('.$entity->getId().',"'.addslashes($entity->getCaption()).'","'.addslashes($entity->getDescription()).'")'
+        ));
+
+        //記事数
+//      $this->createAdd("entry_count","HTMLLabel",array(
+//          "text"=> $entity->getEntryCount(),
+//      ));
+    }
+
+    public function setPageId($pageId)
+    {
+        $this->pageId = $pageId;
+    }
+}
+
+class LabelIconList extends HTMLList
+{
+
+    public function populateItem($entity)
+    {
+        $this->createAdd("image_list_icon", "HTMLImage", array(
+            "src" => $entity->url,
+            "ondblclick" => "javascript:postChangeLabelIcon('".$entity->filename."');"
+        ));
+    }
 }

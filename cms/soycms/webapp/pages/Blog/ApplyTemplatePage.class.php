@@ -1,105 +1,123 @@
 <?php
 
-class ApplyTemplatePage extends CMSWebPageBase{
+class ApplyTemplatePage extends CMSWebPageBase
+{
+    private $id;
+    private $page;
+    private $mode;
 
-	private $id;
-	private $page;
-	private $mode;
+    public function doPost()
+    {
+        $redirect = SOY2PageController::createLink("Blog.Template." . $this->id . "." . $this->mode);
 
-	function doPost(){
-		$redirect = SOY2PageController::createLink("Blog.Template.".$this->id.".".$this->mode);
+        if (soy2_check_token()) {
+            $target_mode = $this->mode;
+            if (isset($_POST['all_template_update']) && 1==$_POST['all_template_update']) {
+                $target_mode = null;
+            }
+            $res = $this->run("Page.ApplyTemplateAction", array("pageId"=>$this->id, "mode"=>$target_mode));
 
-		if(soy2_check_token()){
+            if ($res->success()) {
+                $redirect = SOY2PageController::createLink("Blog.Template." . $this->id . "." . $this->mode);
+            }
+        }
 
-			$res = $this->run("Page.ApplyTemplateAction",array("pageId"=>$this->id,"mode"=>$this->mode));
+        echo "<!DOCTYPE html><html><head><title>-</title></head><body>";
+        echo "<script type=\"text/javascript\">window.parent.location.href='" . $redirect . "';</script>";
+        echo "</body></html>";
 
-			if($res->success()){
-				$redirect = SOY2PageController::createLink("Blog.Template.".$this->id.".".$this->mode);
-			}
+        exit();
+    }
 
-		}
+    public function __construct($arg)
+    {
+        $id = @$arg[0];
+        $this->id = $id;
+        $this->mode = @$arg[1];
+        if ((null===$id) || (null===$this->mode)) {
+            echo CMSMessageManager::get("SOYCMS_ERROR");
+            exit();
+        }
 
-		echo "<html>";
-		echo "<script type=\"text/javascript\">window.parent.location.href='".$redirect."';</script>";
-		echo "</html>";
+        $res = $this->run("Template.TemplateListAction");
+        $templates = $res->getAttribute("list");
 
-		exit;
-	}
+        $res = $this->run("Page.DetailAction", array("id"=>$id));
+        if (!$res->success()) {
+            echo CMSMessageManager::get("SOYCMS_ERROR");
+            exit();
+        }
+        $page = $res->getAttribute("Page");
+        $this->page = $page;
 
-	function __construct($arg) {
-		$id = @$arg[0];
-		$this->id = $id;
-		$this->mode = @$arg[1];
-		if(is_null($id) || is_null($this->mode)){
-			echo CMSMessageManager::get("SOYCMS_ERROR");
-			exit;
-		}
+        parent::__construct();
+        $this->createAdd("main_form", "HTMLForm");
 
+        $this->createAdd("normal_template_select", "HTMLLabel", array(
+            "html"=>$this->buildTemplateList(),
+            "name"=>"template",
+            "visible"=>($page->getPageType() == Page::PAGE_TYPE_NORMAL)
+        ));
+        $this->createAdd("blog_template_select", "HTMLLabel", array(
+            "html"=>$this->buildBlogTemplateList(),
+            "name"=>"template",
+            "visible"=>($page->getPageType() == Page::PAGE_TYPE_BLOG)
+        ));
 
-		$res = $this->run("Template.TemplateListAction");
-		$templates = $res->getAttribute("list");
+        $this->createAdd("all_template_update", "HTMLCheckBox", array(
+            "name"=>"all_template_update",
+            "value"=>1,
+            "type"=>"checkbox",
+            "label"=>$this->getMessage('SOYCMS_APPLY_WEBPAGE_TEMPLATEPACK_ALL'),
+            "visible"=>($page->getPageType() == Page::PAGE_TYPE_BLOG)
+        ));
+    }
 
-		$res = $this->run("Page.DetailAction",array("id"=>$id));
-		if(!$res->success()){
-			echo CMSMessageManager::get("SOYCMS_ERROR");
-			exit;
-		}
-		$page = $res->getAttribute("Page");
-		$this->page = $page;
+    public function buildTemplateList()
+    {
+        $logic = SOY2Logic::createInstance("logic.site.Template.TemplateLogic");
+        $templates = $logic->getByPageType(Page::PAGE_TYPE_NORMAL);
+        $html = array();
+        $html[] = '<option value="">' . CMSMessageManager::get("SOYCMS_ASK_TO_CHOOSE_PAGE_TEMPLATE_PACK") . '</option>';
+        foreach ($templates as $template) {
+            if (!$template->isActive()) {
+                continue;
+            }
 
-		parent::__construct();
-		$this->createAdd("main_form","HTMLForm");
+            $html[] = '<optgroup label="' . $template->getName() . '">';
 
-		$this->createAdd("normal_template_select","HTMLLabel",array(
-			"html" => $this->buildTemplateList(),
-			"name" => "template",
-			"visible"=>($page->getPageType() == Page::PAGE_TYPE_NORMAL)
-		));
-		$this->createAdd("blog_template_select","HTMLLabel",array(
-			"html" => $this->buildBlogTemplateList(),
-			"name" => "template",
-			"visible"=>($page->getPageType() == Page::PAGE_TYPE_BLOG)
-		));
-	}
+            foreach ($template->getTemplate() as $id => $array) {
+                $html[] = '<option value="' . $template->getId() . "/" . $id . '">' . $array["name"] . '</option>';
+            }
 
-	function buildTemplateList(){
-		$logic = SOY2Logic::createInstance("logic.site.Template.TemplateLogic");
-		$templates = $logic->getByPageType(Page::PAGE_TYPE_NORMAL);
-		$html = array();
-		$html[] = '<option value="">'.CMSMessageManager::get("SOYCMS_ASK_TO_CHOOSE_PAGE_TEMPLATE_PACK").'</option>';
-		foreach($templates as $template){
-			if(!$template->isActive())continue;
+            $html[] = "</optgroup>";
+        }
 
-			$html[] = '<optgroup label="'.$template->getName().'">';
+        return implode("\n", $html);
+    }
 
-			foreach($template->getTemplate() as $id => $array){
-				$html[] = '<option value="'.$template->getId()."/". $id .'">' . $array["name"] . '</option>';
-			}
+    public function buildBlogTemplateList()
+    {
+        $logic = SOY2Logic::createInstance("logic.site.Template.TemplateLogic");
+        $templates = $logic->getByPageType(Page::PAGE_TYPE_BLOG);
+        $html = array();
+        $html[] = '<option value="">' . CMSMessageManager::get("SOYCMS_ASK_TO_CHOOSE_PAGE_TEMPLATE_PACK") . '</option>';
+        foreach ($templates as $template) {
+            if (!$template->isActive()) {
+                continue;
+            }
+            $html[] = '<option value="' . $template->getId() . '">' . $template->getName() . '</option>';
+        }
 
-			$html[] = "</optgroup>";
-		}
+        return implode("\n", $html);
+    }
 
-		return implode("\n",$html);
-	}
+    public function getTemplateList()
+    {
+        $result = SOY2ActionFactory::createInstance("Template.TemplateListAction")->run();
 
-	function buildBlogTemplateList(){
-		$logic = SOY2Logic::createInstance("logic.site.Template.TemplateLogic");
-		$templates = $logic->getByPageType(Page::PAGE_TYPE_BLOG);
-		$html = array();
-		$html[] = '<option value="">'.CMSMessageManager::get("SOYCMS_ASK_TO_CHOOSE_PAGE_TEMPLATE_PACK").'</option>';
-		foreach($templates as $template){
-			if(!$template->isActive())continue;
-			$html[] = '<option value="'.$template->getId().'">' . $template->getName() . '</option>';
-		}
+        $list = $result->getAttribute("list");
 
-		return implode("\n",$html);
-	}
-
-	function getTemplateList(){
-		$result = SOY2ActionFactory::createInstance("Template.TemplateListAction")->run();
-
-		$list = $result->getAttribute("list");
-
-		return $list;
-	}
+        return $list;
+    }
 }

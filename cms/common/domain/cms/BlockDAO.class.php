@@ -3,39 +3,39 @@
 /**
  * @entity cms.Block
  */
-abstract class BlockDAO extends SOY2DAO{
+abstract class BlockDAO extends SOY2DAO
+{
+    /**
+     * @return id
+     */
+    abstract public function insert(Block $bean);
 
-	/**
-	 * @return id
-	 */
-	abstract function insert(Block $bean);
+    /**
+     * @no_persistent #pageId#
+     */
+    abstract public function update(Block $bean);
 
-	/**
-	 * @no_persistent #pageId#
-	 */
-	abstract function update(Block $bean);
+    /**
+     * @columns id,object
+     */
+    abstract public function updateObject(Block $bean);
 
-	/**
-	 * @columns id,object
-	 */
-	abstract function updateObject(Block $bean);
+    abstract public function delete($id);
 
-	abstract function delete($id);
+    abstract public function deleteByPageId($pageId);
 
-	abstract function deleteByPageId($pageId);
+    /**
+     * @return object
+     */
+    abstract public function getById($id);
 
-	/**
-	 * @return object
-	 */
-	abstract function getById($id);
+    abstract public function get();
 
-	abstract function get();
+    abstract public function getByPageId($pageId);
 
-	abstract function getByPageId($pageId);
-
-	/**
-	 * @query page_id = :pageId and soy_id = :soyId
-	 * @return object
-	 */
-	abstract function getPageBlock($pageId,$soyId);
+    /**
+     * @query page_id = :pageId and soy_id = :soyId
+     * @return object
+     */
+    abstract public function getPageBlock($pageId, $soyId);
 }

@@ -1,213 +1,257 @@
 <?php
 
-class SearchAction extends SOY2Action{
+class SearchAction extends SOY2Action
+{
+    private $limit;
+    private $offset;
 
-	private $limit;
-	private $offset;
-	private $totalCount;
+    /**
+     * 取得しない列項目
+     */
+    private $ignoreColumns;
 
-    function execute($request,$form,$response) {
-    	$this->limit = (is_numeric($form->getLimit()) ? $form->getLimit() : 10);
-    	$this->offset =(is_numeric($form->getOffset()) ? $form->getOffset() : 0);
+    private $totalCount;
 
-    	$entries = self::searchEntries($form->getFreeword_text(),array(
-    		"op" => $form->getLabelOperator(),
-    		"labels" => $form->getLabel()
-       	));
-
-    	$count = $this->totalCount;
-
-    	$this->setAttribute("from", $this->offset);
-
-    	if(count($entries) < $this->limit){
-    		$this->setAttribute("to",$this->offset+count($entries));
-    	}else{
-    		$this->setAttribute("to",$this->offset+$this->limit);
-    	}
-
-		$this->setAttribute("Entities",$entries);
-		$this->setAttribute("total",$this->totalCount);
-		$this->setAttribute("limit",$this->limit);
-
-		$this->setAttribute("form",$form);
-
-
+    public function getIgnoreColumns()
+    {
+        return $this->ignoreColumns;
+    }
+    public function setIgnoreColumns($ignoreColumns)
+    {
+        $this->ignoreColumns = $ignoreColumns;
     }
 
-    private function searchEntries($freewordText,$label,$others = null){
-    	$logic = SOY2Logic::createInstance("logic.site.Entry.EntryLogic");
-    	$dao = SOY2DAOFactory::create("LabeledEntryDAO");
-    	$dao->setLimit($this->limit);
-    	$dao->setOffset($this->offset);
+    public function getTotalCount()
+    {
+        return $this->totalCount;
+    }
+    public function setTotalCount($totalCount)
+    {
+        $this->totalCount = $totalCount;
+    }
 
-    	$query = new SOY2DAO_Query();
-    	$query->prefix = "select";
-		$query->distinct = true;
-		$query->sql = " id,alias,title,content,more,cdate,udate,openPeriodStart,openPeriodEnd,isPublished ";
-		$query->table = " Entry left outer join EntryLabel on (Entry.id = EntryLabel.entry_id) ";
-		$query->order = "Entry.udate desc";
-		$binds = array();
-		$where = array();
+    public function execute($request, $form, $response)
+    {
+        $this->limit = (is_numeric($form->getLimit()) ? $form->getLimit() : SOYCMS_INI_NUMOF_ENTRY);
+        $this->offset = (is_numeric($form->getOffset()) ? $form->getOffset() : 0);
 
+        $entries = $this->searchEntries($form->getFreeword_text(), array(
+        "op"=>$form->getLabelOperator(),
+        "labels"=>$form->getLabel()
+        ));
 
-		//フリーワード検索を作成
-		if(strlen($freewordText) != 0){
-			$keywords = preg_split('/[\s,]+/',$freewordText);
-			$freeword = array();
-			$keywordCounts = 0;
-			$freewordQuery = array();
+        $count = $this->totalCount;
 
-			foreach(array("title","content","more") as $column){
-				$freeword = array();
-				foreach($keywords as $keyword){
+        $this->setAttribute("from", $this->offset);
 
-					$bind_key = ':freeword'.$keywordCounts;
+        if (count($entries) < $this->limit) {
+            $this->setAttribute("to", $this->offset + count($entries));
+        } else {
+            $this->setAttribute("to", $this->offset + $this->limit);
+        }
 
-					if($keyword[0] == "-"){
-						$keyword = substr($keyword,1);
-						$freeword[] = 'Entry.'.$column." not like ".$bind_key."";
-					}else{
-						$freeword[] = 'Entry.'.$column." like ".$bind_key."";
-					}
+        $this->setAttribute("Entities", $entries);
+        $this->setAttribute("total", $this->totalCount);
+        $this->setAttribute("limit", $this->limit);
 
-					$binds[$bind_key] = '%'.$keyword.'%';
-					$keywordCounts ++;
-				}
+        $this->setAttribute("form", $form);
+    }
 
-				$freewordQuery[] = "(" . implode(' AND ',$freeword) . ")";
-			}
+    private function searchEntries($freewordText, $label, $others = null)
+    {
+        $logic = SOY2Logic::createInstance("logic.site.Entry.EntryLogic", array("offset" => $this->offset, "limit" => $this->limit));
+        $logic->setIgnoreColumns($this->ignoreColumns);
 
-			$where[]= " ( ".implode(' OR ',$freewordQuery)." ) ";
-		}
+        $dao = SOY2DAOFactory::create("LabeledEntryDAO");
+        $dao->setLimit($this->limit);
+        $dao->setOffset($this->offset);
+        $dao->setIgnoreColumns($this->ignoreColumns);
 
-		//記事管理者に見えないラベルの付いた記事は除外する
-		$prohibitedLabelIds = array();
-		if(!UserInfoUtil::hasSiteAdminRole()){
-			$labelLogic = SOY2LogicContainer::get("logic.site.Label.LabelLogic");
-			$prohibitedLabelIds = $labelLogic->getProhibitedLabelIds();
+        $query = new SOY2DAO_Query();
+        $query->prefix = "select";
+        $query->distinct = true;
+        $query->sql = "id,alias,title,content,more,cdate,udate,openPeriodStart,openPeriodEnd,isPublished";
+        $query->quoteSql();
+        $query->table = "Entry left outer join EntryLabel on(Entry.id = EntryLabel.entry_id)";
+        $query->order = "Entry.udate desc";
+        $binds = array();
+        $where = array();
 
-			$labelQuery = new SOY2DAO_Query();
-			$labelQuery->prefix = "select";
-			$labelQuery->sql = "EntryLabel.entry_id";
-			$labelQuery->table = "EntryLabel";
-			$labelQuery->distinct = true;
-			if(count($prohibitedLabelIds)) $labelQuery->where = 'EntryLabel.label_id IN (' . implode(",", $prohibitedLabelIds) . ')';
-			$where[] = 'Entry.id NOT IN ('.$labelQuery.')';
-		}
+        // フリーワード検索を作成
+        $keywords = preg_split('/[\s,]+/', $freewordText, null, PREG_SPLIT_NO_EMPTY);
+        if (!empty($keywords)) {
+            $keywordCounts = 0;
+            $freewordIgnoreQuery = array();
+            $freewordQuery = array();
 
-		//ラベル絞込みを作成
-		if(count($label["labels"])){
-			//int化
-			$label["labels"] = array_map(function($v) {return (int)$v;} ,$label["labels"]);
+            foreach (array("title", "content", "more") as $column) {
+                $freewordIgnore = array();
+                $freeword = array();
+                foreach ($keywords as $keyword) {
+                    $bind_key = ':freeword' . $keywordCounts;
+                    if ($keyword[0] == "-") {
+                        $keyword = substr($keyword, 1);
+                        $freewordIgnore[] = 'Entry.' . $column . " not like " . $bind_key . "";
+                    } else {
+                        $freeword[] = 'Entry.' . $column . " like " . $bind_key . "";
+                    }
+                    $binds[$bind_key] = '%' . $keyword . '%';
+                    $keywordCounts++;
+                }
+                !empty($freewordIgnore) && $freewordIgnoreQuery[] = "(" . implode(' OR ', $freewordIgnore) . ")";
+                !empty($freeword) && $freewordQuery[] = "(" . implode(' AND ', $freeword) . ")";
+            }
+            !empty($freewordIgnoreQuery) && $where[] = " ( " . implode(' AND ', $freewordIgnoreQuery) . " ) ";
+            !empty($freewordQuery) && $where[] = " ( " . implode(' OR ', $freewordQuery) . " ) ";
+        }
 
-			$labelQuery = new SOY2DAO_Query();
-			$labelQuery->prefix = "select";
-			$labelQuery->sql = "EntryLabel.entry_id";
-			$labelQuery->table = "EntryLabel";
-			$labelQuery->distinct = true;
-			$labelQuery->where = 'EntryLabel.label_id IN (' . implode(",", $label["labels"]) . ')';
+        // 記事管理者に見えないラベルの付いた記事は除外する
+        $prohibitedLabelIds = array();
+        if (!UserInfoUtil::hasSiteAdminRole()) {
+            $labelLogic = SOY2LogicContainer::get("logic.site.Label.LabelLogic");
+            $prohibitedLabelIds = $labelLogic->getProhibitedLabelIds();
 
-			if($label["op"] == "AND" && count($label["labels"])){
-				$labelQuery->having = "count(EntryLabel.entry_id) = ".count($label["labels"]);
-				$labelQuery->group = "EntryLabel.entry_id";
-			}
+            $labelQuery = new SOY2DAO_Query();
+            $labelQuery->prefix = "select";
+            $labelQuery->sql = "EntryLabel.entry_id";
+            $labelQuery->table = "EntryLabel";
+            $labelQuery->distinct = true;
+            if (count($prohibitedLabelIds)) {
+                $labelQuery->where = 'EntryLabel.label_id IN (' . implode(",", $prohibitedLabelIds) . ')';
+            }
+            $where[] = 'Entry.id NOT IN (' . $labelQuery . ')';
+        }
 
-			$where[] = 'Entry.id IN ('.$labelQuery.')';
-		}
+        // ラベル絞込みを作成
+        if (count($label["labels"])) {
+            // int化
+            $label["labels"] = array_map(function ($v) {
+                return (int)$v;
+            }, $label["labels"]);
 
-		$query->where = implode(" AND ",$where);
-		try{
-			$results = $dao->executeQuery($query,$binds);
-		}catch(Exception $e){
-			var_dump($e);
-			$results = array();
-		}
+            $labelQuery = new SOY2DAO_Query();
+            $labelQuery->prefix = "select";
+            $labelQuery->sql = "EntryLabel.entry_id";
+            $labelQuery->table = "EntryLabel";
+            $labelQuery->distinct = true;
+            $labelQuery->where = 'EntryLabel.label_id IN (' . implode(",", $label["labels"]) . ')';
 
-		$this->totalCount = $dao->getRowCount();
+            if ($label["op"] == "AND" && count($label["labels"])) {
+                $labelQuery->having = "count(EntryLabel.entry_id) = " . count($label["labels"]);
+                $labelQuery->group = "EntryLabel.entry_id";
+            }
 
-		$ret_val = array();
-		if(count($results)){
-			foreach($results as $row){
-				$obj = $dao->getObject($row);
-				$obj->setLabels($logic->getLabelIdsByEntryId($obj->getId()));
-				$ret_val[] = $obj;
-			}
-		}
-		return $ret_val;
+            $where[] = 'Entry.id IN (' . $labelQuery . ')';
+        }
+
+        $query->where = implode(" AND ", $where);
+        try {
+            $results = $dao->executeQuery($query, $binds);
+        } catch (Exception $e) {
+//      var_dump($e);
+            error_log($e->getMessage());
+            $results = array();
+        }
+
+        $this->totalCount = $dao->getRowCount();
+
+        $ret_val = array();
+        if (count($results)) {
+            foreach ($results as $row) {
+                $obj = $dao->getObject($row);
+                $obj->setLabels($logic->getLabelIdsByEntryId($obj->getId()));
+                $ret_val[] = $obj;
+            }
+        }
+        return $ret_val;
     }
 }
 
-class SearchActionForm extends SOY2ActionForm{
+class SearchActionForm extends SOY2ActionForm
+{
+    private $freeword_text;
+    private $label;
+    private $limit;
+    private $offset;
 
-	private $freeword_text;
-	private $label;
-	private $limit;
-	private $offset;
+    private $labelOperator;
 
-	private $labelOperator;
+    public function getLabel()
+    {
+        if (!isset($_GET["label"]) && isset($_GET["labelOperator"])) {
+            $this->label = array();
+        } elseif (!count($this->label) && isset($_COOKIE["ENTRY_SEARCH_LABELS"])) {
+            $this->label = soy2_unserialize($_COOKIE["ENTRY_SEARCH_LABELS"]);
+            if (!is_array($this->label)) {
+                $this->label = array();
+            }
+        }
+        return $this->label;
+    }
+    public function setLabel($label)
+    {
+        if (isset($_GET["label"]) && is_array($_GET["label"]) && count($_GET["label"])) {
+            soy2_setcookie("ENTRY_SEARCH_LABELS", soy2_serialize($_GET["label"]));
+        } elseif (isset($_GET["labelOperator"])) {    //ラベルオペレータは検索ボタンを押したら必ずあるので、この値を検索の有無の判定として利用する
+            soy2_setcookie("ENTRY_SEARCH_LABELS");  //一度ラベル付き検索した後にラベルを外す処理
+        }
 
-	function getLabel(){
-		if(!isset($_GET["label"]) && isset($_GET["labelOperator"])){
-			$this->label = array();
-		} else if(!count($this->label) && isset($_COOKIE["ENTRY_SEARCH_LABELS"])){
-			$this->label = soy2_unserialize($_COOKIE["ENTRY_SEARCH_LABELS"]);
-			if(!is_array($this->label)) $this->label = array();
-		}
-		return $this->label;
-	}
-	function setLabel($label){
-		if(isset($_GET["label"]) && is_array($_GET["label"]) && count($_GET["label"])){
-			soy2_setcookie("ENTRY_SEARCH_LABELS", soy2_serialize($_GET["label"]));
-		}else if(isset($_GET["labelOperator"])){	//ラベルオペレータは検索ボタンを押したら必ずあるので、この値を検索の有無の判定として利用する
-			soy2_setcookie("ENTRY_SEARCH_LABELS");	//一度ラベル付き検索した後にラベルを外す処理
-		}
+        if (!is_array($label)) {
+            $label = array();
+        }
+        $this->label = $label;
+    }
 
-		if(!is_array($label)) $label = array();
-		$this->label = $label;
-	}
+    public function getFreeword_text()
+    {
+        if (null===$this->freeword_text && isset($_COOKIE["FREEWORD_TEXT"])) {
+            $this->freeword_text = $_COOKIE["FREEWORD_TEXT"];
+        }
+        return $this->freeword_text;
+    }
+    public function setFreeword_text($text)
+    {
+        if (isset($_GET["freeword_text"])) {
+            soy2_setcookie("FREEWORD_TEXT", $_GET["freeword_text"]);
+        }
 
-	function getFreeword_text(){
-		if(is_null($this->freeword_text) && isset($_COOKIE["FREEWORD_TEXT"])){
-			$this->freeword_text = $_COOKIE["FREEWORD_TEXT"];
-		}
-		return $this->freeword_text;
-	}
-	function setFreeword_text($text){
-		if(isset($_GET["freeword_text"])){
-			soy2_setcookie("FREEWORD_TEXT", $_GET["freeword_text"]);
-		}
+        if (null===$text && isset($_COOKIE["FREEWORD_TEXT"])) {
+            $text = $_COOKIE["FREEWORD_TEXT"];
+        }
 
-		if(is_null($text) && isset($_COOKIE["FREEWORD_TEXT"])){
-			$text = $_COOKIE["FREEWORD_TEXT"];
-		}
+        $this->freeword_text = $text;
+    }
 
-		$this->freeword_text = $text;
-	}
+    public function getLabelOperator()
+    {
+        if (null===$this->labelOperator && isset($_COOKIE["LABEL_OPERATOR"])) {
+            $this->labelOperator = $_COOKIE["LABEL_OPERATOR"];
+        }
+        return $this->labelOperator;
+    }
+    public function setLabelOperator($op)
+    {
+        if (isset($_GET["labelOperator"])) {
+            soy2_setcookie("LABEL_OPERATOR", $_GET["labelOperator"]);
+        }
+        $this->labelOperator = $op;
+    }
 
-	function getLabelOperator(){
-		if(is_null($this->labelOperator) && isset($_COOKIE["LABEL_OPERATOR"])){
-			$this->labelOperator = $_COOKIE["LABEL_OPERATOR"];
-		}
-		return $this->labelOperator;
-	}
-	function setLabelOperator($op){
-		if(isset($_GET["labelOperator"])){
-			soy2_setcookie("LABEL_OPERATOR", $_GET["labelOperator"]);
-		}
-		$this->labelOperator = $op;
-	}
+    public function getLimit()
+    {
+        return $this->limit;
+    }
+    public function setLimit($limit)
+    {
+        $this->limit = $limit;
+    }
 
-	function getLimit(){
-		return $this->limit;
-	}
-	function setLimit($limit){
-		$this->limit = $limit;
-	}
-
-	function getOffset(){
-		return $this->offset;
-	}
-	function setOffset($offset){
-		$this->offset = $offset;
-	}
+    public function getOffset()
+    {
+        return $this->offset;
+    }
+    public function setOffset($offset)
+    {
+        $this->offset = $offset;
+    }
 }

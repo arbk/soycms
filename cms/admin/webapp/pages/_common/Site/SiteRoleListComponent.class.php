@@ -1,52 +1,55 @@
 <?php
 
-class SiteRoleListComponent extends HTMLList{
+class SiteRoleListComponent extends HTMLList
+{
+    private $site;
+    private $userId;
+    private $dao;
 
-	private $site;
-	private $userId;
-	private $dao;
+    public function setSite($site)
+    {
+        $this->site = $site;
+    }
 
-	function setSite($site){
-		$this->site = $site;
-	}
+    public function setUserId($userId)
+    {
+        $this->userId = $userId;
+    }
 
-	function setUserId($userId){
-		$this->userId = $userId;
-	}
+    public function setDao($dao)
+    {
+        $this->dao = $dao;
+    }
 
-	function setDao($dao){
-		$this->dao = $dao;
-	}
+    protected function populateItem($entity, $key)
+    {
+        $this->addLabel("site_name", array(
+            "text"  => $this->site[$key],
+        ));
 
-	protected function populateItem($entity, $key){
+        $this->addSelect("site_role", array(
+            "options" => SiteRole::getSiteRoleLists(),
+            "name" => "siteRole[" . $this->userId . "][" . $key . "]",
+            "indexOrder" => true,
+            "selected" => (int)$entity,
+            "visible"=>UserInfoUtil::isDefaultUser(),
+            "disabled" => (self::getSiteType($key) == 2)
+        ));
 
-		$this->addLabel("site_name", array(
-			"text"	=> $this->site[$key],
-		));
+        $list = SiteRole::getSiteRoleLists();
+        $text = $list[(int)$entity];
+        $this->addLabel("site_role_text", array(
+            "text" => $text,
+            "visible" => !UserInfoUtil::isDefaultUser()
+        ));
+    }
 
-
-		$this->addSelect("site_role", array(
-			"options" => SiteRole::getSiteRoleLists(),
-			"name" => "siteRole[" . $this->userId . "][" . $key . "]",
-			"indexOrder" => true,
-			"selected" => (int)$entity,
-			"visible"=>UserInfoUtil::isDefaultUser(),
-			"disabled" => (self::getSiteType($key) == 2)
-		));
-
-		$list = SiteRole::getSiteRoleLists();
-		$text = $list[(int)$entity];
-		$this->addLabel("site_role_text", array(
-			"text" => $text,
-			"visible" => !UserInfoUtil::isDefaultUser()
-		));
-	}
-
-	private function getSiteType($key){
-		try{
-			return $this->dao->getById($key)->getSiteType();
-		}catch(Exception $e){
-			return Site::TYPE_SOY_CMS;
-		}
-	}
+    private function getSiteType($key)
+    {
+        try {
+            return $this->dao->getById($key)->getSiteType();
+        } catch (Exception $e) {
+            return Site::TYPE_SOY_CMS;
+        }
+    }
 }

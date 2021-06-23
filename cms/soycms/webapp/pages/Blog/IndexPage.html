@@ -1,61 +1,62 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="<?php echo SOYCMS_ADMIN_HTML_LANG; ?>">
 
 <head soy:page="_common.HeaderPage" isOverWrite="true">
-</head>
+</head soy:page="_common.HeaderPage">
 
 <body>
 
-	<div id="wrapper">
-		<!-- Navigation -->
-		<nav  class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0" soy:page="_common.UpperMenuPage"><!-- --></nav>
+    <div id="wrapper">
+        <!-- Navigation -->
+        <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0" soy:page="_common.UpperMenuPage"></nav>
 
-		<div id="page-wrapper">
+        <div id="page-wrapper">
 
-			<!-- soy:id="BlogMenu" /-->
+            <!-- soy:id="BlogMenu" /-->
 
-			<div class="row">
-				<div class="col-lg-9">
+            <div class="row">
+                <div class="col-lg-9">
 
-					<div class="tab-content">
-						<div class="panel panel-default">
-							<div class="panel-heading">最新更新した記事</div>
-							<div class="list-group">
-								<p soy:id="empty_entry_msg" class="list-group-item">記事がありません。<a class="btn btn-default" href="#" soy:id="blog_entry_page_link">投稿</a></p>
-								<!-- soy:id="recent_entry" -->
-								<a soy:id="message" class="list-group-item">新着エントリー<i class="fa fa-chevron-right fa-fw"></i></a>
-								<!-- /soy:id="recent_entry" -->
-							</div>
-						</div>
+                    <div class="tab-content">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">最新更新した記事</div>
+                            <div class="list-group">
+                                <p soy:id="empty_entry_msg" class="list-group-item">記事がありません。<a class="btn btn-default" href="#" soy:id="blog_entry_page_link">投稿</a></p>
+                                <!-- soy:id="recent_entry" -->
+                                <a soy:id="message" class="list-group-item">新着エントリー<i class="fa fa-chevron-right fa-fw"></i></a>
+                                <!-- /soy:id="recent_entry" -->
+                            </div>
+                        </div>
 
-						<div class="panel panel-default">
-							<div class="panel-heading">新着コメント</div>
-							<div class="list-group">
-								<p soy:id="empty_comment_msg" class="list-group-item">コメントがありません。</p>
-								<!-- soy:id="recent_comment" -->
-								<a soy:id="message" class="list-group-item">新着エントリー</a>
-								<!-- /soy:id="recent_comment" -->
-							</div>
-						</div>
+                        <div class="panel panel-default">
+                            <div class="panel-heading">新着コメント</div>
+                            <div class="list-group">
+                                <p soy:id="empty_comment_msg" class="list-group-item">コメントがありません。</p>
+                                <!-- soy:id="recent_comment" -->
+                                <a soy:id="message" class="list-group-item">新着エントリー</a>
+                                <!-- /soy:id="recent_comment" -->
+                            </div>
+                        </div>
 
 
-					</div><!-- /tab-content -->
+                    </div><!-- /tab-content -->
 
-				</div>
-				<!-- /.col-lg-9 -->
+                </div>
+                <!-- /.col-lg-9 -->
 
-				<!-- サイドメニュー -->
-				<!-- soy:display="for_entry_publisher" -->
-				<div class="col-lg-3">
-					<div soy:page="_common.ToolBoxPage" isOverWrite="true"></div>
-				</div>
-				<!-- /soy:display="for_entry_publisher" -->
+                <!-- サイドメニュー -->
+                <!-- soy:display="for_entry_publisher" -->
+                <div class="col-lg-3">
+                    <div soy:page="_common.ToolBoxPage" isOverWrite="true"></div>
+                </div>
+                <!-- /soy:display="for_entry_publisher" -->
 
-			</div>
-		</div>
-		<!-- /#page-wrapper -->
-		<!-- soy:page="_common.FooterPage" /-->
-	</div>
-	<!-- /#wrapper -->
+            </div>
+        </div>
+        <!-- /#page-wrapper -->
+        <!-- soy:page="_common.FooterPage" /-->
+    </div>
+    <!-- /#wrapper -->
 </body>
+
 </html>

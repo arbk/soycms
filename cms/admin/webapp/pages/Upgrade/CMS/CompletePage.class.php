@@ -1,24 +1,23 @@
 <?php
 
-class CompletePage extends CMSWebPageBase{
+class CompletePage extends CMSWebPageBase
+{
+    public function __construct()
+    {
+        if (soy2_check_token()) {
+            $logic = SOY2LogicContainer::get("logic.admin.Upgrade.UpdateAdminLogic", array(
+                "target" => "admin"
+            ));
 
-	function __construct(){
+            $logic->update();
 
-		if(soy2_check_token()){
-			$logic = SOY2LogicContainer::get("logic.admin.Upgrade.UpdateAdminLogic", array(
-				"target" => "admin"
-			));
+            /**
+             * @データベースの変更後に何らかの操作が必要な場合
+             */
+        } else {
+            SOY2PageController::redirect("");
+        }
 
-			$logic->update();
-
-			/**
-			 * @データベースの変更後に何らかの操作が必要な場合
-			 */
-		}else{
-			SOY2PageController::redirect("");
-		}
-
-		parent::__construct();
-	}
+        parent::__construct();
+    }
 }
-?>

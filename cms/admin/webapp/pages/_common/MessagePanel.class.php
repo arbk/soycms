@@ -1,36 +1,36 @@
 <?php
 
-class MessagePanel extends CMSWebPageBase{
+class MessagePanel extends CMSWebPageBase
+{
+    public function execute()
+    {
+        /**
+         * メッセージ表示
+         */
+        $messages = CMSMessageManager::getMessages();
+        $error  = CMSMessageManager::getErrorMessages();
 
-	function execute(){
+        $this->createAdd("success_message_list", "MessageListInMessagePanel", array(
+                "list" => $messages,
+        ));
+        $this->createAdd("error_message_list", "MessageListInMessagePanel", array(
+                "list" => $error,
+        ));
 
-		/**
-		 * メッセージ表示
-		 */
-
-		$messages = CMSMessageManager::getMessages();
-		$error  = CMSMessageManager::getErrorMessages();
-
-		$this->createAdd("success_message_list","MessageListInMessagePanel",array(
-				"list" => $messages,
-		));
-		$this->createAdd("error_message_list","MessageListInMessagePanel",array(
-				"list" => $error,
-		));
-
-		$this->addModel("hasMessage", array(
-				"visible" => (count($error) > 0 || count($messages) > 0),
-		));
-	}
+        $this->addModel("hasMessage", array(
+                "visible" => (count($error) > 0 || count($messages) > 0),
+        ));
+    }
 }
 
-class MessageListInMessagePanel extends HTMLList{
+class MessageListInMessagePanel extends HTMLList
+{
+    protected function populateItem($entity, $key)
+    {
+        $this->addLabel("message", array(
+                "html" => $entity,
+        ));
 
-	protected function populateItem($entity, $key){
-		$this->addLabel("message", array(
-				"html" => $entity,
-		));
-
-		return ( strlen($entity) > 0 );
-	}
+        return ( strlen($entity) > 0 );
+    }
 }

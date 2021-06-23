@@ -1,31 +1,30 @@
 <?php
 
-class TrackbackDetailAction extends SOY2Action{
+class TrackbackDetailAction extends SOY2Action
+{
+    private $trackbackId;
 
-	private $trackbackId;
+    public function execute()
+    {
+        $dao = SOY2DAOFactory::create("cms.EntryTrackbackDAO");
 
-    function execute() {
-    	$dao = SOY2DAOFactory::create("cms.EntryTrackbackDAO");
-    	
-    	try{
-    		$trackback = $dao->getById($this->trackbackId);
-    	}catch(Exception $e){
-    		return SOY2Action::FAILED;
-    	}
-    	
-    	$this->setAttribute("entity",$trackback);
-    	
-    	return SOY2Action::SUCCESS;
-    	
+        try {
+            $trackback = $dao->getById($this->trackbackId);
+        } catch (Exception $e) {
+            return SOY2Action::FAILED;
+        }
+
+        $this->setAttribute("entity", $trackback);
+
+        return SOY2Action::SUCCESS;
     }
 
-   
-
-    function getTrackbackId() {
-    	return $this->trackbackId;
+    public function getTrackbackId()
+    {
+        return $this->trackbackId;
     }
-    function setTrackbackId($trackbackId) {
-    	$this->trackbackId = $trackbackId;
+    public function setTrackbackId($trackbackId)
+    {
+        $this->trackbackId = $trackbackId;
     }
 }
-?>

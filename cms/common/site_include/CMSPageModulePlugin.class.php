@@ -1,45 +1,60 @@
 <?php
 
-class CMSPageModulePlugin extends PluginBase{
+class CMSPageModulePlugin extends PluginBase
+{
+    const ERR_MARK_FUNC_NOT_FOUND = "_FNF_";
 
-	protected $_soy2_prefix = "cms";
+    protected $_soy2_prefix = "cms";
 
-	function execute(){
-		$soyValue = $this->soyValue;
-		$array = explode(".", $soyValue);
+    private $_immediate = false;
 
-		//隠しモード：別のサイトのモジュールを取得する
-		$siteId = null;
-		if(count($array) && preg_match('/\{(.*)\}/', $array[0], $tmp)){
-			$dust = array_shift($array);	//配列を一つずらす
-			unset($dust);
-			if(isset($tmp[1])) $siteId = $tmp[1];
-			$soyValue = str_replace("{" . $siteId . "}.", "", $soyValue);
-		}
-		//隠しモードここまで
+    public function getImmediate()
+    {
+        return $this->_immediate;
+    }
+    public function setImmediate($immediate)
+    {
+        $this->_immediate = $immediate;
+    }
 
-		if(count($array) > 1) unset($array[0]);
-		$func = "soycms_" . implode("_", $array);
+    public function execute()
+    {
+        $soyValue = $this->soyValue;
 
-		//ダイナミック編集のためにここで定義を確認しておく
-		if(!defined("_SITE_ROOT_")) define("_SITE_ROOT_", UserInfoUtil::getSiteDirectory());
-		$siteRoot = _SITE_ROOT_;
+        $array = explode(".", $soyValue);
+        if (count($array) > 1) {
+            unset($array[0]);
+        }
+        $func = "scms_mdl_" . implode("_", $array);
 
-		//隠しモード用にパスの書き換え
-		if(!is_null($siteId)) $siteRoot = substr($siteRoot, 0, strrpos($siteRoot, "/")) . "/" . $siteId;
-		$modulePath = soy2_realpath($siteRoot) . ".module/" . str_replace(".", "/", $soyValue) . ".php";
+  //  //ダイナミック編集のためにここで定義を確認しておく
+  //  if(!defined("_SITE_ROOT_")) define("_SITE_ROOT_", UserInfoUtil::getSiteDirectory());
+        $moduleFile = str_replace(".", "/", $soyValue) . ".php";
+        $modulePath = soy2_realpath(_SITE_ROOT_) . ".module/" . $moduleFile; // サイトモジュール
+        $modulePathCom = soy2_realpath(_CMS_COMMON_DIR_) . "site_include/module/" . $moduleFile; // 共通モジュール
 
-		$this->setInnerHTML(
-		'<?php '.// サイト/.module/にファイルがあればそれを優先して使う。なければ、SOY CMSのmodule/site/以下のファイルを使う。ファイルがないか実行すべき関数が定義されてなければ何もしない（またはデバッグ用出力を行う）。
-			'if(file_exists("' . $modulePath . '")){' .'include_once("' . $modulePath . '");' .'}else{' .'SOY2::import("site_include.module.' . $soyValue . '",".php");' .'}' .'if(function_exists("' . $func . '")){' .'ob_start(); ' .' ?>' .
-		$this->getInnerHTML() . '' .
-		'<?php ' .
-				'$tmp_html=ob_get_contents();ob_end_clean(); ' .
-				'echo call_user_func("' . $func . '",$tmp_html,$this);' .
-			'}elseif(defined("DEBUG_MODE") && DEBUG_MODE){' .
-				'echo "function not found : ' . $func . '";' .
-			'}' .
-		' ?>'
-		);
-	}
+        if ($this->_immediate) {
+            if (file_exists($modulePath)) {
+                include_once($modulePath);
+            } else {
+                include_once($modulePathCom);
+            }
+            $cnt = self::ERR_MARK_FUNC_NOT_FOUND;
+            if (function_exists($func)) {
+                ob_start();
+                call_user_func($func, $this->getInnerHTML(), $this->parent);
+                $cnt = ob_get_contents();
+                ob_end_clean();
+                $cnt = CMSPage::deleteComment($cnt);  // cms:ignore
+                $cnt = CMSPage::checkAndEscapePhpTag($cnt); // <?php
+            }
+            $this->setInnerHTML($cnt);
+        } else {
+            $this->setInnerHTML(
+                '<?php if(file_exists("' . $modulePath . '")){include_once("' . $modulePath . '");}else{include_once("' . $modulePathCom . '");} if(function_exists("' . $func . '")){ob_start(); ?>' .
+                $this->getInnerHTML() .
+                '<?php $tmp_html=ob_get_contents();ob_end_clean(); echo call_user_func("' . $func . '",$tmp_html,$this);}else{ echo "' . self::ERR_MARK_FUNC_NOT_FOUND . '";} ?>'
+            );
+        }
+    }
 }

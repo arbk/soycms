@@ -1,33 +1,31 @@
 <?php
 
-class InsertSiteLinkPage extends CMSWebPageBase{
+class InsertSiteLinkPage extends CMSWebPageBase
+{
+    public function __construct()
+    {
+//      if(defined("SOYCMS_ASP_MODE")) exit;
 
-	function __construct() {
+        SOY2DAOConfig::Dsn(ADMIN_DB_DSN);
 
-		//ASPでは使用不可
-		if(defined("SOYCMS_ASP_MODE")) exit;
+        $logic = SOY2Logic::createInstance("logic.admin.Site.SiteLogic");
 
-		SOY2DAOConfig::Dsn(ADMIN_DB_DSN);
+        parent::__construct();
 
-		$logic = SOY2Logic::createInstance("logic.admin.Site.SiteLogic");
+        $this->createAdd("jqueryjs", "HTMLModel", array(
+            "type" => "text/JavaScript",
+            "src" => SOY2PageController::createRelativeLink("./js/jquery.js")
+        ));
 
-		parent::__construct();
+        $this->createAdd("urls", "HTMLScript", array(
+            "type" => "text/JavaScript",
+            "script" => 'var link_url = "'.SOY2PageController::createLink("Entry.Editor.InsertLink").'";'
+        ));
 
-		$this->createAdd("jqueryjs","HTMLModel",array(
-			"type" => "text/JavaScript",
-			"src" => SOY2PageController::createRelativeLink("./js/jquery.js")
-		));
-
-		$this->createAdd("urls","HTMLScript",array(
-			"type" => "text/JavaScript",
-			"script" => 'var link_url = "'.SOY2PageController::createLink("Entry.Editor.InsertLink").'";'
-		));
-
-		$this->createAdd("site_list","HTMLSelect",array(
-			"options"=>$logic->getSiteOnly(),
-			"property"=>"siteName",
-			"indexOrder"=>true
-		));
-
-	}
+        $this->createAdd("site_list", "HTMLSelect", array(
+            "options"=>$logic->getSiteOnly(),
+            "property"=>"siteName",
+            "indexOrder"=>true
+        ));
+    }
 }

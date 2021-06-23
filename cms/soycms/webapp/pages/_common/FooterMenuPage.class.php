@@ -1,19 +1,19 @@
 <?php
 
-class FooterMenuPage extends CMSHTMLPageBase{
-
-    function FooterMenuPage() {
-    	HTMLPage::HTMLPage();
+class FooterMenuPage extends CMSHTMLPageBase
+{
+    public function FooterMenuPage()
+    {
+        HTMLPage::HTMLPage();
     }
 
-    function execute(){
+    public function execute()
+    {
+        $only_one = UserInfoUtil::hasOnlyOneRole();
 
-    	$only_one = UserInfoUtil::hasOnlyOneRole();
-
-    	$this->createAdd("admin_link","HTMLLink",array(
-    		"link" => SOY2PageController::createRelativeLink("../admin/"),
-    		"visible" => !defined("SOYCMS_ASP_MODE") && !$only_one
-    	));
+        $this->createAdd("admin_link", "HTMLLink", array(
+            "link" => SOY2PageController::createRelativeLink("../admin/"),
+            "visible" => /*!defined("SOYCMS_ASP_MODE") &&*/ !$only_one
+        ));
     }
 }
-?>

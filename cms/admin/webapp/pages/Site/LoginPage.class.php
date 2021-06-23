@@ -1,71 +1,73 @@
 <?php
 
-class LoginPage extends CMSWebPageBase{
+class LoginPage extends CMSWebPageBase
+{
+    public function __construct($args)
+    {
+        parent::__construct();
 
-    function __construct($args) {
+        $id = (isset($args[0])) ? $args[0] : null;
 
-    	parent::__construct();
+        // $res = false;
 
-    	$id = (isset($args[0])) ? $args[0] : null;
+        // //SOYShopサイトのIDを取得する
+        // if ($id == 0 && isset($_GET["site_id"])) {
+        //     $siteId = $_GET["site_id"];
+        //     $site = SOYShopUtil::getShopSite($siteId);
+        //     if (null!==$site->getId()) {
+        //         $id = $site->getId();
+        //         $res = true;
+        //     } else {
+        //         SOY2PageController::jump("Site");
+        //     }
+        // }
 
-		$res = false;
+        //他のサイトにログインしているかどうかチェック
+        $oldSite = UserInfoUtil::getSite();
+        $oldSiteId = $oldSite ? $oldSite->getId() : null;
 
-		//SOYShopサイトのIDを取得する
-		if($id == 0 && isset($_GET["site_id"])){
-			$siteId = $_GET["site_id"];
-			$site = SOYShopUtil::getShopSite($siteId);
-			if(!is_null($site->getId())){
-				$id = $site->getId();
-				$res = true;
-			}else{
-				SOY2PageController::jump("Site");
-			}
-		}
+        $result = SOY2ActionFactory::createInstance("Site.LoginAction", array("siteId" => $id))->run();
 
-    	//他のサイトにログインしているかどうかチェック
-    	$oldSite = UserInfoUtil::getSite();
+        // //SOYShopの管理画面へ遷移する
+        // if ($res) {
+        //     $session = SOY2ActionSession::getUserSession();
+        //     SOYShopUtil::setShopAdminSession($session);
+        // }
 
-    	$action = SOY2ActionFactory::createInstance("Site.LoginAction", array(
-    		"siteId" => $id
-    	));
+        if ($result->success()) {
+            //FlashSessionの呼び出し
+            //  FlashSessionをクリアしないと メッセージ表示がおかしくなる.
+            $flashSession = $this->getFlashSession();
+            $flashSession->clearAttributes();
+            $flashSession->resetFlashCounter();
 
-    	$result = $action->run();
+            //URLにappIdの値が存在している場合は直接SOY Appに
+            if (isset($_GET["appId"])) {
+                SOY2PageController::redirect("../app/" . F_FRCTRLER . "/" . $_GET["appId"]);
+            }
 
-    	//SOYShopの管理画面へ遷移する
-    	if($res){
-    		$session = SOY2ActionSession::getUserSession();
-    		SOYShopUtil::setShopAdminSession($session);
-    	}
+            if ($oldSiteId && $oldSiteId !== $id) {
+                $this->addMessage("NOTIFY_DOUBLE_LOGIN", array(
+                    "SITE_NAME" => $oldSite->getSiteName()
+                ));
+                CMSMessageManager::save();
+            }
 
-    	if($result->success()){
+//      // SOY CMSの管理画面のURIを変更する
+//      if(file_exists(SOY2::RootDir() . "config/admin.uri.config.php")) include(SOY2::RootDir() . "config/admin.uri.config.php");
+//      if(!defined("SOYCMS_ADMIN_URI")) define("SOYCMS_ADMIN_URI", "soycms");
 
-    		//URLにappIdの値が存在している場合は直接SOY Appに
-    		if(isset($_GET["appId"])){
-    			SOY2PageController::redirect("../app/index.php/" . $_GET["appId"]);
-    		}
+            //転送先の指定があればそこへリダイレクト
+            $redirect = isset($_GET["r"]) ? $_GET["r"] : "" ;
+            if (strlen($redirect) > 0 && CMSAdminPageController::isAllowedPath($redirect, "../" . SOYCMS_ADMIN_URI . "/")) {
+                SOY2PageController::redirect($redirect);
+            } else {
+                SOY2PageController::redirect("../" . SOYCMS_ADMIN_URI . "/");
+            }
 
-    		if($oldSite && $oldSite->getId() != $id){
-    			$this->addMessage("NOTIFY_DOUBLE_LOGIN", array(
-    				"SITE_NAME" => $oldSite->getSiteName()
-    			));
-    			CMSMessageManager::save();
-    		}
+            exit;
+        }
 
-			// SOY CMSの管理画面のURIを変更する
-			if(file_exists(SOY2::RootDir() . "config/admin.uri.config.php")) include(SOY2::RootDir() . "config/admin.uri.config.php");
-			if(!defined("SOYCMS_ADMIN_URI")) define("SOYCMS_ADMIN_URI", "soycms");
-
-			//転送先の指定があればそこへリダイレクト
-			$redirect = isset($_GET["r"]) ? $_GET["r"] : "" ;
-			if(strlen($redirect) > 0 && CMSAdminPageController::isAllowedPath($redirect, "../" . SOYCMS_ADMIN_URI . "/")){
-				SOY2PageController::redirect($redirect);
-			}else{
-				SOY2PageController::redirect("../" . SOYCMS_ADMIN_URI . "/");
-			}
-
-			exit;
-    	}
-
-    	SOY2PageController::jump("Site");
+        SOY2PageController::jump("Site");
     }
 }

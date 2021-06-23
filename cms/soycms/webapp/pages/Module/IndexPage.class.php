@@ -1,118 +1,136 @@
 <?php
 
-class IndexPage extends CMSWebPageBase{
+class IndexPage extends CMSWebPageBase
+{
+    const TYPE_PHP = "php";
+    const TYPE_HTML = "html";
 
-	const TYPE_PHP = "php";
-	const TYPE_HTML = "html";
+    public function __construct()
+    {
+        //ディレクトリの作成
+        if (!$this->checkHasModuleDirectory()) {
+            $this->createModuleDirectory();
+        }
 
-	function __construct(){
-		//ディレクトリの作成
-		if(!self::checkHasModuleDirectory()) {
-			self::createModuleDirectory();
-		}
+        parent::__construct();
 
-		parent::__construct();
+        //PHPモジュールの使用が許可されているか？
+        $this->addModel("allow_php_module", array(
+            "visible" => SOYCMS_ALLOW_PHP_MODULE
+        ));
 
-		//PHPモジュールの使用が許可されているか？
-		$this->addModel("allow_php_module", array(
-			"visible" => (defined("SOYCMS_ALLOW_PHP_MODULE") && SOYCMS_ALLOW_PHP_MODULE)
-		));
+        $modules = $this->getModules();
 
-		$modules = self::getModules();
+        $this->addModel("has_module", array(
+            "visible" => (count($modules))
+        ));
 
-		$this->addModel("has_module", array(
-			"visible" => (count($modules))
-		));
+        $this->addModel("no_module", array(
+            "visible" => (count($modules) === 0)
+        ));
 
-		$this->addModel("no_module", array(
-			"visible" => (count($modules) === 0)
-		));
+        $this->createAdd("module_list", "_component.Module.ModuleListComponent", array(
+            "list" => $modules,
+            "editorLink" => SOY2PageController::createLink("Module.Editor?moduleId="),
+            "removeLink" => SOY2PageController::createLink("Module.Remove?moduleId=")
+        ));
 
-		$this->createAdd("module_list", "_component.Module.ModuleListComponent", array(
-			"list" => $modules,
-			"editorLink" => SOY2PageController::createLink("Module.Editor?moduleId="),
-			"removeLink" => SOY2PageController::createLink("Module.Remove?moduleId=")
-		));
+        $modules = $this->getModules(self::TYPE_HTML);
 
-		$modules = self::getModules(self::TYPE_HTML);
+        $this->addModel("no_html_module", array(
+            "visible" => (count($modules) === 0)
+        ));
 
-		$this->addModel("no_html_module", array(
-			"visible" => (count($modules) === 0)
-		));
+        $this->addModel("has_html_module", array(
+            "visible" => (count($modules))
+        ));
 
-		$this->addModel("has_html_module", array(
-			"visible" => (count($modules))
-		));
+        $this->createAdd("html_module_list", "_component.Module.ModuleListComponent", array(
+            "list" => $modules,
+            "editorLink" => SOY2PageController::createLink("Module.HTML.Editor?moduleId="),
+            "removeLink" => SOY2PageController::createLink("Module.HTML.Remove?moduleId=")
+        ));
+    }
 
-		$this->createAdd("html_module_list", "_component.Module.ModuleListComponent", array(
-			"list" => $modules,
-			"editorLink" => SOY2PageController::createLink("Module.HTML.Editor?moduleId="),
-			"removeLink" => SOY2PageController::createLink("Module.HTML.Remove?moduleId=")
-		));
-	}
+    /**
+     * モジュール用のディレクトリがあるか？
+     * @return boolean
+     */
+    private function checkHasModuleDirectory()
+    {
+        $dir = $this->getModuleDirectory();
+        return (file_exists($dir) && is_dir($dir));
+    }
 
-	/**
-	 * モジュール用のディレクトリがあるか？
-	 * @return boolean
-	 */
-	private function checkHasModuleDirectory(){
-		$dir = self::getModuleDirectory();
-		return (file_exists($dir) && is_dir($dir));
-	}
+    private function createModuleDirectory()
+    {
+        mkdir($this->getModuleDirectory(), F_MODE_DIR_HDN);
+        CMSUtil::makeHtaccess($this->getModuleDirectory());
+        mkdir($this->getModuleDirectory(self::TYPE_HTML), F_MODE_DIR);
+    }
 
-	private function createModuleDirectory(){
-		mkdir(self::getModuleDirectory());
-		mkdir(self::getModuleDirectory(self::TYPE_HTML));
-	}
+    private function getModules($t = self::TYPE_PHP)
+    {
+        $res = array();
+        $moduleDir = $this->getModuleDirectory();
 
-	private function getModules($t = self::TYPE_PHP){
-		$res = array();
-		$moduleDir = self::getModuleDirectory();
+        $files = soy2_scanfiles($moduleDir);
 
-		$files = soy2_scanfiles($moduleDir);
+        foreach ($files as $file) {
+            if (!preg_match('/\.php$/', $file)) {
+                continue;
+            }
+            $moduleId = preg_replace('/^.*\.module\//', "", $file);
 
-		foreach($files as $file){
-			if(!preg_match('/\.php$/', $file)) continue;
-			$moduleId = preg_replace('/^.*\.module\//', "", $file);
+            if ($t == self::TYPE_PHP) {
+                if (!$this->checkModuleDir($moduleId)) {
+                    continue;
+                }
+            } else {
+                if ($this->checkModuleDir($moduleId)) {
+                    continue;
+                }
+            }
 
-			if($t == self::TYPE_PHP){
-				if(!self::checkModuleDir($moduleId)) continue;
-			}else{
-				if(self::checkModuleDir($moduleId)) continue;
-			}
 
-			//一個目の/より前はカテゴリ
-			$moduleId = preg_replace('/\.php$/', "", $moduleId);
-			$moduleId = str_replace("/", ".", $moduleId);
-			$name = $moduleId;
+            //一個目の/より前はカテゴリ
+            $moduleId = preg_replace('/\.php$/', "", $moduleId);
+            $moduleId = str_replace("/", ".", $moduleId);
+            $name = $moduleId;
 
-			//ini
-			$iniFilePath = preg_replace('/\.php$/', ".ini", $file);
-			if(file_exists($iniFilePath)){
-				$array = parse_ini_file($iniFilePath);
-				if(isset($array["name"])) $name = $array["name"];
-			}
+            //ini
+            $iniFilePath = preg_replace('/\.php$/', ".ini", $file);
+            if (file_exists($iniFilePath)) {
+//          $array = parse_ini_file($iniFilePath);
+                $array = parse_ini_file($iniFilePath, false, INI_SCANNER_RAW);
+                if (isset($array["name"])) {
+                    $name = $array["name"];
+                }
+            }
 
-			$res[] = array(
-				"name" => $name,
-				"moduleId" => $moduleId,
-			);
-		}
+            $res[] = array(
+                "name" => $name,
+                "moduleId" => $moduleId,
+            );
+        }
 
-		return $res;
-	}
+        array_multisort(array_column($res, "name"), SORT_NATURAL, $res);
 
-	//モジュール群からcommonディレクトリにあるモジュールを除く
-	private function checkModuleDir($dir){
-		return (preg_match("/^common./", $dir) || preg_match("/^html./", $dir)) ? false : true;
-	}
+        return $res;
+    }
 
-	private function getModuleDirectory($t = self::TYPE_PHP){
-		if(isset($t) && $t == self::TYPE_HTML){
-			return UserInfoUtil::getSiteDirectory() . ".module/html/";
-		}else{
-			return UserInfoUtil::getSiteDirectory() . ".module/";
-		}
-	}
+    //モジュール群からcommonディレクトリにあるモジュールを除く
+    private function checkModuleDir($dir)
+    {
+        return (preg_match("/^common./", $dir) || preg_match("/^html./", $dir)) ? false : true;
+    }
+
+    private function getModuleDirectory($t = self::TYPE_PHP)
+    {
+        if (isset($t) && $t == self::TYPE_HTML) {
+            return UserInfoUtil::getSiteDirectory() . ".module/html/";
+        } else {
+            return UserInfoUtil::getSiteDirectory() . ".module/";
+        }
+    }
 }
-?>

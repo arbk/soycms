@@ -1,0 +1,47 @@
+@charset "UTF-8";
+
+/* -- main layout -- */
+body{
+ font-family:'HiraKakuProN-W3','Hiragino Kaku Gothic ProN','\30D2\30E9\30AE\30CE\89D2\30B4 ProN W3',
+ 'Hiragino Kaku Gothic Pro','\30D2\30E9\30AE\30CE\89D2\30B4 Pro W3',
+ 'Meiryo UI','\30E1\30A4\30EA\30AA',Meiryo,sans-serif;
+ font-size:16px;
+ line-height:1.7;
+ font-style:normal;
+ font-weight:normal;
+ word-wrap:break-word; overflow-wrap:break-word;
+ color:#333;
+ background-color:#e7f2df;
+}
+
+/* -- basic style -- */
+p.notify{
+ border:3px solid red;
+ padding:10px 10px;
+ margin:10px 0;
+ padding-left:30px;
+ color:red;
+ background-image:url("./img/main/error.png");
+ background-repeat:no-repeat;
+ background-position:10px 10px;
+}
+p.message{
+ border:1px solid #89BE38;
+ padding:10px 10px;
+ margin:10px 0;
+ padding-left:30px;
+ color:blue;
+ background-repeat:no-repeat;
+}
+
+input[type="text"],
+textarea,
+.mono{
+ font-family:Consolas, 'Courier New', Courier, Monaco, monospace;
+ line-height:1.2;
+}
+
+textarea.wrap_off{
+ white-space:pre;
+ overflow:scroll;
+}

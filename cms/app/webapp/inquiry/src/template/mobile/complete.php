@@ -1,28 +1,30 @@
-<table class="soy_inquiry_message" id="soy_inquiry_message_complete">
+<table class="inquiry_message" id="inquiry_message_complete">
 <tr>
-	<td colspan="2">
-	<?php $message = $config->getMessage(); echo $message["complete"]; ?>
-	</td>
+  <td colspan="2">
+  <?php $message = $config->getMessage();
+  echo $message["complete"]; ?>
+  </td>
 </tr>
 <tr>
-	<td><b>お問い合わせ番号</b></td>
+  <td><b>お問い合わせ番号</b></td>
 </tr>
 <tr>
-	<td><?php echo $inquiry->getTrackingNumber(); ?></td>
+  <td><?php echo $inquiry->getTrackingNumber(); ?></td>
 </tr>
 <tr>
-	<td><b>お問い合わせ内容</b></td>
+  <td><b>お問い合わせ内容</b></td>
 </tr>
 <tr>
-	<td><pre><?php echo $inquiry->getContent() ?></pre></td>
+  <td><pre><?php echo $inquiry->getContent() ?></pre></td>
 </tr>
 <tr>
-	<td><b>お問い合わせ日時</b></td>
+  <td><b>お問い合わせ日時</b></td>
 </tr>
 <tr>
-	<td><?php echo date("Y-m-d H:i:s",$inquiry->getCreateDate()); ?></td>
+  <td><?php echo date("Y-m-d H:i:s", $inquiry->getCreateDate()); ?></td>
 </tr>
 </table>
 
-
-<a href="<?php echo $page_link; ?>">戻る</a>
+<div class="inquiry_ctrl">
+  <a href="<?php echo $page_link; ?>">戻る</a>
+</div>

@@ -3,69 +3,80 @@
 /**
  * @table LoginErrorLog
  */
-class LoginErrorLog {
-		
-	/**
-	 * @id
-	 */
-	private $id;
-	
-	private $ip;
-	private $count;	//ログインを何回挑戦したか？
-	
-	private $successed;
-	
-	/**
-	 * @column start_date
-	 */
-	private $startDate;
-	
-	/**
-	 * @column update_date
-	 */
-	private $updateDate;
-	
-	function getId(){
-		return $this->id;
-	}
-	function setId($id){
-		$this->id = $id;
-	}
-	
-	function getIp(){
-		return $this->ip;
-	}
-	function setIp($ip){
-		$this->ip = $ip;
-	}
-	
-	function getCount(){
-		return $this->count;
-	}
-	function setCount($count){
-		$this->count = $count;
-	}
-	
-	function getSuccessed(){
-		return $this->successed;
-	}
-	
-	function setSuccessed($successed){
-		$this->successed = $successed;
-	}
-	
-	function getStartDate(){
-		return $this->startDate;
-	}
-	function setStartDate($startDate){
-		$this->startDate = $startDate;
-	}
-	
-	function getUpdateDate(){
-		return $this->updateDate;
-	}
-	function setUpdateDate($updateDate){
-		$this->updateDate = $updateDate;
-	}
+class LoginErrorLog
+{
+    /**
+     * @id
+     */
+    private $id;
+
+    private $ip;
+    private $count;  //ログインを何回挑戦したか？
+
+    private $successed;
+
+    /**
+     * @column start_date
+     */
+    private $startDate;
+
+    /**
+     * @column update_date
+     */
+    private $updateDate;
+
+    public function getId()
+    {
+        return $this->id;
+    }
+    public function setId($id)
+    {
+        $this->id = $id;
+    }
+
+    public function getIp()
+    {
+        return $this->ip;
+    }
+    public function setIp($ip)
+    {
+        $this->ip = $ip;
+    }
+
+    public function getCount()
+    {
+        return $this->count;
+    }
+    public function setCount($count)
+    {
+        $this->count = $count;
+    }
+
+    public function getSuccessed()
+    {
+        return $this->successed;
+    }
+
+    public function setSuccessed($successed)
+    {
+        $this->successed = $successed;
+    }
+
+    public function getStartDate()
+    {
+        return $this->startDate;
+    }
+    public function setStartDate($startDate)
+    {
+        $this->startDate = $startDate;
+    }
+
+    public function getUpdateDate()
+    {
+        return $this->updateDate;
+    }
+    public function setUpdateDate($updateDate)
+    {
+        $this->updateDate = $updateDate;
+    }
 }
-?>

@@ -1,122 +1,133 @@
 <?php
 
-class SOYAppUtil {
+class SOYAppUtil
+{
+    public static function checkAppAuth($appId = "inquiry")
+    {
+        $auth = false;
+        $useSiteDb = false;
 
-	public static function checkAppAuth($appId="inquiry"){
+        if ($appId == "inquiry") {
+            $useSiteDb = SOYINQUIRY_USE_SITE_DB;
+        } else {
+            $useSiteDb = SOYMAIL_USE_SITE_DB;
+        }
 
-		$auth = false;
-		$useSiteDb = false;
+        if ($useSiteDb) {
+            $session = SOY2ActionSession::getUserSession();
 
-		if($appId == "inquiry"){
-			$useSiteDb = (defined("SOYINQUIRY_USE_SITE_DB") && SOYINQUIRY_USE_SITE_DB);
-		}else{
-			$useSiteDb = (defined("SOYMAIL_USE_SITE_DB") && SOYMAIL_USE_SITE_DB);
-		}
+          // ルート権限の場合、サイト側のデータベースの定数がtrueだったら絶対にtrue
+            if ($session->getAttribute("isdefault")) {
+                return true;
+            }
 
-		if($useSiteDb){
-			$session = SOY2ActionSession::getUserSession();
+            $userId = $session->getAttribute("userid");
 
-			//ルート権限の場合、サイト側のデータベースの定数がtrueだったら絶対にtrue
-			if($session->getAttribute("isdefault")) return true;
+            $old = self::switchAdminMode();
 
-			$userId = $session->getAttribute("userid");
+            $appDao = SOY2DAOFactory::create("admin.AppRoleDAO");
+            try {
+                $appRoles = $appDao->getByUserId($userId);
+            } catch (Exception $e) {
+                $appRoles = array();
+            }
 
-			$old = self::switchAdminMode();
+            self::resetAdminMode($old);
 
-			$appDao = SOY2DAOFactory::create("admin.AppRoleDAO");
-			try{
-				$appRoles = $appDao->getByUserId($userId);
-			}catch(Exception $e){
-				$appRoles = array();
-			}
+          // SOY Appで設定されている権限を調べる
+            if (isset($appRoles[$appId]) && $appRoles[$appId]->getAppRole() > 0) {
+                $auth = true;
+            }
+        }
 
-			self::resetAdminMode($old);
+        return $auth;
+    }
 
-			//SOY Appで設定されている権限を調べる
-			if(isset($appRoles[$appId]) && $appRoles[$appId]->getAppRole() > 0){
-				$auth = true;
-			}
-		}
+    public static function createAppLink($appId = "inquiry")
+    {
+      // index.phpがある場合はindex.phpの二つ前のディレクトリまで戻る
+        if (strpos($_SERVER["REQUEST_URI"], F_FRCTRLER) !==false) {
+            $adminPath = substr($_SERVER["REQUEST_URI"], 0, strpos($_SERVER["REQUEST_URI"], "/" . F_FRCTRLER));
+        } else {
+            $adminPath = $_SERVER["REQUEST_URI"];
+        }
 
-		return $auth;
-	}
+        $root = dirname($adminPath);
+        if ($root== "/") {
+            //dirname("/") => "/"となり、"//app/..."となってしまうので別扱い
+            return "/app/" . F_FRCTRLER. "/" . $appId;
+        } else {
+            return $root . "/app/" . F_FRCTRLER. "/" . $appId;
+        }
+    }
 
-	public static function createAppLink($appId="inquiry"){
-		//index.phpがある場合はindex.phpの二つ前のディレクトリまで戻る
-		if(strpos($_SERVER["REQUEST_URI"], "index.php")!==false){
-			$adminPath = substr($_SERVER["REQUEST_URI"], 0, strpos($_SERVER["REQUEST_URI"], "/index.php"));
-		}else{
-			$adminPath = $_SERVER["REQUEST_URI"];
-		}
+    private static function switchAdminMode()
+    {
+        $old = array();
 
-		$root = dirname($adminPath);
-		if($root== "/"){
-			//dirname("/") => "/"となり、"//app/..."となってしまうので別扱い
-			return "/app/index.php/" . $appId;
-		}else{
-			return $root . "/app/index.php/" . $appId;
-		}
-	}
+        $old["dsn"] = SOY2DAOConfig::Dsn();
+        $old["user"] = SOY2DAOConfig::user();
+        $old["pass"] = SOY2DAOConfig::pass();
 
-	private static function switchAdminMode(){
-		$old = array();
+        SOY2DAOConfig::Dsn(ADMIN_DB_DSN);
+        SOY2DAOConfig::user(ADMIN_DB_USER);
+        SOY2DAOConfig::pass(ADMIN_DB_PASS);
 
-		$old["dsn"] = SOY2DAOConfig::Dsn();
-		$old["user"] = SOY2DAOConfig::user();
-		$old["pass"] = SOY2DAOConfig::pass();
+        return $old;
+    }
 
-		SOY2DAOConfig::Dsn(ADMIN_DB_DSN);
-		SOY2DAOConfig::user(ADMIN_DB_USER);
-		SOY2DAOConfig::pass(ADMIN_DB_PASS);
+    private static function resetAdminMode($old)
+    {
 
-		return $old;
-	}
+        SOY2DAOConfig::Dsn($old["dsn"]);
+        SOY2DAOConfig::user($old["user"]);
+        SOY2DAOConfig::pass($old["pass"]);
+    }
 
-	private static function resetAdminMode($old){
+    public static function switchAppMode($appId = "inquiry")
+    {
+        $old = array();
 
-		SOY2DAOConfig::Dsn($old["dsn"]);
-		SOY2DAOConfig::user($old["user"]);
-		SOY2DAOConfig::pass($old["pass"]);
-	}
+        $old["root"] = SOY2::RootDir();
+        $old["dao"] = SOY2DAOConfig::DaoDir();
+        $old["entity"] = SOY2DAOConfig::EntityDir();
+        $old["dsn"] = SOY2DAOConfig::Dsn();
+        $old["user"] = SOY2DAOConfig::user();
+        $old["pass"] = SOY2DAOConfig::pass();
 
-	public static function switchAppMode($appId = "shop"){
-		$old = array();
+        //公開側でも使用できるように
+        if (!defined("SOYCMS_COMMON_DIR")) {
+            define("SOYCMS_COMMON_DIR", SOY2::RootDir());
+        }
 
-		$old["root"] = SOY2::RootDir();
-		$old["dao"] = SOY2DAOConfig::DaoDir();
-		$old["entity"] = SOY2DAOConfig::EntityDir();
-		$old["dsn"] = SOY2DAOConfig::Dsn();
-		$old["user"] = SOY2DAOConfig::user();
-		$old["pass"] = SOY2DAOConfig::pass();
+        SOY2::RootDir(dirname(SOYCMS_COMMON_DIR) . "/app/webapp/" . $appId . "/src/");
+        SOY2DAOConfig::DaoDir(SOY2::RootDir() . "domain/");
+        SOY2DAOConfig::EntityDir(SOY2::RootDir() . "domain/");
 
-		//公開側でも使用できるように
-		if(!defined("SOYCMS_COMMON_DIR")) define("SOYCMS_COMMON_DIR", SOY2::RootDir());
+        if (SOYCMS_DB_TYPE == "sqlite") {
+          // SOYMailはdbファイル名がappIdと異なるから修正
+            if ($appId == "mail") {
+                $appId = "soymail";
+            }
 
-		SOY2::RootDir(dirname(SOYCMS_COMMON_DIR) . "/app/webapp/" . $appId . "/src/");
-		SOY2DAOConfig::DaoDir(SOY2::RootDir() . "domain/");
-		SOY2DAOConfig::EntityDir(SOY2::RootDir() . "domain/");
+            SOY2DAOConfig::Dsn("sqlite:" . SOYCMS_COMMON_DIR . "db/" . $appId . ".db");
+        } else {
+          // MySQLの場合は管理側のDB
+            SOY2DAOConfig::Dsn(ADMIN_DB_DSN);
+            SOY2DAOConfig::user(ADMIN_DB_USER);
+            SOY2DAOConfig::pass(ADMIN_DB_PASS);
+        }
 
-		if(SOYCMS_DB_TYPE == "sqlite"){
-			//SOYMailはdbファイル名がappIdと異なるから修正
-			if($appId == "mail") $appId = "soymail";
+        return $old;
+    }
 
-			SOY2DAOConfig::Dsn("sqlite:" . SOYCMS_COMMON_DIR . "db/" . $appId . ".db");
-		//MySQLの場合は管理側のDB
-		}else{
-			SOY2DAOConfig::Dsn(ADMIN_DB_DSN);
-			SOY2DAOConfig::user(ADMIN_DB_USER);
-			SOY2DAOConfig::pass(ADMIN_DB_PASS);
-		}
-
-		return $old;
-	}
-
-	public static function resetAppMode($old){
-		SOY2::RootDir($old["root"]);
-		SOY2DAOConfig::DaoDir($old["dao"]);
-		SOY2DAOConfig::EntityDir($old["entity"]);
-		SOY2DAOConfig::Dsn($old["dsn"]);
-		SOY2DAOConfig::user($old["user"]);
-		SOY2DAOConfig::pass($old["pass"]);
-	}
+    public static function resetAppMode($old)
+    {
+        SOY2::RootDir($old["root"]);
+        SOY2DAOConfig::DaoDir($old["dao"]);
+        SOY2DAOConfig::EntityDir($old["entity"]);
+        SOY2DAOConfig::Dsn($old["dsn"]);
+        SOY2DAOConfig::user($old["user"]);
+        SOY2DAOConfig::pass($old["pass"]);
+    }
 }

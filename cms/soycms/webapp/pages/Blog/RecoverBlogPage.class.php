@@ -1,7 +1,8 @@
 <?php
 
-include_once(dirname(dirname(__FILE__))."/Page/RecoverPage.class.php");
+require_once(dirname(__DIR__)."/Page/RecoverPage.class.php");
 
-class RecoverBlogPage extends RecoverPage{
-	protected $pageToGoBack = "Blog.List";
+class RecoverBlogPage extends RecoverPage
+{
+    protected $pageToGoBack = "Blog.List";
 }

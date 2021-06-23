@@ -1,62 +1,65 @@
 <?php
 
-class IndexPage extends CMSUpdatePageBase{
+class IndexPage extends CMSUpdatePageBase
+{
+    private $userinfoChanged;
+    private $passwordChanged;
 
-	private $userinfoChanged;
-	private $passwordChanged;
+    public function setUserInfoChanged($flag)
+    {
+        $this->userinfoChanged = $flag;
+    }
 
-	public function setUserInfoChanged($flag){
-		$this->userinfoChanged = $flag;
-	}
+    public function setPasswordChanged($flag)
+    {
+        $this->passwordChanged = $flag;
+    }
 
-	public function setPasswordChanged($flag){
-		$this->passwordChanged = $flag;
-	}
+    public function doPost()
+    {
+        if (soy2_check_token()) {
+            if (isset($_POST["changeuser"])) {
+                SOY2PageController::jump("Account.ChangeUserInfo");
+            }
 
-	public function doPost(){
+            if (isset($_POST["changepassword"])) {
+                SOY2PageController::jump("Account.ChangePassword");
+            }
+        }
+    }
 
-		if(soy2_check_token()){
-			if(isset($_POST["changeuser"])){
-				SOY2PageController::jump("Account.ChangeUserInfo");
-			}
+    public function __construct()
+    {
+        parent::__construct();
 
-			if(isset($_POST["changepassword"])){
-				SOY2PageController::jump("Account.ChangePassword");
-			}
-		}
-	}
+        $userId = UserInfoUtil::getUserId();
 
-	function __construct(){
-		parent::__construct();
+        $result = $this->run("Administrator.DetailAction", array("adminId" => $userId));
 
-		$userId = UserInfoUtil::getUserId();
+        $userInfo = $result->getAttribute("admin");
 
-		$result = $this->run("Administrator.DetailAction", array("adminId" => $userId));
+        $name =  $userInfo->getName();
 
-		$userInfo = $result->getAttribute("admin");
+        $this->addLabel("name", array(
+            "text" => (strlen($name) > 0) ? $name : CMSMessageManager::get("ADMIN_NO_SETTING")
+        ));
 
-		$name =  $userInfo->getName();
+        $email = $userInfo->getEmail();
 
-		$this->addLabel("name", array(
-			"text" => (strlen($name) > 0) ? $name : CMSMessageManager::get("ADMIN_NO_SETTING")
-		));
+        $this->addLabel("email", array(
+            "text" => (strlen($email) > 0) ? $email : CMSMessageManager::get("ADMIN_NO_SETTING")
+        ));
 
-		$email = $userInfo->getEmail();
+        //フォームの追加
+        $this->addForm("changeuser_form");
+        $this->addForm("changepassword_form");
 
-		$this->addLabel("email", array(
-			"text" => (strlen($email) > 0) ? $email : CMSMessageManager::get("ADMIN_NO_SETTING")
-		));
-
-		//フォームの追加
-		$this->addForm("changeuser_form");
-		$this->addForm("changepassword_form");
-
-		//メッセージ
-		$this->addModel("changepassword_message", array(
-			"visible" => $this->passwordChanged
-		));
-		$this->addModel("changeuserinfo_message", array(
-			"visible"=>$this->userinfoChanged
-		));
-	}
+        //メッセージ
+        $this->addModel("changepassword_message", array(
+            "visible" => $this->passwordChanged
+        ));
+        $this->addModel("changeuserinfo_message", array(
+            "visible"=>$this->userinfoChanged
+        ));
+    }
 }

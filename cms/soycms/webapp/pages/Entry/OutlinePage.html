@@ -1,19 +1,42 @@
-<html>
+<!DOCTYPE html>
+<html lang="<?php echo SOYCMS_ADMIN_HTML_LANG; ?>">
+
 <head soy:page="_common.HeaderPage" isOverWrite="true">
-</head>
+</head soy:page="_common.HeaderPage">
 
 <body class="sub">
-	<table class="table">
-		<tr><th>タイトル</th><td colspan="3" soy:id="title">タイトル&nbsp;[<span soy:id="entry_state">公開中</span>]</td></tr>
-		<tr><th>作成日時</th><td soy:id="cdate">2007-12-12 12:12:12</td><th>更新日時</th><td soy:id="udate">2007-12-12 12:12:12</td></tr>
-		<tr soy:id="open_period"><th>公開期間</th><td colspan="3"><span soy:id="open_period_start">2007-12-12 12:12:12</span> ～ <span soy:id="open_period_end">2007-12-12 12:12:12</span></td></tr soy:id="open_period">
-		<tr><th>本文</th><td colspan="3"><textarea class="form-control" readonly soy:id="contents">内容内容内容内容内容内容内容内容<br>内容内容内容内容内容内容内容内容<br>内容内容内容内容内容内容</textarea></td></tr>
-		<tr><th>追記</th><td colspan="3"><textarea class="form-control" readonly soy:id="more"    >内容内容内容内容内容内容内容内容<br>内容内容内容内容内容内容内容内容<br>内容内容内容内容内容内容</textarea></td></tr>
-		<tr><th>ラベル</th><td colspan="3">
-			<!-- soy:id="entry_label_list" -->
-			<span class="label label-default label-soy" soy:id="entry_label_memo">label1</span>
-			<!-- /soy:id="entry_label_list" -->
-		</td></tr>
-	</table>
+    <table class="table">
+        <tr>
+            <th>タイトル</th>
+            <td colspan="3" soy:id="title">タイトル&nbsp;[<span soy:id="entry_state">公開中</span>]</td>
+        </tr>
+        <tr>
+            <th>作成日時</th>
+            <td soy:id="cdate">2007-12-12 12:12:12</td>
+            <th>更新日時</th>
+            <td soy:id="udate">2007-12-12 12:12:12</td>
+        </tr>
+        <tr soy:id="open_period">
+            <th>公開期間</th>
+            <td colspan="3"><span soy:id="open_period_start">2007-12-12 12:12:12</span> ～ <span soy:id="open_period_end">2007-12-12 12:12:12</span></td>
+        </tr soy:id="open_period">
+        <tr>
+            <th>本文</th>
+            <td colspan="3"><textarea class="form-control" readonly soy:id="contents">内容内容内容内容内容内容内容内容<br>内容内容内容内容内容内容内容内容<br>内容内容内容内容内容内容</textarea></td>
+        </tr>
+        <tr>
+            <th>追記</th>
+            <td colspan="3"><textarea class="form-control" readonly soy:id="more">内容内容内容内容内容内容内容内容<br>内容内容内容内容内容内容内容内容<br>内容内容内容内容内容内容</textarea></td>
+        </tr>
+        <tr>
+            <th>ラベル</th>
+            <td colspan="3">
+                <!-- soy:id="entry_label_list" -->
+                <span class="label label-default label-soy" soy:id="entry_label_memo">label1</span>
+                <!-- /soy:id="entry_label_list" -->
+            </td>
+        </tr>
+    </table>
 </body>
+
 </html>

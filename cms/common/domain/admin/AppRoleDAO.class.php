@@ -2,42 +2,41 @@
 /**
  * @entity admin.AppRole
  */
-abstract class AppRoleDAO extends SOY2DAO{
+abstract class AppRoleDAO extends SOY2DAO
+{
+    abstract public function insert(AppRole $bean);
 
-	abstract function insert(AppRole $bean);
+    abstract public function update(AppRole $bean);
 
-	abstract function update(AppRole $bean);
+    abstract public function delete($id);
 
-	abstract function delete($id);
+    /**
+     * @order #userId#,#appId#
+     */
+    abstract public function get();
 
-	/**
-	 * @order #userId#,#appId#
-	 */
-	abstract function get();
+    /**
+     * @return object
+     */
+    abstract public function getById($id);
 
-	/**
-	 * @return object
-	 */
-	abstract function getById($id);
+    /**
+     * @return object
+     * @query ##appId## = :appId and ##userId## = :userId
+     */
+    abstract public function getRole($appId, $userId);
 
-	/**
-	 * @return object
-	 * @query ##appId## = :appId and ##userId## = :userId
-	 */
-	abstract function getRole($appId,$userId);
+    /**
+     * @index appId
+     */
+    abstract public function getByUserId($userId);
 
-	/**
-	 * @index appId
-	 */
-	abstract function getByUserId($userId);
+    /**
+     * @index userId
+     */
+    abstract public function getByAppId($appId);
 
-	/**
-	 * @index userId
-	 */
-	abstract function getByAppId($appId);
+    abstract public function deleteByUserId($userId);
 
-	abstract function deleteByUserId($userId);
-
-	abstract function deleteByAppId($appId);
-
+    abstract public function deleteByAppId($appId);
 }

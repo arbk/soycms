@@ -1,8 +1,8 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
+<!DOCTYPE html>
+<html lang="<?php echo SOYCMS_ADMIN_HTML_LANG; ?>">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+<?php soycms_admin_html_head_output(); ?>
 
 <!-- Framework CSS -->
 <link rel="stylesheet" href="<?php echo CMSApplication::getRoot(); ?>css/blueprint/screen.css" type="text/css" media="screen, projection">
@@ -22,6 +22,7 @@
 <?php CMSApplication::printLink(); ?>
 
 <title><?php echo CMSApplication::getTitle(); ?></title>
+
 </head>
 <body>
 
@@ -29,4 +30,3 @@
 
 </body>
 </html>
-

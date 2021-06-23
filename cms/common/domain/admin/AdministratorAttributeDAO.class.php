@@ -2,32 +2,32 @@
 /**
  * @entity admin.AdministratorAttribute
  */
-abstract class AdministratorAttributeDAO extends SOY2DAO{
+abstract class AdministratorAttributeDAO extends SOY2DAO
+{
+    abstract public function insert(AdministratorAttribute $bean);
 
-	abstract function insert(AdministratorAttribute $bean);
-
-	/**
+    /**
      * @query #adminId# = :adminId AND #fieldId# = :fieldId
      */
-    abstract function update(AdministratorAttribute $bean);
+    abstract public function update(AdministratorAttribute $bean);
 
     /**
      * @index fieldId
      */
-    abstract function getByAdminId($adminId);
+    abstract public function getByAdminId($adminId);
 
-	/**
-	 * @return object
-	 * @query #adminId# = :adminId AND #fieldId# = :fieldId
-	 */
-    abstract function get($adminId, $fieldId);
+    /**
+     * @return object
+     * @query #adminId# = :adminId AND #fieldId# = :fieldId
+     */
+    abstract public function get($adminId, $fieldId);
 
-    abstract function deleteByAdminId($adminId);
+    abstract public function deleteByAdminId($adminId);
 
     /**
      * @query #adminId# = :adminId AND #fieldId# = :fieldId
      */
-    abstract function delete($adminId, $fieldId);
+    abstract public function delete($adminId, $fieldId);
 
-    abstract function deleteByFieldId($fieldId);
+    abstract public function deleteByFieldId($fieldId);
 }

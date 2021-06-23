@@ -1,97 +1,93 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="<?php echo SOYCMS_ADMIN_HTML_LANG; ?>">
 
 <head soy:page="_common.HeaderPage" isOverWrite="true">
 </head soy:page="_common.HeaderPage">
 
 <body>
 
-	<div id="wrapper">
-		<!-- Navigation -->
-		<nav  class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0" soy:page="_common.UpperMenuPage"><!-- --></nav>
-		<div id="page-wrapper" style="padding-top: 30px;">
+    <div id="wrapper">
+        <!-- Navigation -->
+        <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0" soy:page="_common.UpperMenuPage"></nav>
+        <div id="page-wrapper" style="padding-top: 30px;">
 
-			<div soy:page="_common.MessagePanel" isOverWrite="true"></div>
+            <div soy:page="_common.MessagePanel" isOverWrite="true"></div>
 
-			<div class="row">
-				<div class="col-lg-8">
-					<!-- soy:display="plugin_area" -->
-					<!-- soy:id="plugin_area_list" -->
-					<div class="panel panel-green">
-						<div class="panel-heading"><!-- soy:id="plugin_area_title" /--></div>
-						<!-- soy:id="plugin_area_content" /-->
-					</div>
-					<!-- /soy:id="plugin_area_list" -->
-					<!-- /soy:display="plugin_area" -->
+            <div class="row">
+                <div class="col-lg-8">
+                    <!-- soy:display="plugin_area" -->
+                    <!-- soy:id="plugin_area_list" -->
+                    <div class="panel panel-green">
+                        <div class="panel-heading"><!-- soy:id="plugin_area_title" /--></div>
+                        <!-- soy:id="plugin_area_content" /-->
+                    </div>
+                    <!-- /soy:id="plugin_area_list" -->
+                    <!-- /soy:display="plugin_area" -->
 
-					<div class="panel panel-green">
-						<div class="panel-heading">最新記事</div>
-						<table class="table table-striped">
-							<tr soy:id="recentEntries">
-								<td class="title">
-									<a soy:id="title">What's new</a>
-									<div class="entry_popup" soy:id="popup" style="display:none;"></div	>
-								</td>
-								<td class="content" soy:id="content">「2007/11/24 Aboutを更新しました」 </td>
-								<td class="date" soy:id="udate">2007/11/28</td>
-							</tr soy:id="recentEntries">
-						</table>
-					</div>
+                    <div class="panel panel-green">
+                        <div class="panel-heading">最新記事</div>
+                        <table class="table table-striped">
+                            <tr soy:id="recentEntries">
+                                <td class="title">
+                                    <a soy:id="title">What's new</a>
+                                    <div class="entry_popup" soy:id="popup" style="display:none;"></div>
+                                </td>
+                                <td class="content" soy:id="content">「2007/11/24 Aboutを更新しました」 </td>
+                                <td class="date" soy:id="udate">2007/11/28</td>
+                            </tr soy:id="recentEntries">
+                        </table>
+                    </div>
 
-					<div class="panel panel-green">
-						<div class="panel-heading">最新ページ</div>
-						<table class="table table-striped">
-							<tr soy:id="recentPage">
-								<td class="title"><a soy:id="title">What's new</a></td>
-								<td class="content"><a href="#" soy:id="content">トップページ</a></td>
-								<td class="date" soy:id="udate">2007/11/28</td>
-							</tr soy:id="recentPage">
-						</table>
-					</div>
-				</div>
-				<!-- /.col-lg-8 -->
+                    <div class="panel panel-green">
+                        <div class="panel-heading">最新ページ</div>
+                        <table class="table table-striped">
+                            <tr soy:id="recentPage">
+                                <td class="title"><a soy:id="title">What's new</a></td>
+                                <td class="content"><a href="#" soy:id="content">トップページ</a></td>
+                                <td class="date" soy:id="udate">2007/11/28</td>
+                            </tr soy:id="recentPage">
+                        </table>
+                    </div>
+                </div>
+                <!-- /.col-lg-8 -->
 
-				<div class="col-lg-4">
-					<div class="panel panel-default">
-						<div class="panel-heading">
-						  	 記事操作
-						</div>
-							<ul class="list-group">
-									<li class="list-group-item"><a soy:link="Entry.Create">記事新規作成</a></li>
-									<li class="list-group-item"><a soy:link="Entry">記事一覧</a></li>
-									<li class="list-group-item" soy:id="is_entry_template_enabled"><a soy:link="EntryTemplate">記事雛形設定</a></li>
-									<li class="list-group-item"><a soy:link="Label">ラベル管理</a></li>
-							</ul>
-					</div>
+                <div class="col-lg-4">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">記事操作</div>
+                        <ul class="list-group">
+                            <li class="list-group-item"><a soy:link="Entry.Create">記事新規作成</a></li>
+                            <li class="list-group-item"><a soy:link="Entry">記事一覧</a></li>
+                            <li class="list-group-item" soy:id="is_entry_template_enabled"><a soy:link="EntryTemplate">記事雛形設定</a></li>
+                            <li class="list-group-item"><a soy:link="Label">ラベル管理</a></li>
+                        </ul>
+                    </div>
 
-					<div class="panel panel-default">
-						<div class="panel-heading">
-						  	ページ操作
-						</div>
-						<ul class="list-group">
-							<li class="list-group-item"><a soy:link="Page.Create" onclick="return common_click_to_layer(this,{height:540});">ページ新規作成</a></li>
-							<li class="list-group-item"><a soy:link="Page">ページ一覧</a></li>
-							<li class="list-group-item"><a soy:link="Blog.List">ブログ一覧</a></li>
-							<li class="list-group-item" soy:id="is_page_template_enabled"><a soy:link="Template">ページ雛形設定</a></li>
-							<li class="list-group-item">
-								<select soy:id="page_tree" class="form-control">
-									<option value="">ページへジャンプ</option>
-								</select>
-							</li>
-						</ul>
-					</div>
+                    <div class="panel panel-default">
+                        <div class="panel-heading">ページ操作</div>
+                        <ul class="list-group">
+                            <li class="list-group-item"><a soy:link="Page.Create" onclick="return common_click_to_layer(this,{height:540});">ページ新規作成</a></li>
+                            <li class="list-group-item"><a soy:link="Page">ページ一覧</a></li>
+                            <li class="list-group-item"><a soy:link="Blog.List">ブログ一覧</a></li>
+                            <li class="list-group-item" soy:id="is_page_template_enabled"><a soy:link="Template">ページ雛形設定</a></li>
+                            <li class="list-group-item">
+                                <select soy:id="page_tree" class="form-control">
+                                    <option value="">ページへジャンプ</option>
+                                </select>
+                            </li>
+                        </ul>
+                    </div>
 
-					<div id="widgets" soy:id="widgets" class="panel panel-default"></div>
-				</div>
-				<!-- /.col-lg-4 -->
-			</div>
-			<!-- /.row -->
+                    <div id="widgets" soy:id="widgets" class="panel panel-default"></div>
+                </div>
+                <!-- /.col-lg-4 -->
+            </div>
+            <!-- /.row -->
 
-		</div>
-		<!-- /#page-wrapper -->
-		<!-- soy:page="_common.FooterPage" /-->
-	</div>
-	<!-- /#wrapper -->
+        </div>
+        <!-- /#page-wrapper -->
+        <!-- soy:page="_common.FooterPage" /-->
+    </div>
+    <!-- /#wrapper -->
 
 </body>
 

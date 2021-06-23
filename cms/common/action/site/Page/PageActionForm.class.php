@@ -1,124 +1,143 @@
-<?php 
-class PageActionForm extends SOY2ActionForm{
-	
-	private $id;
-	private $uri;
-	private $title;
-	private $template;
-	private $pageType;
-	private $openPeriodStart;
+<?php
+class PageActionForm extends SOY2ActionForm
+{
+    private $id;
+    private $uri;
+    private $title;
+    private $template;
+    private $pageType;
+    private $openPeriodStart;
     private $openPeriodEnd;
     private $isPublished;
     private $parentPageId;
     private $pageTitleFormat;
     private $icon;
-    
-	
-	function getId() {
-    	return $this->id;
+
+    public function getId()
+    {
+        return $this->id;
     }
-    
+
     /**
-	 * @validator number
-	 */
-    function setId($id) {
-    	$this->id = $id;
+     * @validator number
+     */
+    public function setId($id)
+    {
+        $this->id = $id;
     }
-    function getUri() {
-    	return $this->uri;
+    public function getUri()
+    {
+        return $this->uri;
     }
-    
+
     /**
      * @validator string {"regex":"[^\\\/]$|^$"}
      */
-    function setUri($uri) {
-    	$this->uri = $uri;
+    public function setUri($uri)
+    {
+        $this->uri = $uri;
     }
-    
-    function getTitle() {
-    	return $this->title;
+
+    public function getTitle()
+    {
+        return $this->title;
     }
-    
-    function setTitle($title) {
-    	$this->title = $title;
+
+    public function setTitle($title)
+    {
+        $this->title = $title;
     }
-    function getTemplate() {
-    	return $this->template;
+    public function getTemplate()
+    {
+        return $this->template;
     }
-    
-    function setTemplate($template) {
-    	$this->template = $template;
+
+    public function setTemplate($template)
+    {
+        $this->template = $template;
     }
-    
-    function getPageType() {
-    	return $this->pageType;
+
+    public function getPageType()
+    {
+        return $this->pageType;
     }
-    
-    function setPageType($pageType) {
-    	$this->pageType = $pageType;
+
+    public function setPageType($pageType)
+    {
+        $this->pageType = $pageType;
     }
-    
-    function getOpenPeriodStart() {
-    	return $this->openPeriodStart;
+
+    public function getOpenPeriodStart()
+    {
+        return $this->openPeriodStart;
     }
-    
+
     /**
      * 今日以降
      */
-    function setOpenPeriodStart($openPeriodStart) {
-    	$tmpDate = (strlen($openPeriodStart)) ? strtotime($openPeriodStart) : false;
-    	if($tmpDate === false){
-    		$this->openPeriodStart = null;
-    	}else{
-    		$this->openPeriodStart = $tmpDate;
-    	}
+    public function setOpenPeriodStart($openPeriodStart)
+    {
+        $tmpDate = (strlen($openPeriodStart)) ? strtotime($openPeriodStart) : false;
+        if ($tmpDate === false) {
+            $this->openPeriodStart = null;
+        } else {
+            $this->openPeriodStart = $tmpDate;
+        }
     }
-    
-    function getOpenPeriodEnd() {
-    	return $this->openPeriodEnd;
+
+    public function getOpenPeriodEnd()
+    {
+        return $this->openPeriodEnd;
     }
-    
+
     /**
      * 今日以降
      */
-    function setOpenPeriodEnd($openPeriodEnd) {
-    	$tmpDate = (strlen($openPeriodEnd)) ? strtotime($openPeriodEnd) : false;
-    	if($tmpDate === false){
-    		$this->openPeriodEnd = null;	
-    	}else{
-    		$this->openPeriodEnd = $tmpDate;
-    	}
-    	 
+    public function setOpenPeriodEnd($openPeriodEnd)
+    {
+        $tmpDate = (strlen($openPeriodEnd)) ? strtotime($openPeriodEnd) : false;
+        if ($tmpDate === false) {
+            $this->openPeriodEnd = null;
+        } else {
+            $this->openPeriodEnd = $tmpDate;
+        }
     }
-    function getIsPublished() {
-    	return $this->isPublished;
+    public function getIsPublished()
+    {
+        return $this->isPublished;
     }
-    
+
     /**
      * @validator number {"min":0,"max":1}
      */
-    function setIsPublished($isPublished) {
-    	$this->isPublished = $isPublished;
+    public function setIsPublished($isPublished)
+    {
+        $this->isPublished = $isPublished;
     }
-    function getParentPageId() {
-    	return $this->parentPageId;
+    public function getParentPageId()
+    {
+        return $this->parentPageId;
     }
-    function setParentPageId($parentPageId) {
-    	$this->parentPageId = $parentPageId;
-    }
-
-    function getPageTitleFormat() {
-    	return $this->pageTitleFormat;
-    }
-    function setPageTitleFormat($pageTitleFormat) {
-    	$this->pageTitleFormat = $pageTitleFormat;
+    public function setParentPageId($parentPageId)
+    {
+        $this->parentPageId = $parentPageId;
     }
 
-    function getIcon() {
-    	return $this->icon;
+    public function getPageTitleFormat()
+    {
+        return $this->pageTitleFormat;
     }
-    function setIcon($icon) {
-    	$this->icon = $icon;
+    public function setPageTitleFormat($pageTitleFormat)
+    {
+        $this->pageTitleFormat = $pageTitleFormat;
+    }
+
+    public function getIcon()
+    {
+        return $this->icon;
+    }
+    public function setIcon($icon)
+    {
+        $this->icon = $icon;
     }
 }
-?>

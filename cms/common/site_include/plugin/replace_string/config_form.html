@@ -1,0 +1,60 @@
+<form method="post" soy:id="replace_string_form">
+
+    <section>
+        <h4>設定</h4>
+
+        <section style="margin:1em 0 3em;">
+            <h5 style="font-size:1.2em;margin-bottom:0.5em;" id="SKSET">【置換文字列の指定】</h5>
+            <fieldset>
+                <legend>対象文字列と置換後文字列</legend>
+                <input type="submit" name="replace_string_com_save" value="対象文字列と置換後文字列を設定">
+                <textarea name="replace_string_com" class="wrap_off" style="width:100%; height:auto; font-size:85%;" rows="30" soy:id="replace_string_com"></textarea>
+                <div style="margin-left:0.5em;">【書式】 "対象文字列":"置換後文字列", 1行1組</div>
+            </fieldset>
+        </section>
+
+        <section style="margin:1em 0 3em;">
+            <h5 style="font-size:1.2em;margin-bottom:0.5em;">【置換対象の指定】</h5>
+            <fieldset>
+                <legend>置換対象を指定してください.</legend>
+                <ul>
+                    <li>本文（content）</li>
+                    <li>追記（more）</li>
+                    <li><label>エントリーフィールド (ID指定. ","カンマ区切り):<br>
+                            <input soy:id="replace_string_entry_field_ids" style="width:99%;"></label></li>
+                </ul>
+                <div><input type="submit" name="replace_string_target_save" value="設定"></div>
+            </fieldset>
+        </section>
+
+        <section style="margin:1em 0 3em;">
+            <h5 style="font-size:1.2em;margin-bottom:0.5em;">【ラベルとの関連付け】</h5>
+            <fieldset>
+                <label>ラベルID: <input soy:id="replace_string_labelid" style="text-align:right"></label>
+                <p>文字列の置換処理を特定のラベルと関連付ける場合は ラベルID（数字）を指定してください.<br>
+                    指定されたラベルが付いた記事でのみ置換処理を実行します. （空の場合は全ての記事で置換処理を実行します.）</p>
+                <div><input type="submit" name="replace_string_labelid_save" value="設定"></div>
+            </fieldset>
+        </section>
+
+    </section>
+
+
+    <section>
+        <h4>使い方</h4>
+
+        <p>
+            対象文字列と置換後文字列は ""ダブルクォーテーションで囲み, ":"コロンで組にしてください.<br>
+            対象文字列に空白を指定することはできません. 置換後文字列に空白を指定することは可能です.<br>
+            文字列に改行を含めることはできません.<br>
+            複数指定する場合は改行してください.
+        </p>
+
+        <ul>
+            <li>記事更新時に文字列が置換されます. ※記事データ自体が更新されます. 注意してください.</li>
+            <li>正規表現やワイルドカード(*)は使えません.</li>
+        </ul>
+
+    </section>
+
+</form soy:id="replace_string_form">

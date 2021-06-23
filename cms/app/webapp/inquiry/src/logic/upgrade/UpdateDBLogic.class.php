@@ -1,114 +1,126 @@
 <?php
 SOY2::import("domain.SOYInquiry_DataSets");
-class UpdateDBLogic extends SOY2LogicBase{
+class UpdateDBLogic extends SOY2LogicBase
+{
+    private $directory;
+    private $extendDirectory;  //データベースの実行以外の更新
+    private $checkVersionLogic;
 
-	private $directory;
-	private $extendDirectory;	//データベースの実行以外の更新
-	private $checkVersionLogic;
+    //DataSets (soycms_admin_data_sets)でのclass名
+    const VERSION_KEY = "SOYINQUIRY_DB_VERSION";
 
-	//DataSets (soycms_admin_data_sets)でのclass名
-	const VERSION_KEY = "SOYINQUIRY_DB_VERSION";
+    /*
+     * 更新ファイルの正規表現
+     * 例：update-1.5.sql
+     */
+    const UPDATE_FILE_REGEX = "/^update-([.0-9]+)\\.sql\$/";
 
-	/*
-	 * 更新ファイルの正規表現
-	 * 例：update-1.5.sql
-	 */
-	const UPDATE_FILE_REGEX = "/^update-([.0-9]+)\\.sql\$/";
+    /**
+     * コンストラクタ
+     */
+    public function __construct()
+    {
+        $this->db = new SOY2DAO();
+        $this->checkVersionLogic = SOY2Logic::createInstance("logic.upgrade.CheckVersionLogic");
+        self::setDirectory();
+    }
 
-	/**
-	 * コンストラクタ
-	 */
-	public function __construct(){
-		$this->db = new SOY2DAO();
-		$this->checkVersionLogic = SOY2Logic::createInstance("logic.upgrade.CheckVersionLogic");
-		self::setDirectory();
-	}
+    /**
+     * データベースを更新する
+     */
+    public function update()
+    {
+        $logic = $this->checkVersionLogic;
 
-	/**
-	 * データベースを更新する
-	 */
-	public function update() {
+        //現在のデータベースのバージョンを取得する
+        $current = $logic->getCurrentVersion();
 
-		$logic = $this->checkVersionLogic;
+        //updateのSQLファイルを取得する
+        $sql_files = $logic->getUpdateFiles();
 
-		//現在のデータベースのバージョンを取得する
-		$current = $logic->getCurrentVersion();
+        //現在のデータベースのバージョンより上のupdateを実行する
+        foreach ($sql_files as $version => $sql_file) {
+            if ($version > $current && strpos($sql_file, ".sql") !== false) {
+                self::executeSqlFile($sql_file, $version);
+                self::registerVersion($version);
+            }
+        }
+    }
 
-		//updateのSQLファイルを取得する
-		$sql_files = $logic->getUpdateFiles();
+    /**
+     * 指定したファイルのSQL文を実行
+     */
+    private function executeSqlFile($file, $version = 1)
+    {
+        $sqls = self::getSqlQuery($file);
+        foreach ($sqls as $sql) {
+            if (strlen(trim($sql)) < 1) {
+                continue;
+            }
+            try {
+                $this->db->executeUpdateQuery($sql, array());
+            } catch (Exception $e) {
+//              error_log(var_export($e, true));
+                error_log($e->getMessage());
+                continue;
+            }
+        }
 
-		//現在のデータベースのバージョンより上のupdateを実行する
-		foreach($sql_files as $version => $sql_file){
-			if($version > $current && strpos($sql_file, ".sql") !== false){
-				self::executeSqlFile($sql_file, $version);
-				self::registerVersion($version);
-			}
-		}
-	}
+        //データベース以外の更新
+        if (file_exists($this->extendDirectory . "extendUpdate-" . $version . ".php")) {
+            include_once($this->extendDirectory . "extendUpdate-" . $version . ".php");
+        }
+    }
 
-	/**
-	 * 指定したファイルのSQL文を実行
-	 */
-	private function executeSqlFile($file,$version=1){
+    /**
+     * 指定したファイルからコメントを削除したSQL文を配列として取得する
+     * @return Array<string>
+     */
+    private function getSqlQuery($file)
+    {
 
-		$sqls = self::getSqlQuery($file);
-		foreach($sqls as $sql){
-			if(strlen(trim($sql)) < 1) continue;
-			try{
-				$this->db->executeUpdateQuery($sql, array());
-			}catch(Exception $e){
-				error_log(var_export($e, true));
-				continue;
-			}
-		}
+        $texts = array();
 
-		//データベース以外の更新
-		if(file_exists($this->extendDirectory . "extendUpdate-" . $version . ".php")){
-			include_once($this->extendDirectory . "extendUpdate-" . $version . ".php");
-		}
-	}
+        $sqls = file_get_contents($this->directory . "/" . $file);
+        if (strlen($sqls)) {
+            //コメント削除
+            $sqls = preg_replace("/#.*\$/m", "", $sqls);
 
-	/**
-	 * 指定したファイルからコメントを削除したSQL文を配列として取得する
-	 * @return Array<string>
-	 */
-	private function getSqlQuery($file){
+            //改行統一
+            $sqls = strtr($sqls, array("\r\n" => "\n", "\r" => "\n"));
 
-		$texts = array();
+            $sqls = explode(";", $sqls);
+            foreach ($sqls as $sql) {
+                if (strlen(trim($sql)) < 1) {
+                    continue;
+                }
+                $texts[] = trim($sql) . ";";
+            }
+        }
 
-		$sqls = file_get_contents($this->directory . "/" . $file);
-		if(strlen($sqls)){
-			//コメント削除
-			$sqls = preg_replace("/#.*\$/m", "", $sqls);
+        return $texts;
+    }
 
-			//改行統一
-			$sqls = strtr($sqls, array("\r\n" => "\n", "\r" => "\n"));
+    /**
+     * バージョン番号を保存する
+     * @param string version
+     */
+    private function registerVersion($version)
+    {
+        try {
+            SOYInquiry_DataSets::put(self::VERSION_KEY, $version);
+        } catch (Exception $e) {
+//          error_log(var_export($e, true));
+            error_log($e->getMessage());
+        }
+    }
 
-			$sqls = explode(";", $sqls);
-			foreach($sqls as $sql){
-				if(strlen(trim($sql)) < 1) continue;
-				$texts[] = trim($sql) . ";";
-			}
-		}
-
-		return $texts;
-	}
-
-	/**
-	 * バージョン番号を保存する
-	 * @param string version
-	 */
-	private function registerVersion($version){
-		try{
-			SOYInquiry_DataSets::put(self::VERSION_KEY, $version);
-		}catch(Exception $e){
-			error_log(var_export($e, true));
-		}
-	}
-
-	private function setDirectory(){
-		if(!defined("SOYINQUIRY_DB_MODE")) define("SOYINQUIRY_DB_MODE", SOYCMS_DB_TYPE);
-		$this->directory = SOY2::RootDir() . "logic/upgrade/sql/" . SOYINQUIRY_DB_MODE ."/";
-		$this->extendDirectory = SOY2::RootDir() . "logic/upgrade/extend/";
-	}
+    private function setDirectory()
+    {
+        if (!defined("SOYINQUIRY_DB_MODE")) {
+            define("SOYINQUIRY_DB_MODE", SOYCMS_DB_TYPE);
+        }
+        $this->directory = SOY2::RootDir() . "logic/upgrade/sql/" . SOYINQUIRY_DB_MODE ."/";
+        $this->extendDirectory = SOY2::RootDir() . "logic/upgrade/extend/";
+    }
 }

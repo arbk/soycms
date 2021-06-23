@@ -2,23 +2,24 @@
 /**
  * @table Entry inner join EntryTrackback on (EntryTrackback.entry_id = Entry.id) inner join EntryLabel on (EntryLabel.entry_id = Entry.id)
  */
-class EntryTrackbackLogic implements SOY2LogicInterface{
+class EntryTrackbackLogic implements SOY2LogicInterface
+{
+    public static function getInstance($className, $args)
+    {
+        return SOY2LogicBase::getInstance($className, $args);
+    }
 
-	public static function getInstance($className,$args){
-		return SOY2LogicBase::getInstance($className,$args);
-	}
+    /**
+     * @column EntryTrackback.id
+     * @alias id
+     */
+    private $id;
 
-	/**
-	 * @column EntryTrackback.id
-	 * @alias id
-	 */
-	private $id;
-
-	/**
-	 * @column EntryTrackback.title
-	 * @alias title
-	 */
-	private $title;
+    /**
+     * @column EntryTrackback.title
+     * @alias title
+     */
+    private $title;
 
     /**
      * @column EntryTrackback.excerpt
@@ -37,8 +38,6 @@ class EntryTrackbackLogic implements SOY2LogicInterface{
      * @alias entryTitle
      */
     private $entryTitle;
-
-
 
     /**
      * @column EntryTrackback.submitdate
@@ -64,155 +63,186 @@ class EntryTrackbackLogic implements SOY2LogicInterface{
      */
     private $isCertification;
 
-	/**
-	 * @column EntryTrackback.url
-	 * @alias url
-	 */
-	private $url;
+    /**
+     * @column EntryTrackback.url
+     * @alias url
+     */
+    private $url;
 
-	/**
-	 * @no_persistent
-	 */
-	private $totalCount;
+    /**
+     * @no_persistent
+     */
+    private $totalCount;
 
-	function getId() {
-		return $this->id;
-	}
-	function setId($id) {
-		$this->id = $id;
-	}
-	function getTitle() {
-		return $this->title;
-	}
-	function setTitle($title) {
-		$this->title = $title;
-	}
-	function getExcerpt() {
-		return $this->excerpt;
-	}
-	function setExcerpt($excerpt) {
-		$this->excerpt = $excerpt;
-	}
-	function getAlias() {
-		return $this->alias;
-	}
-	function setAlias($alias) {
-		$this->alias = $alias;
-	}
-	function getEntryTitle() {
-		return $this->entryTitle;
-	}
-	function setEntryTitle($entryTitle) {
-		$this->entryTitle = $entryTitle;
-	}
-	function getLabelId() {
-		return $this->labelId;
-	}
-	function setLabelId($labelId) {
-		$this->labelId = $labelId;
-	}
-	function getSubmitDate() {
-		return $this->submitDate;
-	}
-	function setSubmitDate($submitDate) {
-		$this->submitDate = $submitDate;
-	}
-	function getEntryId() {
-		return $this->entryId;
-	}
-	function setEntryId($entryId) {
-		$this->entryId = $entryId;
-	}
-	function getIsCertification() {
-		return $this->isCertification;
-	}
-	function setIsCertification($isCertification) {
-		$this->isCertification = $isCertification;
-	}
-	function getUrl() {
-		return $this->url;
-	}
-	function setUrl($url) {
-		$this->url = $url;
-	}
+    public function getId()
+    {
+        return $this->id;
+    }
+    public function setId($id)
+    {
+        $this->id = $id;
+    }
+    public function getTitle()
+    {
+        return $this->title;
+    }
+    public function setTitle($title)
+    {
+        $this->title = $title;
+    }
+    public function getExcerpt()
+    {
+        return $this->excerpt;
+    }
+    public function setExcerpt($excerpt)
+    {
+        $this->excerpt = $excerpt;
+    }
+    public function getAlias()
+    {
+        return $this->alias;
+    }
+    public function setAlias($alias)
+    {
+        $this->alias = $alias;
+    }
+    public function getEntryTitle()
+    {
+        return $this->entryTitle;
+    }
+    public function setEntryTitle($entryTitle)
+    {
+        $this->entryTitle = $entryTitle;
+    }
+    public function getLabelId()
+    {
+        return $this->labelId;
+    }
+    public function setLabelId($labelId)
+    {
+        $this->labelId = $labelId;
+    }
+    public function getSubmitDate()
+    {
+        return $this->submitDate;
+    }
+    public function setSubmitDate($submitDate)
+    {
+        $this->submitDate = $submitDate;
+    }
+    public function getEntryId()
+    {
+        return $this->entryId;
+    }
+    public function setEntryId($entryId)
+    {
+        $this->entryId = $entryId;
+    }
+    public function getIsCertification()
+    {
+        return $this->isCertification;
+    }
+    public function setIsCertification($isCertification)
+    {
+        $this->isCertification = $isCertification;
+    }
+    public function getUrl()
+    {
+        return $this->url;
+    }
+    public function setUrl($url)
+    {
+        $this->url = $url;
+    }
 
-	function getByLabelIds($labelIds,$count,$offset){
-		$dao = SOY2DAOFactory::create("EntryTrackbackLogicDAO");
-		$dao->setLimit($count);
-		$dao->setOffset($offset);
-		$retVal =$dao->getByLabelIds($labelIds);
-		$this->setTotalCount($dao->getRowCount());
-		return $retVal;
-	}
+    public function getByLabelIds($labelIds, $count, $offset)
+    {
+        $dao = SOY2DAOFactory::create("EntryTrackbackLogicDAO");
+        $dao->setLimit($count);
+        $dao->setOffset($offset);
+        $retVal =$dao->getByLabelIds($labelIds);
+        $this->setTotalCount($dao->getRowCount());
+        return $retVal;
+    }
 
-	function getRecentTrackbacks($labelIds,$count = 10){
-		$dao = SOY2DAOFactory::create("EntryTrackbackLogicDAO");
-		$dao->setLimit($count);
-		$trackbacks = $dao->getOpenCertificatedTrackbackByLabelIds($labelIds,time());
-		return $trackbacks;
-	}
+    public function getRecentTrackbacks($labelIds, $count = SOYCMS_INI_NUMOF_TRACKBACK_RECENT)
+    {
+        $dao = SOY2DAOFactory::create("EntryTrackbackLogicDAO");
+        $dao->setLimit($count);
+        $trackbacks = $dao->getOpenCertificatedTrackbackByLabelIds($labelIds, SOYCMS_NOW);
+        return $trackbacks;
+    }
 
-	function getTotalCount() {
-		return $this->totalCount;
-	}
-	function setTotalCount($totalCount) {
-		$this->totalCount = $totalCount;
-	}
+    public function getTotalCount()
+    {
+        return $this->totalCount;
+    }
+    public function setTotalCount($totalCount)
+    {
+        $this->totalCount = $totalCount;
+    }
 
-	function getBlogName() {
-		return $this->blogName;
-	}
-	function setBlogName($blogName) {
-		$this->blogName = $blogName;
-	}
+    public function getBlogName()
+    {
+        return $this->blogName;
+    }
+    public function setBlogName($blogName)
+    {
+        $this->blogName = $blogName;
+    }
 }
 
 
-abstract class EntryTrackbackLogicDAO extends SOY2DAO{
+abstract class EntryTrackbackLogicDAO extends SOY2DAO
+{
 
-	/**
-	 * @distinct
-	 * @order #submitDate# DESC
-	 */
-	function getByLabelIds($labelIds){
-		$query = $this->getQuery();
-		$labelIds = array_map(function($val) { return (int)$val; }, $labelIds);
+    /**
+     * @distinct
+     * @order #submitDate# DESC
+     */
+    public function getByLabelIds($labelIds)
+    {
+        $query = $this->getQuery();
+        $labelIds = array_map(function ($val) {
+            return (int)$val;
+        }, $labelIds);
 
-		if(count($labelIds)){
-			$query->where = " EntryLabel.label_id in (" . implode(",",$labelIds) .") ";
-		}
-		$result = $this->executeQuery($query,array());
-		$array = array();
-		foreach($result as $row){
-			$array[] = $this->getObject($row);
-		}
-		return $array;
-	}
+        if (count($labelIds)) {
+            $query->where = " EntryLabel.label_id in (" . implode(",", $labelIds) .") ";
+        }
+        $result = $this->executeQuery($query, array());
+        $array = array();
+        foreach ($result as $row) {
+            $array[] = $this->getObject($row);
+        }
+        return $array;
+    }
 
-	/**
-	 * @order #submitdate# DESC
-	 */
-	function getOpenCertificatedTrackbackByLabelIds($labelIds,$time){
-		$query = $this->getQuery();
-		$labelIds = array_map(function($val) { return (int)$val; }, $labelIds);
-		$query->where = " EntryLabel.label_id in (" . implode(",",$labelIds) .") ";
-		$query->where .= "AND Entry.isPublished = 1 ";
-		$query->where .= "AND (openPeriodEnd > :now AND openPeriodStart < :now)";
-		$query->where .= "AND certification = 1";
+    /**
+     * @order #submitdate# DESC
+     */
+    public function getOpenCertificatedTrackbackByLabelIds($labelIds, $time)
+    {
+        $query = $this->getQuery();
+        $labelIds = array_map(function ($val) {
+            return (int)$val;
+        }, $labelIds);
+        $query->where = " EntryLabel.label_id in (" . implode(",", $labelIds) .") ";
+        $query->where .= "AND Entry.isPublished = 1 ";
+        $query->where .= "AND (openPeriodEnd > :now AND openPeriodStart < :now)";
+        $query->where .= "AND certification = 1";
 
-		$binds = array(
-			":now" => $time
-		);
+        $binds = array(
+        ":now" => $time
+        );
 
-		$result = $this->executeQuery($query,$binds);
+        $result = $this->executeQuery($query, $binds);
 
-		$array = array();
-		foreach($result as $row){
-			$array[] = $this->getObject($row);
-		}
+        $array = array();
+        foreach ($result as $row) {
+            $array[] = $this->getObject($row);
+        }
 
-		return $array;
-	}
-
+        return $array;
+    }
 }
-?>

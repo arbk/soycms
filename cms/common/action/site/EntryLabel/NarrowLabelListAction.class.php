@@ -2,35 +2,34 @@
 /**
  * ラベルを複数指定し、そのラベルに割り当てられているエントリーについているすべてのラベルを取得する
  */
-class NarrowLabelListAction extends SOY2Action{
+class NarrowLabelListAction extends SOY2Action
+{
+    private $labelIds = array();
 
-	private $labelIds = array();
+    public function setLabelIds($labelIds)
+    {
+        $this->labelIds = $labelIds;
+    }
 
-	function setLabelIds($labelIds){
-		$this->labelIds = $labelIds;
-	}
+    public function execute()
+    {
+        $logic = SOY2Logic::createInstance("logic.site.Label.LabelLogic");
+        $subLabels = $logic->getNarrowLabels($this->labelIds);
 
-	function execute() {
+        //記事管理者の場合
+        if (count($subLabels) && !UserInfoUtil::hasSiteAdminRole()) {
+            $prohibitedLabelIds = $logic->getProhibitedLabelIds();
+            if (count($prohibitedLabelIds)) {
+                foreach ($subLabels as $key => $labelId) {
+                    if (in_array($labelId, $prohibitedLabelIds)) {
+                        unset($subLabels[$key]);
+                    }
+                }
+            }
+        }
 
-		$logic = SOY2Logic::createInstance("logic.site.Label.LabelLogic");
-		$subLabels = $logic->getNarrowLabels($this->labelIds);
+        $this->setAttribute("labels", $subLabels);
 
-		//記事管理者の場合
-		if(count($subLabels) && !UserInfoUtil::hasSiteAdminRole()){
-			$prohibitedLabelIds = $logic->getProhibitedLabelIds();
-			if(count($prohibitedLabelIds)){
-				foreach($subLabels as $key => $labelId){
-					if(in_array($labelId, $prohibitedLabelIds)){
-						unset($subLabels[$key]);
-					}
-				}
-			}
-		}
-
-		$this->setAttribute("labels",$subLabels);
-
-		return SOY2Action::SUCCESS;
-
-	}
+        return SOY2Action::SUCCESS;
+    }
 }
-?>

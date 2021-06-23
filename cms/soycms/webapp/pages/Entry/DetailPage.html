@@ -1,215 +1,218 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="<?php echo SOYCMS_ADMIN_HTML_LANG; ?>">
 
 <head soy:page="_common.HeaderPage" isOverWrite="true">
 </head soy:page="_common.HeaderPage">
 
 <body style="overflow:scroll!important;-webkit-overflow-scrolling:touch;">
 
-	<div id="wrapper">
-		<!-- Navigation -->
-		<nav  class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0" soy:page="_common.UpperMenuPage"><!-- --></nav>
-		<div id="page-wrapper">
+    <div id="wrapper">
+        <!-- Navigation -->
+        <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0" soy:page="_common.UpperMenuPage"></nav>
+        <div id="page-wrapper">
 
-			<form id="input_form" soy:id="detail_form">
+            <form id="input_form" soy:id="detail_form">
 
-			<div class="row">
-				<div class="col-lg-12">
-					<h1 class="page-header"><small><a soy:id="back_entry_list">記事一覧</a> &gt;</small> <span soy:id="page_title">詳細</span></h1>
-				</div>
-			</div>
-			<div soy:page="_common.MessagePanel" isOverWrite="true"></div>
+                <div class="row">
+                    <div class="col-lg-12">
+                        <h1 class="page-header"><small><a soy:id="back_entry_list">記事一覧</a> &gt;</small> <span soy:id="page_title">詳細</span></h1>
+                    </div>
+                </div>
+                <div soy:page="_common.MessagePanel" isOverWrite="true"></div>
 
-			<div class="row">
-				<div class="col-lg-9">
-					<div class="form-group">
-						<label>タイトル<span soy:message="HELP_ENTRY_TITLE"></span></label>
-						<input type="text" class="form-control" id="title" soy:id="title">
-					</div>
+                <div class="row">
+                    <div class="col-lg-9">
+                        <div class="form-group">
+                            <label>タイトル<span soy:message="HELP_ENTRY_TITLE"></span></label>
+                            <input type="text" class="form-control" id="title" soy:id="title">
+                        </div>
 
-					<div soy:id="entry_memo_wrapper" id="entry_memo_wrapper" class="form-group">
-						<label>メモ</label>
-						<input id="entry_memo" soy:id="entry_memo_input" onclick="edit_entry_memo();$(this).val($('#entry_description').val());" class="form-control">
-						<p class="help-block">クリックで編集できます。</p>
-						<input type="hidden" id="entry_description" name="description" style="width" soy:id="description">
-					</div soy:id="entry_memo_wrapper">
+                        <div soy:id="entry_memo_wrapper" id="entry_memo_wrapper" class="form-group">
+                            <label>メモ</label>
+                            <input id="entry_memo" soy:id="entry_memo_input" onclick="edit_entry_memo();$(this).val($('#entry_description').val());" class="form-control">
+                            <p class="help-block">クリックで編集できます。</p>
+                            <input type="hidden" id="entry_description" name="description" soy:id="description">
+                        </div soy:id="entry_memo_wrapper">
 
 
-					<div class="form-group">
-						<label>ラベル</label>
-						<div class="form-control-static">
-							<!-- soy:id="entry_label_memos" -->
-							<span class="label label-default label-soy" soy:id="entry_label_memo">ラベルのメモはこちらに表示</span>
-							<!-- /soy:id="entry_label_memos" -->
-						</div>
-					</div>
+                        <div class="form-group">
+                            <label>ラベル</label>
+                            <div class="form-control-static">
+                                <!-- soy:id="entry_label_memos" -->
+                                <span class="label label-default label-soy" soy:id="entry_label_memo">ラベルのメモはこちらに表示</span>
+                                <!-- /soy:id="entry_label_memos" -->
+                            </div>
+                        </div>
 
-					<div class="form-group">
-						<label>本文</label>
-						<textarea soy:id="content" id="entry_content" cols="80" class="form-control"></textarea>
-					</div>
-					<div class="form-group">
-						<label>追記</label>
-						<textarea soy:id="more" id="entry_more" cols="80" class="form-control"></textarea>
-					</div>
+                        <div class="form-group">
+                            <label>本文</label>
+                            <textarea soy:id="content" id="entry_content" cols="80" class="form-control"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>追記</label>
+                            <textarea soy:id="more" id="entry_more" cols="80" class="form-control"></textarea>
+                        </div>
 
-				</div>
+                    </div>
 
-				<div class="col-lg-3 hidden-xs" soy:panel="toolbox">
-					<div class="" soy:page="_common.ToolBoxPage"></div>
-				</div soy:panel="toolbox">
-			</div>
+                    <div class="col-lg-3 hidden-xs" soy:panel="toolbox">
+                        <div class="" soy:page="_common.ToolBoxPage"></div>
+                    </div soy:panel="toolbox">
+                </div>
 
-			<div class="row">
-				<div class="col-lg-12">
-					<div class="form-group">
-						<label>ラベル<span soy:message="HELP_ENTRY_LABEL"></span></label>
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="form-group">
+                            <label>ラベル<span soy:message="HELP_ENTRY_LABEL"></span></label>
 
-						<dl>
-						<!-- soy:id="label_categories" -->
-							<dt><!-- soy:id="category_name" /--></dt>
-							<dd id="labels">
-								<div class="well well-default" style="display:inline-block;">
-								<ul class="nav nav-pills">
-								<!-- soy:id="labels" -->
-								<li class="icon_v">
-									<label soy:id="label_label">
-										<input type="checkbox" soy:id="label_check" >
-										<img soy:src="./image/simplemode/new.gif" soy:id="label_icon">
-										<span soy:id="label_caption" class="label_caption label label-default label-soy">ラベル名</span>
-									</label>
-								</li>
-								<!-- /soy:id="labels" -->
-								</ul>
-								</div>
-							</dd>
-						<!-- /soy:id="label_categories" -->
-						</dl>
-					</div>
-				</div>
+                            <dl>
+                                <!-- soy:id="label_categories" -->
+                                <dt>
+                                    <!-- soy:id="category_name" /-->
+                                </dt>
+                                <dd id="labels">
+                                    <div class="well well-default" style="display:inline-block;">
+                                        <ul class="nav nav-pills">
+                                            <!-- soy:id="labels" -->
+                                            <li class="icon_v">
+                                                <label soy:id="label_label">
+                                                    <input type="checkbox" soy:id="label_check">
+                                                    <img soy:src="./image/simplemode/new.gif" soy:id="label_icon">
+                                                    <span soy:id="label_caption" class="label_caption label label-default label-soy">ラベル名</span>
+                                                </label>
+                                            </li>
+                                            <!-- /soy:id="labels" -->
+                                        </ul>
+                                    </div>
+                                </dd>
+                                <!-- /soy:id="label_categories" -->
+                            </dl>
+                        </div>
+                    </div>
 
-				<div class="col-lg-12">
-					<div class="entry_custom">
-						<!-- soy:custom="Entry.Detail" --><!-- /soy:custom="Entry.Detail" -->
-					</div>
-				</div>
-			</div>
+                    <div class="col-lg-12">
+                        <div class="entry_custom">
+                            <!-- soy:custom="Entry.Detail" -->
+                            <!-- /soy:custom="Entry.Detail" -->
+                        </div>
+                    </div>
+                </div>
 
-			<!-- soy:display="publish" -->
-			<div class="row">
-				<div class="col-lg-4">
-					<div class="form-group">
-						<label>公開設定<span soy:message="HELP_ENTRY_DRAFT"></span></label>
-						<div class="form-control-static">
-							<input type="radio" soy:id="state_draft">
-							<input type="radio" soy:id="state_public">
-						</div>
-					</div>
-				</div>
+                <!-- soy:display="publish" -->
+                <div class="row">
+                    <div class="col-lg-4">
+                        <div class="form-group">
+                            <label>公開設定<span soy:message="HELP_ENTRY_DRAFT"></span></label>
+                            <div class="form-control-static">
+                                <input type="radio" soy:id="state_draft">
+                                <input type="radio" soy:id="state_public">
+                            </div>
+                        </div>
+                    </div>
 
-				<div class="col-lg-4">
-					<div class="form-group">
-						<label>公開期間<span soy:message="HELP_ENTRY_OPEN_PERIOD"></span></label>
-						<div class="form-control-static">
-							<span soy:id="open_period_show" id="open_period_show"></span>
-							<button id="open_period_show_button" class="btn btn-default btn-sm" type="button" onclick="$('#open_period_show').hide();$('#open_period_input').show();$('#open_period_show_button').hide();">公開期間を設定する</button>
+                    <div class="col-lg-4">
+                        <div class="form-group">
+                            <label>公開期間<span soy:message="HELP_ENTRY_OPEN_PERIOD"></span></label>
+                            <div class="form-control-static">
+                                <span soy:id="open_period_show" id="open_period_show"></span>
+                                <button id="open_period_show_button" class="btn btn-default btn-sm" type="button" onclick="$('#open_period_show').hide();$('#open_period_input').show();$('#open_period_show_button').hide();">公開期間を設定する</button>
 
-							<div id="open_period_input" style="display:none;">
-								<table style="width: 28em">
-									<tr>
-										<td style="vertical-align:top;">
-											<input type="text" soy:id="start_date" id="start_date" size="25" maxlength="19" class="form-control">
+                                <div id="open_period_input" style="display:none;">
+                                    <table style="width: 28em">
+                                        <tr>
+                                            <td style="vertical-align:top;">
+                                                <input type="text" soy:id="start_date" id="start_date" size="25" maxlength="19" class="form-control">
 
-											<div style="font-size:10px;margin-top:5px;margin-left:5px;">
-												<a href="#" onclick="$('#start_date').val(buildDateString(movedate(new Date,0,0,0,0,0,0),true,false));return false;">今日</a><br/>
-												<a href="#" onclick="$('#start_date').val(buildDateString(movedate(new Date,0,0,1,0,0,0),true,false));return false;">明日</a><br/>
-												<a href="#" onclick="$('#start_date').val(buildDateString(movedate(new Date,0,0,7,0,0,0),true,false));return false;">来週</a><br/>
-												<a href="#" onclick="$('#start_date').val(buildDateString(movedate(new Date,0,1,0,0,0,0),true,false));return false;">来月</a><br/>
-												<a href="#" onclick="$('#start_date').val(buildDateString(movedate(new Date,0,0,0,0,0,0),false,false));return false;">現在の時刻</a><br/>
-												<a href="#" onclick="$('#start_date').val('');return false;">日時のクリア</a>
-											</div>
-										</td>
-										<td style="vertical-align:top;text-align:center;width:4em;">から</td>
-										<td style="vertical-align:top;">
-											<input type="text" soy:id="end_date" id="end_date" size="25" maxlength="19" class="form-control">
-											<div style="font-size:10px;">
-												<a href="#" onclick="$('#end_date').val(buildDateString(movedate(new Date,0,0,1,0,0,0),true,true));return false;">明日</a><br/>
-												<a href="#" onclick="$('#end_date').val(buildDateString(movedate(new Date,0,0,7,0,0,0),true,true));return false;">来週</a><br/>
-												<a href="#" onclick="$('#end_date').val(buildDateString(movedate(new Date,0,1,0,0,0,0),true,true));return false;">来月</a><br/>
-												<a href="#" onclick="$('#end_date').val(buildDateString(movedate(new Date,0,0,0,0,0,0),false,true));return false;">現在の時刻</a><br/>
-												<a href="#" onclick="$('#end_date').val('');return false;">日時のクリア</a>
-											</div>
-										</td>
-									</tr>
-								</table>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-			<!-- /soy:display="publish" -->
-			<?php /* publish と publish_info は排他 */ ?>
+                                                <div style="font-size:10px;margin-top:5px;margin-left:5px;">
+                                                    <a href="#" onclick="$('#start_date').val(buildDateString(movedate(new Date,0,0,0,0,0,0),true,false));return false;">今日</a><br />
+                                                    <a href="#" onclick="$('#start_date').val(buildDateString(movedate(new Date,0,0,1,0,0,0),true,false));return false;">明日</a><br />
+                                                    <a href="#" onclick="$('#start_date').val(buildDateString(movedate(new Date,0,0,7,0,0,0),true,false));return false;">来週</a><br />
+                                                    <a href="#" onclick="$('#start_date').val(buildDateString(movedate(new Date,0,1,0,0,0,0),true,false));return false;">来月</a><br />
+                                                    <a href="#" onclick="$('#start_date').val(buildDateString(movedate(new Date,0,0,0,0,0,0),false,false));return false;">現在の時刻</a><br />
+                                                    <a href="#" onclick="$('#start_date').val('');return false;">日時のクリア</a>
+                                                </div>
+                                            </td>
+                                            <td style="vertical-align:top;text-align:center;width:4em;">から</td>
+                                            <td style="vertical-align:top;">
+                                                <input type="text" soy:id="end_date" id="end_date" size="25" maxlength="19" class="form-control">
+                                                <div style="font-size:10px;">
+                                                    <a href="#" onclick="$('#end_date').val(buildDateString(movedate(new Date,0,0,1,0,0,0),true,true));return false;">明日</a><br />
+                                                    <a href="#" onclick="$('#end_date').val(buildDateString(movedate(new Date,0,0,7,0,0,0),true,true));return false;">来週</a><br />
+                                                    <a href="#" onclick="$('#end_date').val(buildDateString(movedate(new Date,0,1,0,0,0,0),true,true));return false;">来月</a><br />
+                                                    <a href="#" onclick="$('#end_date').val(buildDateString(movedate(new Date,0,0,0,0,0,0),false,true));return false;">現在の時刻</a><br />
+                                                    <a href="#" onclick="$('#end_date').val('');return false;">日時のクリア</a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- /soy:display="publish" -->
+                <?php /* publish と publish_info は排他 */ ?>
 
-			<div class="row">
-				<!-- soy:display="publish_info" -->
-				<div class="col-lg-4">
-					<div class="form-group">
-						<label>公開情報</label>
-						<div class="form-control-static">
-							<span soy:id="publish_info">公開中</span>
-							<p class="sub">公開期間</p>
-							<span soy:id="period_info">設定なし</span>
-						</div>
-					</div>
-				</div>
-				<!-- /soy:display="publish_info" -->
+                <div class="row">
+                    <!-- soy:display="publish_info" -->
+                    <div class="col-lg-4">
+                        <div class="form-group">
+                            <label>公開情報</label>
+                            <div class="form-control-static">
+                                <span soy:id="publish_info">公開中</span>
+                                <p class="sub">公開期間</p>
+                                <span soy:id="period_info">設定なし</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /soy:display="publish_info" -->
 
-				<div class="col-lg-4">
-					<div class="form-group">
-						<label>作成日<span soy:message="HELP_ENTRY_CREATE_DATE"></span></label>
-						<div class="form-control-static">
-							<span soy:id="createdate_show" id="create_show"></span>
-							<button id="create_show_button" class="btn btn-default btn-sm" type="button" onclick="$('#create_show').hide();$('#create_input').show();$('#create_show_button').hide();">変更する</button>
-							<input type="text" soy:id="createdate" id="create_input" style="display:none;" size="25" class="form-control">
-						</div>
-					</div>
-				</div>
+                    <div class="col-lg-4">
+                        <div class="form-group">
+                            <label>作成日<span soy:message="HELP_ENTRY_CREATE_DATE"></span></label>
+                            <div class="form-control-static">
+                                <span soy:id="createdate_show" id="create_show"></span>
+                                <button id="create_show_button" class="btn btn-default btn-sm" type="button" onclick="$('#create_show').hide();$('#create_input').show();$('#create_show_button').hide();">変更する</button>
+                                <input type="text" soy:id="createdate" id="create_input" style="display:none;" size="25" class="form-control">
+                            </div>
+                        </div>
+                    </div>
 
-				<div class="col-lg-4">
-					<div class="form-group">
-						<label>最終更新日時</label>
-						<div class="form-control-static">
-							<span soy:id="updatedate_show"></span>
-						</div>
-					</div>
-				</div>
-			</div>
+                    <div class="col-lg-4">
+                        <div class="form-group">
+                            <label>最終更新日時</label>
+                            <div class="form-control-static">
+                                <span soy:id="updatedate_show"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-			<div class="row">
-				<div class="col-lg-12">
-					<div class="form-group">
-						<input id="update_button" soy:id="update_button" class="btn btn-primary btn-lg btn-block" type="submit" value="更新" />
-						<input id="create_button" soy:id="create_button" class="btn btn-primary btn-lg btn-block" type="submit" value="新規" />
-					</div>
-				</div>
-			</div>
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="form-group">
+                            <input id="update_button" soy:id="update_button" class="btn btn-primary btn-lg btn-block" type="submit" value="更新" />
+                            <input id="create_button" soy:id="create_button" class="btn btn-primary btn-lg btn-block" type="submit" value="新規" />
+                        </div>
+                    </div>
+                </div>
 
-			<input type="hidden" name="style" id="style" soy:id="style" />
-			</form soy:id="detail_form">
+                <input type="hidden" name="style" id="style" soy:id="style" />
+            </form soy:id="detail_form">
 
-			<div class="row visible-xs">
-				<div class="col-lg-12">
-					<div soy:panel="toolbox"></div>
-				</div>
-			</div>
+            <div class="row visible-xs">
+                <div class="col-lg-12">
+                    <div soy:panel="toolbox"></div>
+                </div>
+            </div>
 
-		</div>
-		<!-- /#page-wrapper -->
-		<!-- soy:page="_common.FooterPage" /-->
-	</div>
-	<!-- /#wrapper -->
+        </div>
+        <!-- /#page-wrapper -->
+        <!-- soy:page="_common.FooterPage" /-->
+    </div>
+    <!-- /#wrapper -->
 
-	<!-- soy:id="entry_editor_javascripts" /-->
+    <!-- soy:id="entry_editor_javascripts" /-->
 
 </body>
 

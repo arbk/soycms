@@ -3,13 +3,13 @@
 /**
  * @table EntryLabel
  */
-class EntryLabel {
+class EntryLabel
+{
+    const ORDER_MAX = 10000000;
 
-	const ORDER_MAX = 10000000;
-
-	/**
-	 * @column entry_id
-	 */
+    /**
+     * @column entry_id
+     */
     private $entryId;
 
     /**
@@ -22,26 +22,35 @@ class EntryLabel {
      */
     private $displayOrder;
 
-    function getEntryId() {
-    	return $this->entryId;
+    public function getEntryId()
+    {
+        return $this->entryId;
     }
-    function setEntryId($entryId) {
-    	$this->entryId = $entryId;
+    public function setEntryId($entryId)
+    {
+        $this->entryId = $entryId;
     }
-    function getLabelId() {
-    	return $this->labelId;
+    public function getLabelId()
+    {
+        return $this->labelId;
     }
-    function setLabelId($labelId) {
-    	$this->labelId = $labelId;
+    public function setLabelId($labelId)
+    {
+        $this->labelId = $labelId;
     }
-    function getDisplayOrder() {
-    	return $this->displayOrder;
+    public function getDisplayOrder()
+    {
+        return $this->displayOrder;
     }
-    function setDisplayOrder($displayOrder) {
-    	if(((int)$displayOrder) >= EntryLabel::ORDER_MAX) return;
-    	$this->displayOrder = $displayOrder;
+    public function setDisplayOrder($displayOrder)
+    {
+        if (((int)$displayOrder) >= EntryLabel::ORDER_MAX) {
+            return;
+        }
+        $this->displayOrder = $displayOrder;
     }
-    function setMaxDisplayOrder(){
-    	$this->displayOrder = EntryLabel::ORDER_MAX;
+    public function setMaxDisplayOrder()
+    {
+        $this->displayOrder = EntryLabel::ORDER_MAX;
     }
 }

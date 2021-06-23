@@ -14,19 +14,19 @@
 /**
 $lines = explode("\n", $mailBody[0]);
 if(count($lines)){
-	$contents = array();
-	foreach($lines as $line){
-		//内容が空の場合はスルー
-		$c = trim(substr($line, strpos($line, ":") + 1));
-		if(!strlen($c)) continue;
+    $contents = array();
+    foreach($lines as $line){
+        //内容が空の場合はスルー
+        $c = trim(substr($line, strpos($line, ":") + 1));
+        if(!strlen($c)) continue;
 
-		//お問い合わせへのリンクの出力前にbreak
-		if(strpos($line, "--") === 0) break;
+        //お問い合わせへのリンクの出力前にbreak
+        if(strpos($line, "--") === 0) break;
 
-		$line = trim(str_replace(array(" ", "　"), "", $line));
-		$contents[] = $line;
-	}
+        $line = trim(str_replace(array(" ", "　"), "", $line));
+        $contents[] = $line;
+    }
 
-	$mailBody[0] = implode("\n", $contents);
+    $mailBody[0] = implode("\n", $contents);
 }
 **/

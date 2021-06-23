@@ -1,109 +1,107 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="<?php echo SOYCMS_ADMIN_HTML_LANG; ?>">
 
 <head soy:page="_common.HeaderPage" isOverWrite="true">
 </head soy:page="_common.HeaderPage">
 
 <body>
 
-	<div id="wrapper">
-		<!-- Navigation -->
-		<nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0" soy:page="_common.UpperMenuPage"><!-- --></nav>
-		<div id="page-wrapper">
-			<div class="row">
-				<div class="col-lg-12">
-					<h1 class="page-header"><small><a soy:link="Page">ページ</a> &gt;</small> ページ雛形管理</h1>
-				</div>
-				<!-- /.col-lg-12 -->
-			</div>
+    <div id="wrapper">
+        <!-- Navigation -->
+        <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0" soy:page="_common.UpperMenuPage"></nav>
+        <div id="page-wrapper">
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header"><small><a soy:link="Page">ページ</a> &gt;</small> ページ雛形管理</h1>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
 
-			<div soy:page="_common.MessagePanel" isOverWrite="true"></div>
+            <div soy:page="_common.MessagePanel" isOverWrite="true"></div>
 
-			<div class="row">
-				<div class="col-lg-12">
-					<div class="panel panel-default">
-						<div class="panel-body">
-							<a class="btn btn-default" soy:link="Page.Create" onclick="return common_click_to_layer(this,{height:540});">ページ新規作成</a>
-							<a class="btn btn-default" soy:link="Blog">ブログ一覧</a>
-							<div class="btn-group">
-								<a class="btn btn-default active" soy:link="Template">ページ雛型管理</a>
-								<button type="button" class="btn btn-default dropdown-toggle active" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-									<span class="caret"></span>
-									<span class="sr-only">Toggle Dropdown</span>
-								</button>
-								<ul class="dropdown-menu">
-									<li><a soy:link="Template.Create">新規作成</a></li>
-									<li><a soy:link="Template.Upload" onclick="return common_click_to_layer(this);">アップロード</a></li>
-								</ul>
-							</div>
-							<a class="btn btn-default" soy:link="Module">モジュール管理</a>
-						</div>
-					</div>
-				</div>
-				<!-- /.col-lg-12 -->
-			</div>
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="panel panel-default">
+                        <div class="panel-body">
+                            <a class="btn btn-default" soy:link="Page.Create" onclick="return common_click_to_layer(this,{height:540});">ページ新規作成</a>
+                            <a class="btn btn-default" soy:link="Blog">ブログ一覧</a>
+                            <div class="btn-group">
+                                <a class="btn btn-default active" soy:link="Template">ページ雛型管理</a>
+                                <button type="button" class="btn btn-default dropdown-toggle active" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <span class="caret"></span>
+                                    <span class="sr-only">Toggle Dropdown</span>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a soy:link="Template.Create">新規作成</a></li>
+                                    <li><a soy:link="Template.Upload" onclick="return common_click_to_layer(this);">アップロード</a></li>
+                                </ul>
+                            </div>
+                            <a class="btn btn-default" soy:link="Module">モジュール管理</a>
+                        </div>
+                    </div>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
 
-			<div class="row">
-				<div class="col-lg-12">
-					<div class="panel panel-green">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="panel panel-green">
 
-						<div class="panel-heading">
-							ページ雛形一覧
-							<div class="pull-right">
-								<a class="btn btn-default btn-xs" soy:link="Template.Create">新規作成</a>
-								<a class="btn btn-default btn-xs" soy:link="Template.Upload" onclick="return common_click_to_layer(this);">アップロード</a>
-							</div>
-						</div>
+                        <div class="panel-heading">
+                            ページ雛形一覧
+                            <div class="pull-right">
+                                <a class="btn btn-default btn-xs" soy:link="Template.Create">新規作成</a>
+                                <a class="btn btn-default btn-xs" soy:link="Template.Upload" onclick="return common_click_to_layer(this);">アップロード</a>
+                            </div>
+                        </div>
 
-						<!-- soy:id="no_template_message" -->
-						<div class="panel-body">
-							現在登録されているページ雛形はありません。
-						</div>
-						<!-- /soy:id="no_template_message" -->
+                        <!-- soy:id="no_template_message" -->
+                        <div class="panel-body">
+                            現在登録されているページ雛形はありません。
+                        </div>
+                        <!-- /soy:id="no_template_message" -->
 
-						<!-- soy:display="must_exists_template" -->
-						<div class="table-responsive">
-							 <table class="table table-striped">
-								<thead>
-									<tr>
-										<td class="">タイトル</td>
-										<td class="">種類</td>
-										<td class="">説明</td>
-										<td class="">操作</td>
-									</tr>
-								</thead>
-								<tbody>
-									<tr soy:id="template_list">
-										<td class="">
-											<a soy:id="title"></a>
-										</td>
-										<td class="">
-											<span soy:id="template_type"></span>
-										</td>
-										<td class=""><span soy:id="description"">dd</span></td>
-										<td class="">
-											<div class="btn-group">
-												<a class="btn btn-default" soy:id="modify_link">詳細</a>
-												<a class="btn btn-default" soy:id="install_link">インストール</a>
-												<a class="btn btn-default" soy:id="uninstall_link">アンインストール</a>
-												<a class="btn btn-default" soy:id="remove_link" onclick="return confirm('削除してもよろしいですか？');">削除</a>
-												<a class="btn btn-default" soy:id="download">ダウンロード</a>
-											</div>
-										</td>
-									</tr soy:id="template_list">
-								</tbody>
-							</table>
-						</div>
-						<!-- /soy:display="must_exists_template" -->
-					</div>
-				</div>
-				<!-- /.col-lg-12 -->
-			</div>
-		</div>
-		<!-- /#page-wrapper -->
-		<!-- soy:page="_common.FooterPage" /-->
-	</div>
-	<!-- /#wrapper -->
+                        <!-- soy:display="must_exists_template" -->
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <td class="">タイトル</td>
+                                        <td class="">種類</td>
+                                        <td class="">説明</td>
+                                        <td class="">操作</td>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr soy:id="template_list">
+                                        <td class=""><a soy:id="title"></a></td>
+                                        <td class=""><span soy:id="template_type"></span></td>
+                                        <td class=""><span soy:id="description"">dd</span></td>
+                                        <td class="">
+                                            <div class=" btn-group">
+                                                <a class="btn btn-default" soy:id="modify_link">詳細</a>
+                                                <a class="btn btn-default" soy:id="install_link">インストール</a>
+                                                <a class="btn btn-default" soy:id="uninstall_link">アンインストール</a>
+                                                <a class="btn btn-default" soy:id="remove_link" onclick="return confirm('削除してもよろしいですか？');">削除</a>
+                                                <a class="btn btn-default" soy:id="download">ダウンロード</a>
+                                            </div>
+                                        </td>
+                                    </tr soy:id="template_list">
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- /soy:display="must_exists_template" -->
+                    </div>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+        </div>
+        <!-- /#page-wrapper -->
+
+        <!-- soy:page="_common.FooterPage" /-->
+
+    </div>
+    <!-- /#wrapper -->
 
 </body>
 

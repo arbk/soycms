@@ -1,17 +1,15 @@
 <?php
 
-class CreatePage extends CMSWebPageBase{
+class CreatePage extends CMSWebPageBase
+{
+    private $labels;
 
-	var $labels;
-
-    function __construct($arg) {
-
-    	$this->labels = $arg;
-
-    	$this->jump("Entry.Detail",array(
-    		"initLabelList" => $arg
-    	));
-
-    	exit;
+    public function __construct($arg)
+    {
+        $this->labels = $arg;
+        $this->jump("Entry.Detail", array(
+        "initLabelList" => $arg
+        ));
+        exit;
     }
 }

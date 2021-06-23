@@ -2,29 +2,28 @@
  /**
  * @entity admin.AutoLogin
  */
-abstract class AutoLoginDAO extends SOY2DAO{
+abstract class AutoLoginDAO extends SOY2DAO
+{
+    /**
+     * @return id
+     */
+    abstract public function insert(AutoLogin $bean);
 
-	/**
-	 * @return id
-	 */
-	abstract function insert(AutoLogin $bean);
+    abstract public function update(AutoLogin $bean);
 
-	abstract function update(AutoLogin $bean);
+    abstract public function delete($id);
 
-	abstract function delete($id);
+    /**
+     * @return object
+     */
+    abstract public function getByToken($token);
 
-	/**
-	 * @return object
-	 */
-	abstract function getByToken($token);
+    /**
+     * @query #limit# < :time
+     */
+    abstract public function deleteByTime($time);
 
-	/**
-	 * @query #limit# < :time
-	 */
-	abstract function deleteByTime($time);
+    abstract public function get();
 
-	abstract function get();
-
-	abstract function deleteByUserId($userId);
-
+    abstract public function deleteByUserId($userId);
 }

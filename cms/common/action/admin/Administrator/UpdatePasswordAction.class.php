@@ -1,58 +1,62 @@
 <?php
-class UpdatePasswordAction extends SOY2Action{
+class UpdatePasswordAction extends SOY2Action
+{
+    protected function execute(SOY2ActionRequest &$request, SOY2ActionForm &$form, SOY2ActionResponse &$response)
+    {
+        $this->setAttribute("form", $form);
 
-    protected function execute(SOY2ActionRequest &$request,SOY2ActionForm &$form,SOY2ActionResponse &$response){
+        if ($form->hasError()) {
+            foreach ($form as $key => $value) {
+                if ($form->isError($key)) {
+                    $this->setErrorMessage($key, $form->getErrorString($key));
+                }
+            }
+            return SOY2Action::FAILED;
+        }
 
-		$this->setAttribute("form",$form);
+        //他人のパスワードを変更できるのは初期管理者のみ
+        if (!UserInfoUtil::isDefaultUser()) {
+            return SOY2Action::FAILED;
+        }
 
-		if($form->hasError()){
-			foreach($form as $key => $value){
-				if($form->isError($key)){
-					$this->setErrorMessage($key,$form->getErrorString($key));
-				}
-			}
-			return SOY2Action::FAILED;
-		}
+        //変更
+        $logic = SOY2Logic::createInstance("logic.admin.Administrator.AdministratorLogic");
+        if ($logic->updateAdministratorPassword($form->administratorId, $form->newPassword)) {
+            return SOY2Action::SUCCESS;
+        }
 
-		//他人のパスワードを変更できるのは初期管理者のみ
-		if(!UserInfoUtil::isDefaultUser()){
-			return SOY2Action::FAILED;
-		}
-
-		//変更
-		$logic = SOY2Logic::createInstance("logic.admin.Administrator.AdministratorLogic");
-		if($logic->updateAdministratorPassword($form->administratorId,$form->newPassword)){
-			return SOY2Action::SUCCESS;
-		}
-
-		return SOY2Action::FAILED;
-	}
+        return SOY2Action::FAILED;
+    }
 }
 
-class UpdatePasswordActionForm extends SOY2ActionForm{
-	var $administratorId;//変更する管理者のAdministrator.id
-	var $newPassword; //新しいパスワード
+class UpdatePasswordActionForm extends SOY2ActionForm
+{
+    public $administratorId;//変更する管理者のAdministrator.id
+    public $newPassword; //新しいパスワード
 
+    public function getAdministratorId()
+    {
+        return $this->administratorId;
+    }
 
-	function getAdministratorId(){
-		return $this->administratorId;
-	}
-
-	/**
+    /**
      * @validator string { "require" : true }
-	 */
-	function setAdministratorId($administratorId){
-		$this->administratorId = $administratorId;
-	}
+     */
+    public function setAdministratorId($administratorId)
+    {
+        $this->administratorId = $administratorId;
+    }
 
-	function getNewPassword() {
-		return $this->newPassword;
-	}
+    public function getNewPassword()
+    {
+        return $this->newPassword;
+    }
 
-	/**
+    /**
      * @validator string {"max" : 30, "min" : 6, "require" : true }
      */
-	function setNewPassword($newPassword) {
-		$this->newPassword = $newPassword;
-	}
+    public function setNewPassword($newPassword)
+    {
+        $this->newPassword = $newPassword;
+    }
 }

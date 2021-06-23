@@ -1,69 +1,71 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="<?php echo SOYCMS_ADMIN_HTML_LANG; ?>">
 
 <head soy:page="_common.HeaderPage" isOverWrite="true">
 </head soy:page="_common.HeaderPage">
+
 <body>
 
-	<div id="wrapper">
-		<!-- Navigation -->
-		<nav  class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0" soy:page="_common.UpperMenuPage"><!-- --></nav>
-		<div id="page-wrapper">
-			<div class="row">
-				<div class="col-lg-12">
-					<h1 class="page-header">プラグイン管理</h1>
-				</div>
-				<!-- /.col-lg-12 -->
-			</div>
-			<div soy:page="_common.MessagePanel" isOverWrite="true"></div>
-			<div class="row">
-				<div class="col-lg-12">
-					<!-- soy:id="plguin_category_list" -->
-					<div class="panel panel-green">
-						<div class="panel-heading">
-							<a soy:id="category_name" data-toggle="collapse" href="#collapseOne" style="color:white;width:100%;height:100%;display:block;text-decoration:none;">カテゴリー名</a>
-						</div>
+    <div id="wrapper">
+        <!-- Navigation -->
+        <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0" soy:page="_common.UpperMenuPage"></nav>
+        <div id="page-wrapper">
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header">プラグイン管理</h1>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+            <div soy:page="_common.MessagePanel" isOverWrite="true"></div>
+            <div class="row">
+                <div class="col-lg-12">
+                    <!-- soy:id="plguin_category_list" -->
+                    <div class="panel panel-green">
+                        <div class="panel-heading">
+                            <a soy:id="category_name" data-toggle="collapse" href="#collapseOne" style="color:white;width:100%;height:100%;display:block;text-decoration:none;">カテゴリー名</a>
+                        </div>
 
-						<div class="panel-body panel-collapse collapse in" soy:id="has_plugin">
-						<!-- soy:id="plugin_list" -->
-							<div soy:id="plugin_box" class="plugin_box">
-								<a soy:id="config_link">
-									<p><img soy:id="plugin_icon" width="90"></p>
-									<p soy:id="plugin_name"></p>
-								</a>
-							</div soy:id="plugin_box">
-						<!--/soy:id="plugin_list" -->
-						</div soy:id="has_plugin">
+                        <div class="panel-body panel-collapse collapse in" soy:id="has_plugin">
+                            <!-- soy:id="plugin_list" -->
+                            <div soy:id="plugin_box" class="plugin_box">
+                                <a soy:id="config_link">
+                                    <p><img soy:id="plugin_icon" width="90"></p>
+                                    <p soy:id="plugin_name"></p>
+                                </a>
+                            </div soy:id="plugin_box">
+                            <!--/soy:id="plugin_list" -->
+                        </div soy:id="has_plugin">
 
-						<div class="panel-body" soy:id="no_plugin">
-							<span>該当するプラグインはありません。</span>
-						</div>
-					</div>
-					<!-- /soy:id="plguin_category_list" -->
-				</div>
-				<!-- /.col-lg-12 -->
-			</div>
+                        <div class="panel-body" soy:id="no_plugin">
+                            <span>該当するプラグインはありません。</span>
+                        </div>
+                    </div>
+                    <!-- /soy:id="plguin_category_list" -->
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
 
-			<form style="display:none" id="hidden_form" soy:id="hidden_form">
-				<input type="hidden" name="category_name" id="category_name">
-			</form soy:id="hidden_form">
-		</div>
-		<!-- /#page-wrapper -->
-		<!-- soy:page="_common.FooterPage" /-->
-	</div>
-	<!-- /#wrapper -->
+            <form style="display:none" id="hidden_form" soy:id="hidden_form">
+                <input type="hidden" name="category_name" id="category_name">
+            </form soy:id="hidden_form">
+        </div>
+        <!-- /#page-wrapper -->
+        <!-- soy:page="_common.FooterPage" /-->
+    </div>
+    <!-- /#wrapper -->
 
-	<script type="text/JavaScript">
-	function create_category(){
-		var category = prompt("追加するカテゴリ名を入力してください","");
-		if(!category || category.length == 0){
-			return false;
-		}else{
-			$("#category_name").val(category);
-			$("#hidden_form").submit();
-		}
-	}
-	</script>
+    <script type="text/JavaScript">
+    function create_category(){
+        var category = prompt("追加するカテゴリ名を入力してください","");
+        if(!category || category.length == 0){
+            return false;
+        }else{
+            $("#category_name").val(category);
+            $("#hidden_form").submit();
+        }
+    }
+    </script>
 
 </body>
+
 </html>

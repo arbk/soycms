@@ -1,302 +1,435 @@
 <?php
 
-class UpdateBlogConfigAction extends SOY2Action{
+class UpdateBlogConfigAction extends SOY2Action
+{
+    public $id;
 
-	var $id;
+    public function setId($id)
+    {
+        $this->id = $id;
+    }
 
-	function setId($id){
-		$this->id = $id;
-	}
+    protected function execute(SOY2ActionRequest &$request, SOY2ActionForm &$form, SOY2ActionResponse &$response)
+    {
+        // 生成フラグの変換
+        if ($form->entryPageUri == $form->categoryPageUri
+        || $form->entryPageUri == $form->monthPageUri
+        || $form->entryPageUri == $form->rssPageUri
+        || $form->categoryPageUri == $form->monthPageUri
+        || $form->categoryPageUri == $form->rssPageUri
+        || $form->monthPageUri == $form->rssPageUri
+        ) {
+            return SOY2Action::FAILED;
+        }
 
-    protected function execute(SOY2ActionRequest &$request,SOY2ActionForm &$form,SOY2ActionResponse &$response){
+        $dao = SOY2DAOFactory::create("cms.BlogPageDAO");
+        $page = $dao->getById($this->id);
+        $page = SOY2::cast($page, $form);
 
-    	//生成フラグの変換
+        //カテゴリ未選択の場合は、pageオブジェクトも未選択にする
+        if (null===$form->getCategoryLabelList()) {
+            $page->setCategoryLabelList(null);
+        }
 
-    	if(
-    		$form->entryPageUri == $form->categoryPageUri
-    		|| $form->entryPageUri == $form->monthPageUri
-    		|| $form->entryPageUri == $form->rssPageUri
-    		|| $form->categoryPageUri == $form->monthPageUri
-    		|| $form->categoryPageUri == $form->rssPageUri
-    		|| $form->monthPageUri == $form->rssPageUri
-    	){
-    		return SOY2Action::FAILED;
-    	}
+        $page->setId($this->id);
 
-    	$dao = SOY2DAOFactory::create("cms.BlogPageDAO");
-    	$page = $dao->getById($this->id);
-    	$page = SOY2::cast($page,$form);
-		
-    	//カテゴリ未選択の場合は、pageオブジェクトも未選択にする
-    	if(is_null($form->getCategoryLabelList())) $page->setCategoryLabelList(null);
+        try {
+            $dao->updatePageConfig($page);
+        } catch (Exception $e) {
+            return SOY2Action::FAILED;
+        }
 
-    	$page->setId($this->id);
-
-		try{
-	    	$dao->updatePageConfig($page);
-		}catch(Exception $e){
-			return SOY2Action::FAILED;
-		}
-
-    	return SOY2Action::SUCCESS;
+        return SOY2Action::SUCCESS;
     }
 }
 
-class UpdateBlogConfigActionForm extends SOY2ActionForm{
+class UpdateBlogConfigActionForm extends SOY2ActionForm
+{
+    public $title;
+    public $icon;
+    public $uri;
+    public $parentPageId;
+    public $description;
 
-	var $uri;
-	var $title;
-	var $openPeriodStart;
-    var $openPeriodEnd;
-    var $isPublished;
-    var $parentPageId;
-    var $topPageUri;
-	var $entryPageUri;
-	var $monthPageUri;
-	var $categoryPageUri;
-	var $rssPageUri;
-	var $topDisplayCount;
-	var $monthDisplayCount;
-	var $categoryDisplayCount;
-	var $rssDisplayCount;
-	var $topEntrySort;
-	var $monthEntrySort;
-	var $categoryEntrySort;
-	var $generateTopFlag;
-	var $generateEntryFlag;
-	var $generateMonthFlag;
-	var $generateCategoryFlag;
-	var $generateRssFlag;
-	var $blogLabelId;
-	var $categoryLabelList = array();
-	var $topTitleFormat;
-	var $monthTitleFormat;
-	var $entryTitleFormat;
-	var $categoryTitleFormat;
-	var $feedTitleFormat;
-	var $icon;
-	var $description;
-	var $bBlockConfig;
+    public $blogLabelId;
+    public $categoryLabelList = array();
 
-    function setId($id) {
-    	$this->id = $id;
+    public $generateTopFlag;
+    public $generateEntryFlag;
+    public $generateMonthFlag;
+    public $generateCategoryFlag;
+    public $generateRssFlag;
+
+    public $topDisplayCount;
+    public $monthDisplayCount;
+    public $categoryDisplayCount;
+    public $rssDisplayCount;
+
+    public $topPageUri;
+    public $entryPageUri;
+    public $monthPageUri;
+    public $categoryPageUri;
+    public $rssPageUri;
+
+    public $topTitleFormat;
+    public $entryTitleFormat;
+    public $monthTitleFormat;
+    public $categoryTitleFormat;
+    public $feedTitleFormat;
+
+    public $topEntrySortType;
+    public $topEntrySort;
+    public $monthEntrySortType;
+    public $monthEntrySort;
+    public $categoryEntrySortType;
+    public $categoryEntrySort;
+
+    public $topEntryOpdata;
+    public $monthEntryOpdata;
+    public $categoryEntryOpdata;
+
+    public $openPeriodStart;
+    public $openPeriodEnd;
+
+    public $isPublished;
+
+    public $bBlockConfig;
+
+    public function getTitle()
+    {
+        return $this->title;
     }
-    function getUri() {
-    	return $this->uri;
+    public function setTitle($title)
+    {
+        $this->title = $title;
     }
-    function setUri($uri) {
-    	$this->uri = $uri;
+    public function getIcon()
+    {
+        return $this->icon;
     }
-    function getTitle() {
-    	return $this->title;
+    public function setIcon($icon)
+    {
+        $this->icon = $icon;
     }
-    function setTitle($title) {
-    	$this->title = $title;
+    public function getUri()
+    {
+        return $this->uri;
     }
-    function getOpenPeriodStart() {
-    	return $this->openPeriodStart;
+    public function setUri($uri)
+    {
+        $this->uri = $uri;
     }
-    function setOpenPeriodStart($openPeriodStart) {
-    	$tmpDate = (strlen($openPeriodStart)) ? strtotime($openPeriodStart) : false;
-    	if($tmpDate === false){
-    		$this->openPeriodStart = null;
-    	}else{
-    		$this->openPeriodStart = $tmpDate;
-    	}
+    public function getParentPageId()
+    {
+        return $this->parentPageId;
     }
-    function getOpenPeriodEnd() {
-    	return $this->openPeriodEnd;
+    public function setParentPageId($parentPageId)
+    {
+        $this->parentPageId = $parentPageId;
     }
-    function setOpenPeriodEnd($openPeriodEnd) {
-    	$tmpDate = (strlen($openPeriodEnd)) ? strtotime($openPeriodEnd) : false;
-    	if($tmpDate === false){
-    		$this->openPeriodEnd = null;
-    	}else{
-    		$this->openPeriodEnd = $tmpDate;
-    	}
+    public function getDescription()
+    {
+        return $this->description;
     }
-    function getIsPublished() {
-    	return $this->isPublished;
-    }
-    function setIsPublished($isPublished) {
-    	$this->isPublished = $isPublished;
-    }
-    function getParentPageId() {
-    	return $this->parentPageId;
-    }
-    function setParentPageId($parentPageId) {
-    	$this->parentPageId = $parentPageId;
-    }
-    function getEntryPageUri() {
-    	return $this->entryPageUri;
-    }
-    function setEntryPageUri($entryPageUri) {
-    	$this->entryPageUri = $entryPageUri;
-    }
-    function getCategoryLabelList() {
-    	return $this->categoryLabelList;
-    }
-    function setCategoryLabelList($categoryLabelList) {
-    	$this->categoryLabelList = $categoryLabelList;
+    public function setDescription($description)
+    {
+        $this->description = $description;
     }
 
-
-    function getMonthPageUri() {
-    	return $this->monthPageUri;
+    public function getBlogLabelId()
+    {
+        return $this->blogLabelId;
     }
-    function setMonthPageUri($monthPageUri) {
-    	$this->monthPageUri = $monthPageUri;
+    public function setBlogLabelId($blogLabelId)
+    {
+        $this->blogLabelId = $blogLabelId;
     }
-    function getCategoryPageUri() {
-    	return $this->categoryPageUri;
+    public function getCategoryLabelList()
+    {
+        return $this->categoryLabelList;
     }
-    function setCategoryPageUri($categoryPageUri) {
-    	$this->categoryPageUri = $categoryPageUri;
-    }
-    function getRssPageUri() {
-    	return $this->rssPageUri;
-    }
-    function setRssPageUri($rssPageUri) {
-    	$this->rssPageUri = $rssPageUri;
-    }
-    function getTopDisplayCount() {
-    	return $this->topDisplayCount;
-    }
-    function setTopDisplayCount($topDisplayCount) {
-    	$this->topDisplayCount = $topDisplayCount;
-    }
-    function getMonthDisplayCount() {
-    	return $this->monthDisplayCount;
-    }
-    function setMonthDisplayCount($monthDisplayCount) {
-    	$this->monthDisplayCount = $monthDisplayCount;
-    }
-    function getCategoryDisplayCount() {
-    	return $this->categoryDisplayCount;
-    }
-    function setCategoryDisplayCount($categoryDisplayCount) {
-    	$this->categoryDisplayCount = $categoryDisplayCount;
-    }
-    function getRssDisplayCount() {
-    	return $this->rssDisplayCount;
-    }
-    function setRssDisplayCount($rssDisplayCount) {
-    	$this->rssDisplayCount = $rssDisplayCount;
-    }
-    function getTopEntrySort(){
-    	return $this->topEntrySort;
-    }
-    function setTopEntrySort($topEntrySort){
-    	$this->topEntrySort = $topEntrySort;
-    }
-    function getMonthEntrySort(){
-    	return $this->monthEntrySort;
-    }
-    function setMonthEntrySort($monthEntrySort){
-    	$this->monthEntrySort = $monthEntrySort;
-    }
-    function getCategoryEntrySort(){
-    	return $this->categoryEntrySort;
-    }
-    function setCategoryEntrySort($categoryEntrySort){
-    	$this->categoryEntrySort = $categoryEntrySort;
-    }
-    function getGenerateTopFlag() {
-    	return $this->generateTopFlag;
-    }
-    function setGenerateTopFlag($generateTopFlag) {
-    	$this->generateTopFlag = (boolean)$generateTopFlag;
-    }
-    function getGenerateMonthFlag() {
-    	return $this->generateMonthFlag;
-    }
-    function setGenerateMonthFlag($generateMonthFlag) {
-    	$this->generateMonthFlag = (boolean)$generateMonthFlag;
-    }
-    function getGenerateCategoryFlag() {
-    	return $this->generateCategoryFlag;
-    }
-    function setGenerateCategoryFlag($generateCategoryFlag) {
-    	$this->generateCategoryFlag = (boolean)$generateCategoryFlag;
-    }
-    function getGenerateRssFlag() {
-    	return $this->generateRssFlag;
-    }
-    function setGenerateRssFlag($generateRssFlag) {
-    	$this->generateRssFlag = (boolean)$generateRssFlag;
+    public function setCategoryLabelList($categoryLabelList)
+    {
+        $this->categoryLabelList = $categoryLabelList;
     }
 
-    function getGenerateEntryFlag() {
-    	return $this->generateEntryFlag;
+    public function getGenerateTopFlag()
+    {
+        return $this->generateTopFlag;
     }
-    function setGenerateEntryFlag($generateEntryFlag) {
-    	$this->generateEntryFlag = (boolean)$generateEntryFlag;
+    public function setGenerateTopFlag($generateTopFlag)
+    {
+        $this->generateTopFlag = (boolean)$generateTopFlag;
     }
-
-    function getTopTitleFormat() {
-    	return $this->topTitleFormat;
+    public function getGenerateEntryFlag()
+    {
+        return $this->generateEntryFlag;
     }
-    function setTopTitleFormat($topTitleFormat) {
-    	$this->topTitleFormat = $topTitleFormat;
+    public function setGenerateEntryFlag($generateEntryFlag)
+    {
+        $this->generateEntryFlag = (boolean)$generateEntryFlag;
     }
-    function getMonthTitleFormat() {
-    	return $this->monthTitleFormat;
+    public function getGenerateMonthFlag()
+    {
+        return $this->generateMonthFlag;
     }
-    function setMonthTitleFormat($monthTitleFormat) {
-    	$this->monthTitleFormat = $monthTitleFormat;
+    public function setGenerateMonthFlag($generateMonthFlag)
+    {
+        $this->generateMonthFlag = (boolean)$generateMonthFlag;
     }
-    function getEntryTitleFormat() {
-    	return $this->entryTitleFormat;
+    public function getGenerateCategoryFlag()
+    {
+        return $this->generateCategoryFlag;
     }
-    function setEntryTitleFormat($entryTitleFormat) {
-    	$this->entryTitleFormat = $entryTitleFormat;
+    public function setGenerateCategoryFlag($generateCategoryFlag)
+    {
+        $this->generateCategoryFlag = (boolean)$generateCategoryFlag;
     }
-    function getCategoryTitleFormat() {
-    	return $this->categoryTitleFormat;
+    public function getGenerateRssFlag()
+    {
+        return $this->generateRssFlag;
     }
-    function setCategoryTitleFormat($categoryTitleFormat) {
-    	$this->categoryTitleFormat = $categoryTitleFormat;
-    }
-
-    function getIcon() {
-    	return $this->icon;
-    }
-    function setIcon($icon) {
-    	$this->icon = $icon;
-    }
-
-    function getBlogLabelId() {
-    	return $this->blogLabelId;
-    }
-    function setBlogLabelId($blogLabelId) {
-    	$this->blogLabelId = $blogLabelId;
+    public function setGenerateRssFlag($generateRssFlag)
+    {
+        $this->generateRssFlag = (boolean)$generateRssFlag;
     }
 
-    function getDescription() {
-    	return $this->description;
+    public function getTopDisplayCount()
+    {
+        return $this->topDisplayCount;
     }
-    function setDescription($description) {
-    	$this->description = $description;
+    public function setTopDisplayCount($topDisplayCount)
+    {
+        $this->topDisplayCount = $topDisplayCount;
+    }
+    public function getMonthDisplayCount()
+    {
+        return $this->monthDisplayCount;
+    }
+    public function setMonthDisplayCount($monthDisplayCount)
+    {
+        $this->monthDisplayCount = $monthDisplayCount;
+    }
+    public function getCategoryDisplayCount()
+    {
+        return $this->categoryDisplayCount;
+    }
+    public function setCategoryDisplayCount($categoryDisplayCount)
+    {
+        $this->categoryDisplayCount = $categoryDisplayCount;
+    }
+    public function getRssDisplayCount()
+    {
+        return $this->rssDisplayCount;
+    }
+    public function setRssDisplayCount($rssDisplayCount)
+    {
+        $this->rssDisplayCount = $rssDisplayCount;
     }
 
-	function getBBlockConfig(){
-		return $this->bBlockConfig;
-	}
-	function setBBlockConfig($bBlockConfig){
-		$this->bBlockConfig = $bBlockConfig;
-	}
+    public function getTopPageUri()
+    {
+        return $this->topPageUri;
+    }
+    public function setTopPageUri($topPageUri)
+    {
+        $this->topPageUri = $topPageUri;
+    }
+    public function getEntryPageUri()
+    {
+        return $this->entryPageUri;
+    }
+    public function setEntryPageUri($entryPageUri)
+    {
+        $this->entryPageUri = $entryPageUri;
+    }
+    public function getMonthPageUri()
+    {
+        return $this->monthPageUri;
+    }
+    public function setMonthPageUri($monthPageUri)
+    {
+        $this->monthPageUri = $monthPageUri;
+    }
+    public function getCategoryPageUri()
+    {
+        return $this->categoryPageUri;
+    }
+    public function setCategoryPageUri($categoryPageUri)
+    {
+        $this->categoryPageUri = $categoryPageUri;
+    }
+    public function getRssPageUri()
+    {
+        return $this->rssPageUri;
+    }
+    public function setRssPageUri($rssPageUri)
+    {
+        $this->rssPageUri = $rssPageUri;
+    }
 
-    function getFeedTitleFormat() {
-    	return $this->feedTitleFormat;
+    public function getTopTitleFormat()
+    {
+        return $this->topTitleFormat;
     }
-    function setFeedTitleFormat($feedTitleFormat) {
-    	$this->feedTitleFormat = $feedTitleFormat;
+    public function setTopTitleFormat($topTitleFormat)
+    {
+        $this->topTitleFormat = $topTitleFormat;
+    }
+    public function getEntryTitleFormat()
+    {
+        return $this->entryTitleFormat;
+    }
+    public function setEntryTitleFormat($entryTitleFormat)
+    {
+        $this->entryTitleFormat = $entryTitleFormat;
+    }
+    public function getMonthTitleFormat()
+    {
+        return $this->monthTitleFormat;
+    }
+    public function setMonthTitleFormat($monthTitleFormat)
+    {
+        $this->monthTitleFormat = $monthTitleFormat;
+    }
+    public function getCategoryTitleFormat()
+    {
+        return $this->categoryTitleFormat;
+    }
+    public function setCategoryTitleFormat($categoryTitleFormat)
+    {
+        $this->categoryTitleFormat = $categoryTitleFormat;
+    }
+    public function getFeedTitleFormat()
+    {
+        return $this->feedTitleFormat;
+    }
+    public function setFeedTitleFormat($feedTitleFormat)
+    {
+        $this->feedTitleFormat = $feedTitleFormat;
     }
 
-    function getTopPageUri() {
-    	return $this->topPageUri;
+    public function getTopEntrySortType()
+    {
+        return $this->topEntrySortType;
     }
-    function setTopPageUri($topPageUri) {
-    	$this->topPageUri = $topPageUri;
+    public function setTopEntrySortType($topEntrySortType)
+    {
+        $this->topEntrySortType = $topEntrySortType;
+    }
+
+    public function getTopEntrySort()
+    {
+        return $this->topEntrySort;
+    }
+    public function setTopEntrySort($topEntrySort)
+    {
+        $this->topEntrySort = $topEntrySort;
+    }
+
+    public function getMonthEntrySortType()
+    {
+        return $this->monthEntrySortType;
+    }
+    public function setMonthEntrySortType($monthEntrySortType)
+    {
+        $this->monthEntrySortType = $monthEntrySortType;
+    }
+
+    public function getMonthEntrySort()
+    {
+        return $this->monthEntrySort;
+    }
+    public function setMonthEntrySort($monthEntrySort)
+    {
+        $this->monthEntrySort = $monthEntrySort;
+    }
+
+    public function getCategoryEntrySortType()
+    {
+        return $this->categoryEntrySortType;
+    }
+    public function setCategoryEntrySortType($categoryEntrySortType)
+    {
+        $this->categoryEntrySortType = $categoryEntrySortType;
+    }
+
+    public function getCategoryEntrySort()
+    {
+        return $this->categoryEntrySort;
+    }
+    public function setCategoryEntrySort($categoryEntrySort)
+    {
+        $this->categoryEntrySort = $categoryEntrySort;
+    }
+
+    public function getTopEntryOpdata()
+    {
+        return $this->topEntryOpdata;
+    }
+    public function setTopEntryOpdata($topEntryOpdata)
+    {
+        $this->topEntryOpdata = $topEntryOpdata;
+    }
+    public function getMonthEntryOpdata()
+    {
+        return $this->monthEntryOpdata;
+    }
+    public function setMonthEntryOpdata($monthEntryOpdata)
+    {
+        $this->monthEntryOpdata = $monthEntryOpdata;
+    }
+    public function getCategoryEntryOpdata()
+    {
+        return $this->categoryEntryOpdata;
+    }
+    public function setCategoryEntryOpdata($categoryEntryOpdata)
+    {
+        $this->categoryEntryOpdata = $categoryEntryOpdata;
+    }
+
+    public function getOpenPeriodStart()
+    {
+        return $this->openPeriodStart;
+    }
+    public function setOpenPeriodStart($openPeriodStart)
+    {
+        $tmpDate = (strlen($openPeriodStart)) ? strtotime($openPeriodStart) : false;
+        if ($tmpDate === false) {
+            $this->openPeriodStart = null;
+        } else {
+            $this->openPeriodStart = $tmpDate;
+        }
+    }
+    public function getOpenPeriodEnd()
+    {
+        return $this->openPeriodEnd;
+    }
+    public function setOpenPeriodEnd($openPeriodEnd)
+    {
+        $tmpDate = (strlen($openPeriodEnd)) ? strtotime($openPeriodEnd) : false;
+        if ($tmpDate === false) {
+            $this->openPeriodEnd = null;
+        } else {
+            $this->openPeriodEnd = $tmpDate;
+        }
+    }
+
+    public function getIsPublished()
+    {
+        return $this->isPublished;
+    }
+    public function setIsPublished($isPublished)
+    {
+        $this->isPublished = $isPublished;
+    }
+
+    public function getBBlockConfig()
+    {
+        return $this->bBlockConfig;
+    }
+    public function setBBlockConfig($bBlockConfig)
+    {
+        $this->bBlockConfig = $bBlockConfig;
     }
 }

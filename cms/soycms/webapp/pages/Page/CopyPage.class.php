@@ -1,48 +1,46 @@
 <?php
 
-class CopyPage extends CMSWebPageBase{
+class CopyPage extends CMSWebPageBase
+{
+    public function __construct($args)
+    {
+        if (soy2_check_token()) {
+            $id = $args[0];
 
-    function CopyPage($args) {
+            $pageDAO = SOY2DAOFactory::create("cms.PageDAO");
+            $blockDAO = SOY2DAOFactory::create("cms.BlockDAO");
 
-    	if(soy2_check_token()){
-	    	$id = $args[0];
+            try {
+                $page = $pageDAO->getById($id);
 
-	    	$pageDAO = SOY2DAOFactory::create("cms.PageDAO");
-	    	$blockDAO = SOY2DAOFactory::create("cms.BlockDAO");
+                if ($page->getPageType() == Page::PAGE_TYPE_ERROR) {
+                    throw new Exception("The 404 Not Found Page cannot be copied.");
+                }
 
-	    	try{
-	    		$page = $pageDAO->getById($id);
+                $page->setTitle($this->getMessage("SOYCMS_COPY_MESSAGE") . $page->getTitle());
+                $page->setUri($page->getUri() . "_" . SOYCMS_NOW);
 
-	    		if($page->getPageType() == Page::PAGE_TYPE_ERROR){
-	    			throw new Exception("The 404 Not Found Page cannot be copied.");
-	    		}
+                $blocks = $blockDAO->getByPageId($id);
 
-	    		$page->setTitle($this->getMessage("SOYCMS_COPY_MESSAGE") . $page->getTitle());
-	    		$page->setUri($page->getUri()."_" . time());
+                $page->setId(null);
+                $id = $pageDAO->insert($page);
 
-	    		$blocks = $blockDAO->getByPageId($id);
+                $page->setId($id);
+                $page->setIsPublished(false);
 
-	    		$page->setId(null);
-	    		$id = $pageDAO->insert($page);
+                foreach ($blocks as $block) {
+                    $block->setPageId($id);
 
-	    		$page->setId($id);
-	    		$page->setIsPublished(false);
+                    $blockDAO->insert($block);
+                }
 
-	    		foreach($blocks as $block){
-	    			$block->setPageId($id);
+                $this->jump("Page.Detail." . $id . "?msg=create");
+            } catch (Exception $e) {
+                error_log("Page copy failed. : " . __METHOD__);
+            }
+        }
 
-	    			$blockDAO->insert($block);
-	    		}
-
-				$this->jump("Page.Detail.".$id."?msg=create");
-
-	    	}catch(Exception $e){
-	    		//
-	    	}
-    	}
-
-    	$this->jump("Page");
-    	exit;
+        $this->jump("Page");
+        exit();
     }
 }
-?>

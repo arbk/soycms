@@ -3,31 +3,35 @@
  * 記事のロールバックを行います
  * @init entryId
  */
-class RollbackAction extends SOY2Action {
+class RollbackAction extends SOY2Action
+{
+    private $entryId;
 
-	private $entryId;
+    public function setEntryId($entryId)
+    {
+        $this->entryId = $entryId;
+    }
 
-	public function setEntryId($entryId){
-		$this->entryId = $entryId;
-	}
-
-	protected function execute(SOY2ActionRequest &$request,SOY2ActionForm &$form,SOY2ActionResponse &$response){
-		try{
-			SOY2LogicContainer::get("logic.site.Entry.EntryHistoryLogic")->rollback($this->entryId, $form->historyId);
-			return SOY2Action::SUCCESS;
-		}catch(Exception $e){
-			error_log(var_export($e,true));
-			$this->setErrorMessage("failed",CMSMessageManager::get("SOYCMS_ERROR"));
-			return SOY2Action::FAILED;
-		}
-
-	}
+    protected function execute(SOY2ActionRequest &$request, SOY2ActionForm &$form, SOY2ActionResponse &$response)
+    {
+        try {
+            SOY2LogicContainer::get("logic.site.Entry.EntryHistoryLogic")->rollback($this->entryId, $form->historyId);
+            return SOY2Action::SUCCESS;
+        } catch (Exception $e) {
+//          error_log(var_export($e, true));
+            error_log($e->getMessage());
+            $this->setErrorMessage("failed", CMSMessageManager::get("SOYCMS_ERROR"));
+            return SOY2Action::FAILED;
+        }
+    }
 }
 
-class RollbackActionForm extends SOY2ActionForm {
-	public $historyId;
+class RollbackActionForm extends SOY2ActionForm
+{
+    public $historyId;
 
-	function setHistoryId($historyId){
-		$this->historyId = $historyId;
-	}
+    public function setHistoryId($historyId)
+    {
+        $this->historyId = $historyId;
+    }
 }

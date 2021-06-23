@@ -1,16 +1,16 @@
 <?php
 
-class IndexPage extends WebPage{
+class IndexPage extends WebPage
+{
+    public function __construct()
+    {
+        //データベースの変更の必要がない場合はトップページに戻す
+        if (SOY2Logic::createInstance("logic.upgrade.CheckVersionLogic")->checkVersion() === false) {
+            SOY2PageController::jump("");
+        }
 
-	function __construct(){
+        SOY2Logic::createInstance("logic.upgrade.UpdateDBLogic")->update();
 
-		//データベースの変更の必要がない場合はトップページに戻す
-		if(SOY2Logic::createInstance("logic.upgrade.CheckVersionLogic")->checkVersion() === false){
-			SOY2PageController::jump("");
-		}
-
-		SOY2Logic::createInstance("logic.upgrade.UpdateDBLogic")->update();
-
-		SOY2PageController::jump("inquiry?update=finish");
-	}
+        SOY2PageController::jump("inquiry?update=finish");
+    }
 }

@@ -1,78 +1,80 @@
 <?php
 
-class RemovePage extends CMSUpdatePageBase{
+class RemovePage extends CMSUpdatePageBase
+{
+    private $adminId;
+    private $failed = false;
+    public $id;
 
-	private $adminId;
-	private $failed = false;
-		var $id;
+    public function doPost()
+    {
+        if (soy2_check_token()) {
+            $action = SOY2ActionFactory::createInstance("Administrator.DeleteAction", array(
+              "id" => $this->adminId
+            ));
+            $result = $action->run();
 
-	function doPost() {
+            if ($result->success()) {
+                $this->addMessage("REMOVE_SUCCESS");
+                $this->jump("Administrator");
+            } else {
+                $this->addMessage("REMOVE_FAILED");
+                $this->reload();
+            }
+        }
 
-		if(soy2_check_token()){
-		  	$action = SOY2ActionFactory::createInstance("Administrator.DeleteAction",array(
-				"id" => $this->adminId
-			));
-			$result = $action->run();
+        $this->jump("Administrator");
+    }
 
-			if($result->success()){
-				$this->addMessage("REMOVE_SUCCESS");
-				$this->jump("Administrator");
-			}else{
-				$this->addMessage("REMOVE_FAILED");
-				$this->reload();
-			}
-		}
+    public function __construct($arg)
+    {
+        if (!UserInfoUtil::isDefaultUser() || count($arg) < 1) {
+            SOY2PageController::jump("Administrator");
+        }
 
-		$this->jump("Administrator");
-	}
+        $this->adminId = (isset($arg[0])) ? $arg[0] : null;
 
-	function __construct($arg){
-		if(!UserInfoUtil::isDefaultUser() || count($arg) < 1){
-			SOY2PageController::jump("Administrator");
-		}
+        $result = $this->run("Administrator.DetailAction", array("adminId" => $this->adminId));
+        $admin = $result->getAttribute("admin");
 
-		$this->adminId = (isset($arg[0])) ? $arg[0] : null;
+        if ($result->success()) {
+          //
+        } else {
+            $this->jump("Administrator");
+        }
 
-		$result = $this->run("Administrator.DetailAction", array("adminId" => $this->adminId));
-		$admin = $result->getAttribute("admin");
+        parent::__construct();
 
-		if($result->success()){
-			//
-		}else{
-			$this->jump("Administrator");
-		}
+        $this->outputMessage();
 
-		parent::__construct();
+        $this->addLabel("userId", array(
+        "text"  =>  $admin->getUserId()
+        ));
 
-		$this->outputMessage();
+        $this->addLabel("name_text", array(
+        "text" => (strlen($admin->getName()) == 0 )? CMSMessageManager::get("ADMIN_NO_SETTING") : $admin->getName(),
+        ));
 
-		$this->addLabel("userId", array(
-			"text"	=>	$admin->getUserId()
-		));
+        $this->addLabel("email_text", array(
+        "text" => (strlen($admin->getEmail()) == 0 )? CMSMessageManager::get("ADMIN_NO_SETTING") : $admin->getEmail(),
+        ));
 
-		$this->addLabel("name_text", array(
-			"text" => (strlen($admin->getName()) == 0 )? CMSMessageManager::get("ADMIN_NO_SETTING") : $admin->getName(),
-		));
+        $this->addForm("removeForm");
 
-		$this->addLabel("email_text", array(
-			"text" => (strlen($admin->getEmail()) == 0 )? CMSMessageManager::get("ADMIN_NO_SETTING") : $admin->getEmail(),
-		));
+        $this->addModel("error", array(
+        "visible" => $this->failed
+        ));
+    }
 
-		$this->addForm("removeForm");
-
-		$this->addModel("error", array(
-			"visible" => $this->failed
-		));
-	}
-
-	function outputMessage(){
-		$messages = CMSMessageManager::getMessages();
-		$this->addLabel("message", array(
-			"text" => implode("\n", $messages),
-			"visible" => !empty($messages)
-		));
-		$this->addModel("has_message", array(
-			"visible" => !empty($messages)
-		));
-	}
+    public function outputMessage()
+    {
+        $messages = CMSMessageManager::getMessages();
+        $this->addLabel("message", array(
+        "text" => implode("\n", $messages),
+        "visible" => !empty($messages)
+        ));
+        $this->addModel("has_message", array(
+        "visible" => !empty($messages)
+        ));
+    }
 }

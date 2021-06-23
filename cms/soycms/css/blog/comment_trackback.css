@@ -1,16 +1,16 @@
 table.list tbody.comment_list   td,
-table.list tbody.trackback_list td {
-	text-align:center;
+table.list tbody.trackback_list td{
+ text-align:center;
 }
 
 table.list tbody.comment_list   td.state,
-table.list tbody.trackback_list td.state {
-	width:40px;
+table.list tbody.trackback_list td.state{
+ width:40px;
 }
 
 table.list tbody.comment_list   td.date,
-table.list tbody.trackback_list td.date {
-	width:90px;
+table.list tbody.trackback_list td.date{
+ width:90px;
 }
 
 table.list tbody.comment_list   td.author,

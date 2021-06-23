@@ -1,0 +1,166 @@
+<form method="post" soy:id="replace_keyword_form">
+
+    <section>
+        <h4>設定</h4>
+
+        <section style="margin:1em 0 3em;">
+            <h5 style="font-size:1.2em;margin-bottom:0.5em;" id="SKSET">【サイト共通のキーワードと文言の指定】</h5>
+            <fieldset>
+                <legend>サイト共通のキーワードと置換文言</legend>
+                <input type="submit" name="replace_keyword_com_save" value="サイト共通のキーワードと文言を設定">
+                <textarea name="replace_keyword_com" class="wrap_off" style="width:100%; height:auto; font-size:85%;" rows="15" soy:id="replace_keyword_com"></textarea>
+                <div style="margin-left:0.5em;">【書式】 "##KEYWORD##":"文言" KEYWORD:[a-zA-Z0-9_-], 1行1組</div>
+            </fieldset>
+        </section>
+
+        <section style="margin:1em 0 3em;">
+            <h5 style="font-size:1.2em;margin-bottom:0.5em;">【ブログ記事別のキーワードと文言の指定】</h5>
+            <label style="margin-right:1em;">ブログ記事別のキーワードを指定する: <input soy:id="replace_keyword_use_entry" type="checkbox"></label>
+            <input type="submit" name="replace_keyword_entry_save" value="ブログ記事別の設定">
+            <fieldset>
+                <legend>ラベルとの関連付け</legend>
+                <label>ラベルID: <input soy:id="replace_keyword_labelid" style="text-align:right"></label>
+                <p>ブログ記事別のキーワードと文言を指定するための replace_keyword フィールド の入力フォームを特定のラベルと関連付ける場合は ラベルID（数字）を指定してください.<br>
+                    指定されたラベルが付いた記事でのみフォームを表示します. （空の場合は全ての記事にフォームが表示されます.）</p>
+            </fieldset>
+        </section>
+
+    </section>
+
+
+    <section>
+        <h4>使い方</h4>
+
+        <section style="margin:1em 0 3em;">
+            <h5 style="font-size:1.2em;margin-bottom:0.5em;">【キーワードと文言の指定】</h5>
+            <p><a href="#SKSET">サイト共通のキーワードと文言は 本ページ で指定</a>します.</p>
+            <p>ブログ記事別のキーワードと文言は 各記事の [記事詳細]ページ にて replace_keyword フィールド に指定します.</p>
+
+            <p>
+                キーワードと文言は ""ダブルクォーテーションで囲み, ":"コロンで組にしてください.<br>
+                キーワードと文言の文字列に改行を含めることはできません.<br>
+                キーワードに使用可能な文字は 半角英数 及び "_"アンダースコア と "-"ハイフン です.（[a-zA-Z0-9_-]）<br>
+                キーワードの最初と最後を "##"2シャープで挟んでください.<br>
+                キーワードと文言を複数指定する場合は改行してください.
+            </p>
+            <pre style="padding:0.5em 1.2em 0.5em; border:solid 1px black;">
+"##TITLE##":"どうぶつ波乱万丈"
+"##SUB-TITLE##":"ミークンの決死圏"
+"##READ-MORE##":"続きをどうぞ"
+</pre>
+
+            <p>サイト共通のキーワードと同じキーワードをブログ記事別に設定した場合は <span style="text-decoration:underline;">サイト共通に設定したキーワードが優先（先に置換）</span>されます. </p>
+
+            <p>
+                特殊な用法として, キーワード記載時に 引数（値） を指定することができます.<br>
+                これを利用すると 同じキーワードを パターンは同じながら部分的に異なる文言 に置換することができます.<br>
+                引数を指定する場合は キーワード設定の際に キーワードの最後の "##"2シャープに続いて "[]"角括弧 を付けます.<br>
+            </p>
+            <pre style="padding:0.5em 1.2em 0.5em; border:solid 1px black;">
+"##SEARCH-LINK##[]":"&#x3C;a href='/search?word=##0##'&#x3E;##0##検索&#x3C;/a&#x3E;"
+</pre>
+            <p>
+                引数は文言の中で "##"2シャープで挟まれた番号（##0## や ##1## や ##10##）として参照できます.<br>
+                番号は 引数の順番で, 0はじまりです.
+            </p>
+
+            <p>
+                キーワードの置換は次の順で実行されます.<br>
+                ぞれぞれのキーワード種別内では 設定した順 で置換されます.
+            </p>
+            <ol>
+                <li>サイト共通のキーワード（引数付き）</li>
+                <li>サイト共通のキーワード</li>
+                <li>ブログ記事別のキーワード（引数付き）</li>
+                <li>ブログ記事別のキーワード</li>
+            </ol>
+            <p>* 先に実行される置換文言の中で 後に置換されるキーワードを使うと 多段で置換するこが可能です.</p>
+        </section>
+
+        <section style="margin:1em 0 3em;">
+            <h5 style="font-size:1.2em;margin-bottom:0.5em;">【キーワードの使用】</h5>
+            <p>
+                キーワードを ページ・テンプレート または ブログ記事の記事内容 に記載します.<br>
+                キーワードを記載したページを表示すると, キーワードが指定した文言に置換されて表示されます.
+            </p>
+            <pre style="padding:0.5em 1.2em 0.5em; background-color:#eee;">
+&#x3C;h1&#x3E;##TITLE##&#x3C;/h1&#x3E;
+</pre>
+
+            <p>
+                キーワードに引数を指定する場合は キーワードの"[]"角括弧内に引数（値）を記載します.<br>
+                複数の引数を指定する場合は","カンマで区切ります.
+            </p>
+            <pre style="padding:0.5em 1.2em 0.5em; background-color:#eee;">
+&#x3C;div&#x3E;##SEARCH-LINK##[りんご]&#x3C;/div&#x3E;
+&#x3C;div&#x3E;##ANIMAL-TYPE##[パンダ,笹,白黒]&#x3C;/div&#x3E;
+</pre>
+        </section>
+
+        <section style="margin:1em 0 3em;">
+            <h5 style="font-size:1.2em;margin-bottom:0.5em;">【使用例1】</h5>
+            <p>ページ・テンプレート または 記事内容 にキーワードを記載します.</p>
+            <pre style="padding:0.5em 1.2em 0.5em; background-color:#eee;">
+&#x3C;h1&#x3E;##TITLE##&#x3C;/h1&#x3E;
+&#x3C;article&#x3E;
+  記事内容
+  ##AAA##は, ##BBB##です。
+  でも, ##AAA##は自分を##BBB##ではないと言います。
+  --
+  ##AAA##の憂鬱
+&#x3C;/article&#x3E;
+</pre>
+
+            <p>
+                本ページにて "##TITLE##":"どうぶつ波乱万丈" を指定します.<br>
+                記事詳細の replace_keyword フィールド に "##AAA##":"コウモリ" と "##BBB##":"哺乳類" を指定します.
+            </p>
+            <pre style="padding:0.5em 1.2em 0.5em; background-color:#eee;">
+&#x3C;h1&#x3E;どうぶつ波乱万丈&#x3C;/h1&#x3E;
+&#x3C;article&#x3E;
+  記事内容
+  コウモリは, 哺乳類です。
+  でも, コウモリは自分を哺乳類ではないと言います。
+  --
+  コウモリの憂鬱
+&#x3C;/article&#x3E;
+</pre>
+            <p>キーワード部分が指定した文言に置換され, 表示されます.</p>
+
+            <p>別の記事で replace_keyword フィールド に "##AAA##":"カモノハシ" と "##BBB##":"哺乳類" を指定します.</p>
+            <pre style="padding:0.5em 1.2em 0.5em; background-color:#eee;">
+&#x3C;h1&#x3E;どうぶつ波乱万丈&#x3C;/h1&#x3E;
+&#x3C;article&#x3E;
+  記事内容
+  カモノハシは, 哺乳類です。
+  でも, カモノハシは自分を哺乳類ではないと言います。
+  --
+  カモノハシの憂鬱
+&#x3C;/article&#x3E;
+</pre>
+            <p>別の記事ではこのように置換され, 表示されます.</p>
+        </section>
+
+        <section style="margin:1em 0 3em;">
+            <h5 style="font-size:1.2em;margin-bottom:0.5em;">【使用例2 引数の利用】</h5>
+            <p>ページ・テンプレート または 記事内容 に引数付きでキーワードを記載します.</p>
+            <pre style="padding:0.5em 1.2em 0.5em; background-color:#eee;">
+&#x3C;div&#x3E;##SEARCH-LINK##[りんご]&#x3C;/div&#x3E;
+&#x3C;div&#x3E;##SEARCH-LINK##[みかん]&#x3C;/div&#x3E;
+</pre>
+
+            <p>本ページ（または 記事詳細の replace_keyword フィールド）に 次のキーワードを指定します.</p>
+            <pre style="padding:0.5em 1.2em 0.5em; border:solid 1px black;">
+"##SEARCH-LINK##[]":"&#x3C;a href='/search?word=##0##'&#x3E;##0##検索&#x3C;/a&#x3E;"
+</pre>
+
+            <p>ページ表示時に次のように置換されます.</p>
+            <pre style="padding:0.5em 1.2em 0.5em; background-color:#eee;">
+&#x3C;div&#x3E;&#x3C;a href='/search?word=りんご'&#x3E;りんご検索&#x3C;/a&#x3E;&#x3C;/div&#x3E;
+&#x3C;div&#x3E;&#x3C;a href='/search?word=みかん'&#x3E;みかん検索&#x3C;/a&#x3E;&#x3C;/div&#x3E;
+</pre>
+        </section>
+
+    </section>
+
+</form soy:id="replace_keyword_form">

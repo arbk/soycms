@@ -4,10 +4,10 @@
  *
  * 基本的なオブジェクトのimport,exportはこれで対応出来るようになっている
  */
-class ExImportLogicBase extends SOY2LogicBase{
-
+class ExImportLogicBase extends SOY2LogicBase
+{
     private $quote = true;
-    private $charset = "UTF-8";
+    private $charset = SOY2::CHARSET;
     private $separator = ",";
 
     private $items = array();
@@ -18,8 +18,11 @@ class ExImportLogicBase extends SOY2LogicBase{
     /**
      * オブジェクトをCSV,TSVに変換
      */
-    function export($obj){
-        if(!$this->_func)$this->buildExFunc($this->getItems());
+    public function export($obj)
+    {
+        if (!$this->_func) {
+            $this->buildExFunc($this->getItems());
+        }
         $array = call_user_func($this->_func, $obj);
         return $this->encodeTo($this->implodeToLine($array));
     }
@@ -27,23 +30,29 @@ class ExImportLogicBase extends SOY2LogicBase{
     /**
      * CSV,TSVの一行から連想配列（オブジェクト）に変換
      */
-    function import($line){
+    public function import($line)
+    {
         $line = $this->encodeFrom($line);
         $items = $this->explodeLine($line);
-        if(!$this->_func)$this->buildImFunc($this->getItems());
-        return call_user_func($this->_func,$items);
+        if (!$this->_func) {
+            $this->buildImFunc($this->getItems());
+        }
+        return call_user_func($this->_func, $items);
     }
 
     /**
      * import用のfunction
      */
-    function buildImFunc($items){
+    public function buildImFunc($items)
+    {
         $function = array();
         $function[] = '$res = array();';
 
         $items = array_keys($items);
-        foreach($items as $key => $item){
-            if(!$item)continue;
+        foreach ($items as $key => $item) {
+            if (!$item) {
+                continue;
+            }
 
             $function[] = 'if(isset($items['.$key.'])){ ';
             $function[] = '  $item = trim($items['.$key.']);';
@@ -52,20 +61,25 @@ class ExImportLogicBase extends SOY2LogicBase{
         }
 
         $function[] = 'return $res;';
-		$this->_func = function($items) use ($function) { return eval(implode("\n", $function)); };
+        $this->_func = function ($items) use ($function) {
+            return eval(implode("\n", $function));
+        };
     }
 
     /**
      * export用のfunction（オブジェクトを配列にする）
      * ついでにラベルも設定しなおす
      */
-    function buildExFunc($items){
+    public function buildExFunc($items)
+    {
         $labels = $this->getLabels();
         $used_labels = array();
         $function = array();
         $function[] = '$res = array();';
-        foreach($items as $key => $item){
-            if(!$item)continue;
+        foreach ($items as $key => $item) {
+            if (!$item) {
+                continue;
+            }
 
             $getter = "get" . ucwords($key);
             $function[] = '$res[] = (method_exists($obj,"'.$getter.'")) ? $obj->'.$getter.'()  : "" ;';
@@ -76,7 +90,9 @@ class ExImportLogicBase extends SOY2LogicBase{
 
         $function[] = 'return $res;';
 
-        $this->_func = function($obj) use ($function) { return eval(implode("\n", $function)); };
+        $this->_func = function ($obj) use ($function) {
+            return eval(implode("\n", $function));
+        };
         $this->setLabels($used_labels);
     }
 
@@ -86,19 +102,19 @@ class ExImportLogicBase extends SOY2LogicBase{
      * @param boolean 見出し行かどうか
      * @return String
      */
-    function implodeToLine($array, $isHeader = false){
+    public function implodeToLine($array, $isHeader = false)
+    {
         $quote = $this->getQuote();
         $separator = $this->getSeparator();
-        foreach($array as $key => $value){
-            if(
-              $quote
+        foreach ($array as $key => $value) {
+            if ($quote
               || ( strpos($value, "\"") !== false )
               || ( strpos($value, "\n") !== false )
               || ( strpos($value, "\r") !== false )
               || ( $separator == "tab" && strpos($value, "\t") !== false )
               || ( $separator != "tab" && strpos($value, ",") !== false )
               || ( $isHeader && strncmp("ID", $value, 2) == 0 )// CSVファイルの先頭にIDという文字があるとExcelではSYLKファイルと誤認識されるので "ID" にしておく
-            ){
+            ) {
                 $array[$key] = '"' . str_replace('"', '""', $value) . '"';
             }
         }
@@ -110,28 +126,28 @@ class ExImportLogicBase extends SOY2LogicBase{
      * @param String
      * @return Array
      */
-    function explodeLine($line){
+    public function explodeLine($line)
+    {
         $quote = $this->getQuote();
         $separator = $this->getSeparator();
 
-        if($separator == "tab"){
+        if ($separator == "tab") {
             preg_match_all('/([^"]*?(?:"[^"]*?"[^"]*?)*)(?:\t|\r\n|\r|\n|$)/', $line, $matches);
-        }else{
+        } else {
             preg_match_all('/([^"]*?(?:"[^"]*?"[^"]*?)*)(?:,|\r\n|\n|\r|$)/', $line, $matches);
         }
 
         $values = array();
-        foreach($matches[1] as $value){
-            if(
-                $quote
-                OR strlen($value) >1 AND $value[0] == '"' AND $value[strlen($value)-1] = '"'
-                OR ( strpos($value, "\n") !== false )
-                OR ( strpos($value, "\r") !== false )
-                OR ( $separator == "tab" AND strpos($value, "\t") !== false )
-                OR ( $separator != "tab" AND strpos($value, ",") !== false )
-            ){
-                $value = preg_replace("/^\"/","",$value);//substr($value, 1, strlen($value)-2);
-                $value = preg_replace("/\"\$/","",$value);//substr($value, 1, strlen($value)-2);
+        foreach ($matches[1] as $value) {
+            if ($quote
+                or strlen($value) >1 and $value[0] == '"' and $value[strlen($value)-1] = '"'
+                or ( strpos($value, "\n") !== false )
+                or ( strpos($value, "\r") !== false )
+                or ( $separator == "tab" and strpos($value, "\t") !== false )
+                or ( $separator != "tab" and strpos($value, ",") !== false )
+            ) {
+                $value = preg_replace("/^\"/", "", $value);//substr($value, 1, strlen($value)-2);
+                $value = preg_replace("/\"\$/", "", $value);//substr($value, 1, strlen($value)-2);
                 $value = str_replace('""', '"', $value);
             }
 
@@ -142,17 +158,19 @@ class ExImportLogicBase extends SOY2LogicBase{
     }
 
 
-    function encodeTo($str){
-        if($this->charset != "UTF-8"){
-            return mb_convert_encoding($str,$this->charset,"UTF-8");
+    public function encodeTo($str)
+    {
+        if ($this->charset != SOY2::CHARSET) {
+            return mb_convert_encoding($str, $this->charset, SOY2::CHARSET);
         }
 
         return $str;
     }
 
-    function encodeFrom($str){
-        if($this->charset != "UTF-8"){
-            return mb_convert_encoding($str,"UTF-8",$this->charset);
+    public function encodeFrom($str)
+    {
+        if ($this->charset != SOY2::CHARSET) {
+            return mb_convert_encoding($str, SOY2::CHARSET, $this->charset);
         }
         return $str;
     }
@@ -160,27 +178,29 @@ class ExImportLogicBase extends SOY2LogicBase{
     /**
      * 見出し行の出力
      */
-    function getHeader(){
+    public function getHeader()
+    {
         return $this->encodeTo($this->implodeToLine($this->getLabels(), true));
     }
 
     /**
      * 改行を含むデータの場合に行を正しく認識しなおす
      */
-    function GET_CSV_LINES($lines){
-        if(!is_array($lines)){
+    public function GET_CSV_LINES($lines)
+    {
+        if (!is_array($lines)) {
             $lines = str_replace(array("\r\n","\r"), "\n", $lines);
             $lines = explode("\n", $lines);
         }
         $csv_lines = array();
         $status = 0;
         $buffer = array();
-        foreach($lines as $line){
+        foreach ($lines as $line) {
             $buffer[] = $line;
             //まずはバッファーに付け足す
             $status = ($status + substr_count($line, '"')) % 2;
             //"が閉じていれば0
-            if( $status == 0 ){
+            if ($status == 0) {
                 //"が閉じていれば
                 $csv_lines[] = implode("\n", $buffer);    //バッファーの中身を移す
                 $buffer = array();    //バッファーを空にする
@@ -192,15 +212,21 @@ class ExImportLogicBase extends SOY2LogicBase{
     /**
      * ファイルのチェック
      */
-    public function checkFileContent($file){
-        if($file["size"] == 0) return false;
+    public function checkFileContent($file)
+    {
+        if ($file["size"] == 0) {
+            return false;
+        }
 
         $head = file_get_contents($file["tmp_name"], false, null, 0, 1000);
-        if( false === strpos($head,$this->getSeparatorString()) ) return false;
-        if( $this->getQuote() && false === strpos($head,'"') ) return false;
+        if (false === strpos($head, $this->getSeparatorString())) {
+            return false;
+        }
+        if ($this->getQuote() && false === strpos($head, '"')) {
+            return false;
+        }
 
         return true;
-
     }
 
     /**
@@ -208,7 +234,8 @@ class ExImportLogicBase extends SOY2LogicBase{
      * @param Array("name"=>,"type"=>,"size"=>,"tmp_name","error")
      * @return True or String
      */
-    public function checkUploadedFile($file){
+    public function checkUploadedFile($file)
+    {
         return ( $file["error"] === UPLOAD_ERR_OK );
 /*
         switch($file["error"]){
@@ -234,15 +261,18 @@ class ExImportLogicBase extends SOY2LogicBase{
     /**
      * タイトルの数とインポート予定の項目数が合っているかどうかをチェックする
      */
-    public function checkTitles($titles){
-        if(!is_array($titles)){
+    public function checkTitles($titles)
+    {
+        if (!is_array($titles)) {
             $titles = $this->explodeLine($titles);
         }
 
         $itemCount = 0;
         $items = $this->getItems();
-        foreach($items as $item){
-            if(!$item)continue;
+        foreach ($items as $item) {
+            if (!$item) {
+                continue;
+            }
             $itemCount++;
         }
 
@@ -251,53 +281,63 @@ class ExImportLogicBase extends SOY2LogicBase{
 
     /* setter getter */
 
-    function getQuote() {
+    public function getQuote()
+    {
         return $this->quote;
     }
-    function setQuote($quote) {
+    public function setQuote($quote)
+    {
         $this->quote = $quote;
     }
-    function getCharset() {
+    public function getCharset()
+    {
         return $this->charset;
     }
-    function setCharset($charset) {
-
-        switch($charset){
+    public function setCharset($charset)
+    {
+        switch ($charset) {
             case "Shift-JIS":
             case "Shift_JIS":
                 $charset = "SJIS-win";
                 break;
             default:
-                $charset = "UTF-8";
+                $charset = SOY2::CHARSET;
                 break;
         }
 
         $this->charset = $charset;
     }
-    function getSeparator() {
+    public function getSeparator()
+    {
         return $this->separator;
     }
-    function setSeparator($separator) {
+    public function setSeparator($separator)
+    {
         $this->separator = $separator;
     }
-    function getSeparatorString(){
-        if($this->separator == "tab"){
+    public function getSeparatorString()
+    {
+        if ($this->separator == "tab") {
             return "\t";
-        }else{
+        } else {
             return ",";
         }
     }
-    function getItems() {
+    public function getItems()
+    {
         return $this->items;
     }
-    function setItems($items) {
+    public function setItems($items)
+    {
         $this->items = $items;
     }
 
-    function getLabels() {
+    public function getLabels()
+    {
         return $this->labels;
     }
-    function setLabels($labels) {
+    public function setLabels($labels)
+    {
         $this->labels = $labels;
     }
 }

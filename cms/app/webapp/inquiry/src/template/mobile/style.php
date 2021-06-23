@@ -13,7 +13,7 @@ table#inquiry_form{
 	border-style:dashed solid;
 	padding:8px 10px; **/
 	text-align:left;
-	background-color:white; 
+	background-color:white;
 }
 #inquiry_form th{
 /**	background-color:#F4F9FE;

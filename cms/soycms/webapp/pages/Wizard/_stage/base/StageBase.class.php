@@ -1,52 +1,59 @@
 <?php
 
-class StageBase extends CMSWebPageBase{
-	
-	var $wizardObj;
-	
-	
+class StageBase extends CMSWebPageBase
+{
+    public $wizardObj;
 
-    function StageBase() {
-    	parent::__construct();
+    public function __construct()
+    {
+        parent::__construct();
     }
-    
+
     //表示部分はここに書く
-    function execute(){		
-    }
-    
-    //次へが押された際の動作
-    function checkNext(){
-    	return true;
-    }
-    
-    //前へが押された際の動作
-    function checkBack(){
-    	return true;
-    }
-    
-    //次のオブジェクト名、終了の際はEndStageを呼び出す
-    function getNextObject(){
-    	return "EndStage";
-    }
-    
-    //前のオブジェクト名、nullの場合は表示しない
-    function getBackObject(){
-    	return null;
+    public function execute()
+    {
     }
 
-    function getWizardObj() {
-    	return $this->wizardObj;
+    //次へが押された際の動作
+    public function checkNext()
+    {
+        return true;
     }
-    function setWizardObj($wizardObj) {
-    	$this->wizardObj = $wizardObj;
+
+    //前へが押された際の動作
+    public function checkBack()
+    {
+        return true;
     }
-    
-    function getNextString(){
-    	return "次へ";
+
+    //次のオブジェクト名、終了の際はEndStageを呼び出す
+    public function getNextObject()
+    {
+        return "EndStage";
     }
-    
-    function getBackString(){
-    	return "前へ";
+
+    //前のオブジェクト名、nullの場合は表示しない
+    public function getBackObject()
+    {
+        return null;
+    }
+
+    public function getWizardObj()
+    {
+        return $this->wizardObj;
+    }
+    public function setWizardObj($wizardObj)
+    {
+        $this->wizardObj = $wizardObj;
+    }
+
+    public function getNextString()
+    {
+        return "次へ";
+    }
+
+    public function getBackString()
+    {
+        return "前へ";
     }
 }
-?>

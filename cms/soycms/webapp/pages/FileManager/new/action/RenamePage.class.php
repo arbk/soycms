@@ -1,23 +1,21 @@
 <?php
 
-class RenamePage extends CMSWebPageBase{
-	
-	function doPost(){
-		
-		//パス
-		$path = $_POST["path"];
-		
-		//返り値
-		$flag = 1;
-		echo $flag;	//成功もしくは失敗を返す		
-		
-		exit;				
-	}
+class RenamePage extends CMSWebPageBase
+{
+    public function doPost()
+    {
+        //パス
+        $path = $_POST["path"];
 
+        //返り値
+        $flag = 1;
+        echo $flag; //成功もしくは失敗を返す
 
-    function __construct() {
-    	parent::__construct();
-    	
+        exit;
+    }
+
+    public function __construct()
+    {
+        parent::__construct();
     }
 }
-?>

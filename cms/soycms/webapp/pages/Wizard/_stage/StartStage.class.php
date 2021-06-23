@@ -1,32 +1,37 @@
 <?php
-class StartStage extends StageBase{
+class StartStage extends StageBase
+{
+    public function __construct()
+    {
+        parent::__construct();
+    }
 
-    function StartStage() {
-    	parent::__construct();
+    public function execute()
+    {
     }
-    
-    function execute(){
-    	
+
+    public function checkNext()
+    {
+        return true;
     }
-    
-    function checkNext(){
-    	return true;
+
+    public function checkBack()
+    {
+        return true;
     }
-    
-    function checkBack(){
-    	return true;
+
+    public function getNextObject()
+    {
+        return "SelectTopStage";
     }
-    
-    function getNextObject(){
-    	return "SelectTopStage";
+
+    public function getBackObject()
+    {
+        return null;
     }
-    
-    function getBackObject(){
-    	return null;
-    }
-    
-    function getBackString(){
-    	return "";
+
+    public function getBackString()
+    {
+        return "";
     }
 }
-?>

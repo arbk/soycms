@@ -1,24 +1,24 @@
-<html>
+<!DOCTYPE html>
+<html lang="<?php echo SOYCMS_ADMIN_HTML_LANG; ?>">
 
 <head soy:page="_common.HeaderPage" isOverWrite="true">
 </head soy:page="_common.HeaderPage">
 
 <body>
-	<div class="container">
-		<div class="main-div">
-			<div class="form-heading">&nbsp;</div>
-			<img soy:id="biglogo" alt="logo" />
-			<div class="panel">
-				<div class="panel-body">
-					ユーザーID <strong soy:id="user_id">soycms</strong> で初期管理者を作成しました。<br />
-					次の画面でログインしてください。<br />
-					自動でログイン画面に移らない場合は次のリンクをクリックしてください。→<a href="#" class="btn btn-primary" soy:link="./index.php">ログイン</a>
-				</div>
-			</div>
-		</div>
-	</div>
+    <div class="container">
+        <div class="main-div">
+            <div class="form-heading">&nbsp;</div>
+            <div class="panel">
+                <div class="panel-body">
+                    ユーザーID <strong soy:id="user_id">soycms</strong> で初期管理者を作成しました。<br>
+                    次の画面でログインしてください。<br>
+                    自動でログイン画面に移らない場合は次のリンクをクリックしてください。→<a href="#" class="btn btn-primary" soy:link="./index.php">ログイン</a>
+                </div>
+            </div>
+        </div>
+    </div>
 
-	<!-- soy:page="_common.FooterPage" /-->
+    <!-- soy:page="_common.FooterPage" /-->
 
 </body>
 

@@ -1,0 +1,71 @@
+<section>
+    <h4>使い方</h4>
+
+
+    <section style="margin:1em 0 3em;">
+        <h5 style="font-size:1.2em;margin-bottom:0.5em;">【非表示にするHTML要素のidの指定】</h5>
+        <p>
+            [記事]ページにて, 非表示にしたいHTML要素のidを display_noneフィールド に指定してください.<br>
+            複数指定する場合は","カンマで区切ってください.
+        </p>
+    </section>
+
+
+    <section style="margin:1em 0 3em;">
+        <h5 style="font-size:1.2em;margin-bottom:0.5em;">【ラベルとの関連付け】</h5>
+        <form method="post" soy:id="display_none_form">
+            <fieldset>
+                <label>ラベルID: <input soy:id="display_none_labelid" style="text-align:right"></label>
+                <p>display_noneフィールドの入力フォームを特定のラベルと関連付ける場合は ラベルID（数字）を指定してください.<br>
+                    指定されたラベルが付いた記事でのみフォームを表示します. （空の場合は全ての記事にフォームが表示されます.）</p>
+                <div><input type="submit" name="display_none_save" value="設定"></div>
+            </fieldset>
+        </form>
+    </section>
+
+
+    <section style="margin:1em 0 3em;">
+        <h5 style="font-size:1.2em;margin-bottom:0.5em;">【使用例】</h5>
+        <p>特定のブログ記事でコメントとトラックバックを非表示にする場合</p>
+
+        <pre>
+&#x3C;article&#x3E;
+  記事内容
+&#x3C;/article&#x3E;
+&#x3C;div id="comments"&#x3E;
+  コメントです.
+&#x3C;/div&#x3E;
+&#x3C;div id="trackback"&#x3E;
+  トラックバックURI
+&#x3C;/div&#x3E;
+</pre>
+
+        <p>ブログ記事のdisplay_noneフィールドに[comments,trackback]を指定します.</p>
+
+        <pre>
+&#x3C;article&#x3E;
+  記事内容
+&#x3C;/article&#x3E;
+</pre>
+
+        <p>
+            そうすると, そのブログ記事ページではコメントとトラックバックが非表示となります.<br>
+            （該当するHTML要素が削除されたHTMLが出力されます.）
+        </p>
+    </section>
+
+
+    <section style="margin:1em 0 3em;">
+        <h5 style="font-size:1.2em;margin-bottom:0.5em;">【注意事項】</h5>
+        <p>このプラグインでは, 要素の操作にDOM（DOMDocumentクラス）を使用しています.</p>
+        <ul>
+            <li>
+                <p>
+                    正しいHTMLを記述してください.<br>
+                    誤ったHTMLはパースエラーを起こす可能性があります.
+                </p>
+            </li>
+        </ul>
+    </section>
+
+</section>

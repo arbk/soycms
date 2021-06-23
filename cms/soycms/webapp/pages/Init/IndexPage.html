@@ -1,76 +1,77 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="<?php echo SOYCMS_ADMIN_HTML_LANG; ?>">
 
 <head soy:page="_common.HeaderPage" isOverWrite="true">
 </head soy:page="_common.HeaderPage">
 
 <body>
 
-	<div id="wrapper">
-		<!-- Navigation -->
-		<nav  class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0" soy:page="_common.UpperMenuPage"><!-- --></nav>
+    <div id="wrapper">
+        <!-- Navigation -->
+        <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0" soy:page="_common.UpperMenuPage"></nav>
 
-		<div id="page-wrapper">
-			<div class="row">
-				<div class="col-lg-12">
-					<h1 class="page-header">ようこそ<!-- soy:id="cms_name" -->SOY CMS<!-- /soy:id="cms_name" -->へ！</h1>
-				</div>
-				<!-- /.col-lg-12 -->
-			</div>
+        <div id="page-wrapper">
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header">ようこそ <!-- soy:id="cms_name" -->SOY CMS <!-- /soy:id="cms_name" -->へ！</h1>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
 
-			<div soy:page="_common.MessagePanel" isOverWrite="true"></div>
+            <div soy:page="_common.MessagePanel" isOverWrite="true"></div>
 
-			<div class="row">
-				<div class="col-lg-12">
-					<div id="content_bar_top_for_wizard">
-						<div id="content_bar_top_left"><!----></div>
-						<div id="content_bar_top_right"><!----></div>
-						<div style="clear:both;"><!----></div>
-					</div>
-				</div>
-			</div>
+            <div class="row">
+                <div class="col-lg-12">
+                    <div id="content_bar_top_for_wizard">
+                        <div id="content_bar_top_left"></div>
+                        <div id="content_bar_top_right"></div>
+                        <div style="clear:both;"></div>
+                    </div>
+                </div>
+            </div>
 
-			<!-- soy:id="has_zip_archive" -->
-			<div class="row">
-				<div class="col-lg-12 container">
-					<div class="jumbotron">
-						<h2>作りたいサイトが決まっている方</h2>
-						<p class="">作りたいサイトが決まっている場合はページの新規作成から始めましょう。</p>
-						<a class="btn btn-primary btn-lg" href="" soy:link="Page.Create" onclick="return common_click_to_layer(this, {height: 580})">ページの新規作成</a>
-					</div>
-				</div>
-				<!-- /.col-lg-12 -->
-				<div class="col-lg-12 container">
-					<div class="jumbotron">
-						<h2>とにかくSOY CMSを触ってみたい方</h2>
-						<p>SOY CMSでどのようなことができるのか、どのように使えばいいのか知りたい方は、サンプルデータで管理画面を使ってみましょう。</p>
-						<a class="btn btn-primary btn-lg" href="" soy:link="Init.CreateSample" onclick="return common_click_to_layer(this, {width: 500, height: 360})">サンプルデータを読み込む</a>
-					</div>
-				</div>
-				<!-- /.col-lg-12 -->
-			</div>
-			<!-- /.row -->
-			<!-- /soy:id="has_zip_archive" -->
+            <!-- soy:id="has_zip_archive" -->
+            <div class="row">
+                <div class="col-lg-12 container">
+                    <div class="jumbotron">
+                        <h2>作りたいサイトが決まっている方</h2>
+                        <p class="">作りたいサイトが決まっている場合はページの新規作成から始めましょう。</p>
+                        <a class="btn btn-primary btn-lg" href="" soy:link="Page.Create" onclick="return common_click_to_layer(this, {height: 580})">ページの新規作成</a>
+                    </div>
+                </div>
+                <!-- /.col-lg-12 -->
+                <div class="col-lg-12 container">
+                    <div class="jumbotron">
+                        <h2>とにかくSOY CMSを触ってみたい方</h2>
+                        <p>SOY CMSでどのようなことができるのか、どのように使えばいいのか知りたい方は、サンプルデータで管理画面を使ってみましょう。</p>
+                        <a class="btn btn-primary btn-lg" href="" soy:link="Init.CreateSample" onclick="return common_click_to_layer(this, {width: 500, height: 360})">サンプルデータを読み込む</a>
+                    </div>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+            <!-- /.row -->
+            <!-- /soy:id="has_zip_archive" -->
 
-			<!-- soy:id="no_zip_archive" -->
-			<div class="row">
-				<div class="col-lg-12 container">
-					<div class="jumbotron">
-						<p class="">まずはページの新規作成から始めましょう。</p>
-						<a class="btn btn-primary btn-lg" href="" soy:link="Page.Create" onclick="return common_click_to_layer(this, {height: 580})">ページの新規作成</a>
-					</div>
-				</div>
-				<!-- /.col-lg-12 -->
-				<!-- /.col-lg-12 -->
-			</div>
-			<!-- /.row -->
-			<!-- /soy:id="no_zip_archive" -->
+            <!-- soy:id="no_zip_archive" -->
+            <div class="row">
+                <div class="col-lg-12 container">
+                    <div class="jumbotron">
+                        <p class="">まずはページの新規作成から始めましょう。</p>
+                        <a class="btn btn-primary btn-lg" href="" soy:link="Page.Create" onclick="return common_click_to_layer(this, {height: 580})">ページの新規作成</a>
+                    </div>
+                </div>
+                <!-- /.col-lg-12 -->
+                <!-- /.col-lg-12 -->
+            </div>
+            <!-- /.row -->
+            <!-- /soy:id="no_zip_archive" -->
 
-		</div>
-		<!-- /#page-wrapper -->
-		<!-- soy:page="_common.FooterPage" /-->
-	</div>
-	<!-- /#wrapper -->
+        </div>
+        <!-- /#page-wrapper -->
+        <!-- soy:page="_common.FooterPage" /-->
+    </div>
+    <!-- /#wrapper -->
 
 </body>
+
 </html>

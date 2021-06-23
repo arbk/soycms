@@ -1,133 +1,138 @@
 <?php
 SOY2::import("domain.cms.SiteConfig");
 
-class CreatePage extends CMSUpdatePageBase{
+class CreatePage extends CMSUpdatePageBase
+{
+    public function doPost()
+    {
+        if (soy2_check_token()) {
+            if ($this->createSite()) {
+                $this->addMessage("CREATE_SUCCESS");
+                $this->jump("Site");
+            } else {
+                $this->addErrorMessage("CREATE_FAILED");
+                $errors = CMSMessageManager::getErrorMessages();
+                $this->jump("Site.Create");
+            }
+        }
+    }
 
-	function doPost(){
+    public function __construct()
+    {
+        if (!UserInfoUtil::isDefaultUser()) {
+            //デフォルトユーザのみ作成可能
+            $this->jump("Site");
+            exit;
+        }
 
-		if(soy2_check_token()){
-			if(self::_createSite()){
-				$this->addMessage("CREATE_SUCCESS");
-				$this->jump("Site");
-			}else{
-				$this->addErrorMessage("CREATE_FAILED");
-				$errors = CMSMessageManager::getErrorMessages();
-				$this->jump("Site.Create");
-			}
-		}
-	}
+        parent::__construct();
 
-	function __construct(){
+        if (false == $this->checkTargetDirectoryWritable()) {
+            $this->addErrorMessage("TARGET_DIRECTORY_NOT_WRITABLE");
+        }
 
-		if(!UserInfoUtil::isDefaultUser()){
-			//デフォルトユーザのみ作成可能
-			$this->jump("Site");
-			exit;
-		}
+        $this->addForm("create_site_form");
 
-		parent::__construct();
+        //文字コードの追加
+        $this->addSelect("encoding", array(
+            "options" => $this->getEncordingList(),
+            "name" => "encoding"
+        ));
 
+        // //サイトのコピー機能（既存サイトのデータを渡す） 初期値は「コピーしない」
+        // $this->addSelect("copy_from", array(
+        //     "options" => $this->getSiteList(),
+        //     "name" => "copyFrom",
+        //     "selected" =>"none"
+        // ));
 
-		if(false == $this->checkTargetDirectoryWritable()){
-			$this->addErrorMessage("TARGET_DIRECTORY_NOT_WRITABLE");
-		}
+        $siteList = SOY2Logic::createInstance("logic.admin.Site.SiteLogic")->getSiteList();
 
-		$this->addForm("create_site_form");
+        if (count($siteList) != 0 || SOYCMS_DB_TYPE != "mysql") {
+            DisplayPlugin::hide("only_first_site");
+        }
 
-		//文字コードの追加
-		$this->addSelect("encoding", array(
-			"options" => $this->getEncordingList(),
-			"name" => "encoding"
-		));
+        $this->addCheckBox("separate", array(
+            "value"=>"0",
+            "name"=>"separate",
+            "label"=>$this->getMessage("ADMIN_MAKE_WEBSITE_IN_ADMIN_DB")
+        ));
 
+        $messages = CMSMessageManager::getMessages();
+        $messages_visible = (count($messages) > 0);
+        $this->addLabel("message", array(
+            "text" => implode($messages),
+            "visible" => $messages_visible,
+        ));
+        $errors = CMSMessageManager::getErrorMessages();
+        $errors_visible = (count($errors) > 0);
+        $this->addLabel("error", array(
+            "text" => implode($errors),
+            "visible" => $errors_visible,
+        ));
+        $this->addModel("has_message_or_error", array(
+            "visible" => $messages_visible || $errors_visible,
+        ));
+    }
 
-		//サイトのコピー機能（既存サイトのデータを渡す） 初期値は「コピーしない」
-		$this->addSelect("copy_from", array(
-			"options" => $this->getSiteList(),
-			"name" => "copyFrom",
-			"selected" =>"none"
-		));
+    /**
+     * 文字コードの種類を取得する
+     */
+    public function getEncordingList()
+    {
+        return SiteConfig::getCharsetLists();
+    }
 
-		$siteList = SOY2Logic::createInstance("logic.admin.Site.SiteLogic")->getSiteList();
+    /**
+     * サイトを作成します
+     * @return boolean
+     */
+    public function createSite()
+    {
+        $action = SOY2ActionFactory::createInstance("Site.CreateAction");
+        $result = $action->run();
 
-		if(count($siteList) != 0 || SOYCMS_DB_TYPE != "mysql"){
-			DisplayPlugin::hide("only_first_site");
-		}
+        if ($result->success()) {
+            $site = $result->getAttribute("Site");
 
-		$this->addCheckBox("separate", array(
-			"value"=>"0",
-			"name"=>"separate",
-			"label"=>$this->getMessage("ADMIN_MAKE_WEBSITE_IN_ADMIN_DB")
-		));
+//          SOY2::import("util.CMSFileManager");
+//          CMSFileManager::insertAll($site->getPath());
+        } else {
+            //
+        }
 
-		$messages = CMSMessageManager::getMessages();
-		$errors = CMSMessageManager::getErrorMessages();
-		$this->addLabel("message", array(
-			"text" => implode($messages),
-			"visible" => count($messages),
-		));
-		$this->addLabel("error", array(
-			"text" => implode($errors),
-			"visible" => count($errors),
-		));
-		$this->addModel("has_message_or_error", array(
-			"visible" => count($messages) || count($errors),
-		));
-	}
+        return $result->success();
+    }
 
-	/**
-	 * 文字コードの種類を取得する
-	 */
-	function getEncordingList(){
-		return SiteConfig::getCharsetLists();
-	}
+    /**
+     * サイトの書き込み権限をチェックする
+     */
+    public function checkTargetDirectoryWritable()
+    {
+        $targetDir = SOYCMS_TARGET_DIRECTORY;
+        return (is_writable($targetDir));
+    }
 
+    //  /**
+    //  * コピーのもととなるサイトを指定するため、サイト一覧を取得する。
+    //  */
+    // public function getSiteList()
+    // {
+    //     $sites = $this->getLoginableSiteList();
+    //     $siteList = array();
+    //     $siteList["none"] = "コピーせず新規作成";
+    //     foreach ($sites as $site) {
+    //         $siteList[$site->getId()] = $site->getSiteName();
+    //     }
+    //     return $siteList;
+    // }
 
-	/**
-	 * サイトを作成します
-	 * @return boolean
-	 */
-	private function _createSite(){
-		$result = SOY2ActionFactory::createInstance("Site.CreateAction")->run();
-
-		if($result->success()){
-			$site = $result->getAttribute("Site");
-
-			SOY2::import("util.CMSFileManager");
-			CMSFileManager::insertAll($site->getPath());
-		}else{
-			//
-		}
-
-		return $result->success();
-	}
-
-	/**
-	 * サイトの書き込み権限をチェックする
-	 */
-	 function checkTargetDirectoryWritable(){
-	 	$targetDir = SOYCMS_TARGET_DIRECTORY;
-	 	return (is_writable($targetDir));
-	 }
-
-	 /**
-	 * コピーのもととなるサイトを指定するため、サイト一覧を取得する。
-	 */
-	function getSiteList(){
-		$sites = $this->getLoginableSiteList();
-		$siteList = array();
-		$siteList["none"] = "コピーせず新規作成";
-		foreach( $sites as $site){
-			$siteList[$site->getId()] = $site->getSiteName();
-		}
-		return $siteList;
-	}
-
-	 /**
-	 * 現在のユーザIDからログイン可能なサイトオブジェクトのリストを取得する
-	 */
-	function getLoginableSiteList(){
-		$SiteLogic = SOY2Logic::createInstance("logic.admin.Site.SiteLogic");
-		return $SiteLogic->getSiteOnly();
-	}
+    //  /**
+    //  * 現在のユーザIDからログイン可能なサイトオブジェクトのリストを取得する
+    //  */
+    // public function getLoginableSiteList()
+    // {
+    //     $SiteLogic = SOY2Logic::createInstance("logic.admin.Site.SiteLogic");
+    //     return $SiteLogic->getSiteOnly();
+    // }
 }

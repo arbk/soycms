@@ -1,136 +1,143 @@
 create table Entry(
-	id integer primary key AUTO_INCREMENT,
-	title varchar(255),
-	alias varchar(255),
-	content TEXT,
-	more TEXT,
-	cdate INTEGER,
-	udate INTEGER,
-	description TEXT,
-	openPeriodStart INTEGER,
-	openPeriodEnd INTEGER,
-	isPublished int default 0,
-	style TEXT,
-	author varchar(255)
+ id INTEGER primary key AUTO_INCREMENT,
+ title VARCHAR(255),
+ alias VARCHAR(255),
+ content TEXT,
+ more TEXT,
+ cdate INTEGER,
+ udate INTEGER,
+ description TEXT,
+ openPeriodStart INTEGER,
+ openPeriodEnd INTEGER,
+ isPublished INT default 0,
+ style TEXT,
+ author VARCHAR(255)
 )ENGINE = InnoDB;
+create index Entry_for_list on Entry(cdate desc, title asc, id desc);
+create index Entry_for_list_by_title on Entry(title asc, cdate asc, id asc);
+create index entry_udate on Entry(udate desc);
 
 create table EntryHistory(
-	id                INTEGER UNSIGNED primary key AUTO_INCREMENT,
-	entry_id          INTEGER UNSIGNED,
-	title             varchar(255),
-	content           TEXT,
-	more              TEXT,
-	additional        TEXT,
-	is_published      TINYINT(1) NOT NULL DEFAULT 0,
-	cdate             INTEGER UNSIGNED NOT NULL,
-	author            varchar(255),
-	user_id           INTEGER UNSIGNED,
-	action_type       TINYINT(1) NOT NULL DEFAULT 0,
-	action_target     INTEGER UNSIGNED,
-	change_title      TINYINT(1) NOT NULL DEFAULT 0,
-	change_content    TINYINT(1) NOT NULL DEFAULT 0,
-	change_more       TINYINT(1) NOT NULL DEFAULT 0,
-	change_additional TINYINT(1) NOT NULL DEFAULT 0,
-	change_is_published TINYINT(1) NOT NULL DEFAULT 0
+ id INTEGER UNSIGNED primary key AUTO_INCREMENT,
+ entry_id INTEGER UNSIGNED,
+ title VARCHAR(255),
+ content TEXT,
+ more TEXT,
+ additional TEXT,
+ is_published TINYINT(1) NOT NULL DEFAULT 0,
+ cdate INTEGER UNSIGNED not null,
+ author VARCHAR(255),
+ user_id INTEGER UNSIGNED,
+ action_type TINYINT(1) NOT NULL DEFAULT 0,
+ action_target INTEGER UNSIGNED,
+ change_title TINYINT(1) NOT NULL DEFAULT 0,
+ change_content TINYINT(1) NOT NULL DEFAULT 0,
+ change_more TINYINT(1) NOT NULL DEFAULT 0,
+ change_additional TINYINT(1) NOT NULL DEFAULT 0,
+ change_is_published TINYINT(1) NOT NULL DEFAULT 0
 )ENGINE = InnoDB;
 create index entry_history_entry_id on EntryHistory(entry_id);
 
 create table EntryComment(
-	id integer primary key AUTO_INCREMENT,
-	entry_id integer references Entry(id),
-	title varchar(255),
-	author varchar(255),
-	body TEXT,
-	is_approved integer default 0,
-	mail_address varchar(255),
-	url varchar(255),
-	submitdate INTEGER
+ id INTEGER primary key AUTO_INCREMENT,
+ entry_id INTEGER references Entry(id),
+ title VARCHAR(255),
+ author VARCHAR(255),
+ body TEXT,
+ is_approved INTEGER default 0,
+ mail_address VARCHAR(255),
+ url VARCHAR(255),
+ extra_values TEXT,
+ submitdate INTEGER
 )ENGINE = InnoDB;
 
 create table EntryTrackback(
-	id integer primary key AUTO_INCREMENT,
-	entry_id integer references Entry(id),
-	title varchar(255),
-	url TEXT,
-	blog_name varchar(255),
-	excerpt TEXT,
-	submitdate INTEGER,
-	certification INTEGER default 0
+ id INTEGER primary key AUTO_INCREMENT,
+ entry_id INTEGER references Entry(id),
+ title VARCHAR(255),
+ url VARCHAR(255),
+ blog_name VARCHAR(255),
+ excerpt TEXT,
+ extra_values TEXT,
+ submitdate INTEGER,
+ certification INTEGER default 0
 )ENGINE = InnoDB;
 
 create table EntryAttribute(
-	entry_id integer NOT NULL,
-	entry_field_id VARCHAR(255) NOT NULL,
-	entry_value TEXT,
-	entry_extra_values TEXT,
-	unique(entry_id, entry_field_id)
+ entry_id INTEGER NOT NULL,
+ entry_field_id VARCHAR(255) NOT NULL,
+ entry_value TEXT,
+ entry_extra_values TEXT,
+ unique(entry_id, entry_field_id)
 ) ENGINE=InnoDB;
 
 create index EntryAttribute_entry_id on EntryAttribute(entry_id);
 create index EntryAttribute_entry_field_id on EntryAttribute(entry_field_id);
 
 create table Label(
-	id integer primary key AUTO_INCREMENT,
-	caption varchar(255),
-	description TEXT,
-	alias varchar(255),
-	icon varchar(255),
-	display_order INTEGER default 2147483647,
-	color INTEGER default 0,
-	background_color INTEGER default 16777215
+ id INTEGER primary key AUTO_INCREMENT,
+ caption VARCHAR(255),
+ description TEXT,
+ alias VARCHAR(255),
+ icon VARCHAR(255),
+ display_order INTEGER default 2147483647,
+ color INTEGER default 0,
+ background_color INTEGER default 16777215
 )ENGINE = InnoDB;
+create index Label_display_order on Label(display_order asc);
 
 create table EntryLabel(
-	entry_id integer references Entry(id),
-	label_id integer references Label(id),
-	display_order integer default 2147483647,
-	unique(entry_id,label_id)
+ entry_id INTEGER references Entry(id),
+ label_id INTEGER references Label(id),
+ display_order INTEGER default 2147483647,
+ unique(entry_id,label_id)
 )ENGINE = InnoDB;
+create index EntryLabel_display_order on EntryLabel(display_order asc);
 
 create table Template(
-	id integer primary key AUTO_INCREMENT,
-	name varchar(255),
-	contents varchar(255),
-	create_date INTEGER
+ id INTEGER primary key AUTO_INCREMENT,
+ name VARCHAR(255),
+ contents VARCHAR(255),
+ create_date INTEGER
 )ENGINE = InnoDB;
 
 create table Page(
-	id INTEGER primary key AUTO_INCREMENT,
-	title varchar(255),
-	template LONGTEXT,
-	uri varchar(255) UNIQUE,
-	page_type INTEGER default 0,
-	page_config TEXT,
-	openPeriodStart INTEGER,
-	openPeriodEnd INTEGER,
-	isPublished int default 0,
-	isTrash int default 0,
-	parent_page_id integer ,
-	udate INTEGER,
-	icon varchar(255)
+ id INTEGER primary key AUTO_INCREMENT,
+ title VARCHAR(255),
+ template LONGTEXT,
+ uri VARCHAR(255) unique,
+ page_type INTEGER default 0,
+ page_config TEXT,
+ openPeriodStart INTEGER,
+ openPeriodEnd INTEGER,
+ isPublished int default 0,
+ isTrash int default 0,
+ parent_page_id INTEGER,
+ udate INTEGER,
+ icon VARCHAR(255)
 )ENGINE = InnoDB;
 
 create table TemplateHistory(
-	id integer primary key AUTO_INCREMENT,
-	page_id integer references Page(id),
-	contents LONGTEXT,
-	update_date INTEGER
+ id INTEGER primary key AUTO_INCREMENT,
+ page_id INTEGER references Page(id),
+ contents LONGTEXT,
+ update_date INTEGER
 )ENGINE = InnoDB;
 
 create table Block(
-	id integer primary key AUTO_INCREMENT,
-	soy_id varchar(255),
-	page_id integer references Page(id),
-	class varchar(255),
-	object TEXT,
-	unique(soy_id,page_id)
+ id INTEGER primary key AUTO_INCREMENT,
+ soy_id VARCHAR(255),
+ page_id INTEGER references Page(id),
+ class VARCHAR(255),
+ object TEXT,
+ unique(soy_id,page_id)
 )ENGINE = InnoDB;
 
 create table SiteConfig(
-	name varchar(255),
-	description varchar(255),
-	siteConfig TEXT,
-	charset integer default 1
+ name VARCHAR(255),
+ description VARCHAR(255),
+ siteConfig TEXT,
+ charset INTEGER default 1
 )ENGINE = InnoDB;
 
 CREATE TABLE CmsMemo(
@@ -140,10 +147,8 @@ CREATE TABLE CmsMemo(
 	update_date INTEGER NOT NULL
 ) ENGINE=InnoDB;
 
-create index entry_udate on Entry(udate desc);
-
 create table soycms_data_sets(
-	id integer primary key AUTO_INCREMENT,
-	class_name varchar(255) unique,
-	object_data LONGTEXT
+ id INTEGER primary key AUTO_INCREMENT,
+ class_name VARCHAR(255) unique,
+ object_data LONGTEXT
 );

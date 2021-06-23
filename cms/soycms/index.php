@@ -1,12 +1,10 @@
 <?php
-include_once("../common/common.inc.php");
-include_once('webapp/config.inc.php');
-//extモードのファイルを読み込む
-if(file_exists(dirname(__FILE__) . "/webapp/config.ext.php")) include_once('webapp/config.ext.php');
+require_once(dirname(__DIR__) . "/common/common.inc.php");
+require_once(__DIR__ . '/webapp/config.inc.php');
 
-try{
-	SOY2PageController::run();
-}catch(Exception $e){
-	$exception = $e;
-	include_once(SOY2::RootDir() . "error/admin.php");		
+try {
+    SOY2PageController::run();
+} catch (Exception $e) {
+    $exception = $e;
+    include(SOY2::RootDir() . "error/admin.php");
 }

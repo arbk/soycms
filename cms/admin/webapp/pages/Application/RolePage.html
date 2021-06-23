@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="<?php echo SOYCMS_ADMIN_HTML_LANG; ?>">
 
 <head soy:page="_common.HeaderPage" isOverWrite="true">
 </head soy:page="_common.HeaderPage">
@@ -7,8 +7,8 @@
 <body>
 
     <div id="wrapper">
-		<!-- Navigation -->
-        <nav  class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0" soy:page="_common.UpperMenuPage"><!-- --></nav>
+        <!-- Navigation -->
+        <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0" soy:page="_common.UpperMenuPage"></nav>
         <div id="page-wrapper">
             <div class="row">
                 <div class="col-lg-12">
@@ -19,8 +19,8 @@
             <div class="row">
                 <div class="col-lg-12">
                     <div class="panel panel-default panel-message">
-						<div  class="panel-heading" soy:id="message">メッセージ</div>
-						<div  class="panel-heading" soy:id="error">エラー</div>
+                        <div class="panel-heading" soy:id="message">メッセージ</div>
+                        <div class="panel-heading" soy:id="error">エラー</div>
                     </div>
                 </div>
             </div>
@@ -30,9 +30,9 @@
                         <div class="panel-body">
                             <ul class="nav nav-pills">
                                 <li><a soy:link="Application">戻る</a></li>
-                           </ul>
+                            </ul>
                         </div>
-                     </div>
+                    </div>
                 </div>
                 <!-- /.col-lg-12 -->
             </div>
@@ -40,36 +40,32 @@
             <div class="row">
                 <div class="col-lg-12">
                     <div class="panel panel-green">
-                        <div class="panel-heading"　 soy:id="user_name">
-                          	 管理者の権限設定
-                        </div>
+                        <div class="panel-heading" soy:id="user_name">管理者の権限設定</div>
                         <div class="panel-body">
-                        	<div class="table-responsive">
-                        			<form soy:id="form">
-		<table class="table table-striped" cellpadding="0" cellspacing="0">
-			<thead>
-				<tr>
-					<td>ユーザ名</td>
-					<td class="authority">権限</td>
-				</tr>
-			</thead>
-			<tbody>
-				<tr soy:id="role_list">
-					<td>
-						<span soy:id="user_name">admin1</span>
-					</td>
-					<td class="authority">
-						<select soy:id="role">
-						</select>
-					</td>
-				</tr soy:id="role_list">
-			</tbody>
-		</table>
-		<div class="text-center">
-			<input class="btn btn-primary btn-lg btn-block" soy:id="modify_button" type="submit" value="変更">
-		</div>
-		</form>
-							</div>
+                            <div class="table-responsive">
+                                <form soy:id="form">
+                                    <table class="table table-striped" cellpadding="0" cellspacing="0">
+                                        <thead>
+                                            <tr>
+                                                <td>ユーザ名</td>
+                                                <td class="authority">権限</td>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr soy:id="role_list">
+                                                <td><span soy:id="user_name">admin1</span></td>
+                                                <td class="authority">
+                                                    <select soy:id="role">
+                                                    </select>
+                                                </td>
+                                            </tr soy:id="role_list">
+                                        </tbody>
+                                    </table>
+                                    <div class="text-center">
+                                        <input class="btn btn-primary btn-lg btn-block" soy:id="modify_button" type="submit" value="変更">
+                                    </div>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -79,7 +75,7 @@
 
         </div>
         <!-- /#page-wrapper -->
-		<!-- soy:page="_common.FooterPage" /-->
+        <!-- soy:page="_common.FooterPage" /-->
     </div>
     <!-- /#wrapper -->
 

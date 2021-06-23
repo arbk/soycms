@@ -1,233 +1,239 @@
 <?php
+class IndexPage extends CMSWebPageBase
+{
+//  const NUMBER_OF_ENTRIES = 5;
 
-class IndexPage extends CMSWebPageBase{
+    public $blogIds;
 
-	const NUMBER_OF_ENTRIES = 5;
+    public function doPost()
+    {
+        if (soy2_check_token()) {
+            if (isset($_POST["clear_cache"])) {
+                $dir = UserInfoUtil::getSiteDirectory().SOYCMS_CACHE_DIRNAME."/";
+                CMSUtil::unlinkAllIn($dir, true);
+            }
+            $this->jump("Index");
+        }
+    }
 
-	function doPost(){
+    public function __construct()
+    {
+        // 記事管理者以上の時
+        if (UserInfoUtil::hasSiteAdminRole()) {
+            $initDetect = $this->run("Init.InitDetectAction");
+            if ($initDetect->success()) {
+                if ($initDetect->getAttribute("detect")) {
+                  // 初めてサイトにアクセスする場合は２択ページに飛ぶ
+                    $this->jump("Init");
+                    exit();
+                }
+            }
+        }
 
-		$dir = UserInfoUtil::getSiteDirectory() . "/.cache/";
+        if (!UserInfoUtil::hasSiteAdminRole()) {
+            SOY2PageController::jump("Simple");
+        }
 
-		$files = scandir($dir);
+        parent::__construct();
 
-		foreach($files as $file){
+        $siteConfig = $this->getSiteConfig();
+        if ($siteConfig->isShowOnlyAdministrator()) {
+            $this->addMessage("SOYCMS_CONFIG_SHOW_ONLY_ADMINISTRATOR");
+        }
 
-			if($file[0] == ".") continue;
+        //プラグインによるコンテンツの追加
+        $contents = array();
+        $onLoad = CMSPlugin::getEvent('onAdminTop');
+        foreach ($onLoad as $plugin) {
+            $func = $plugin[0];
+            $res = call_user_func($func);
+            if (!isset($res["title"])) {
+                continue; //コンテンツ名が無い場合はスルー
+            }
+            $contents[] = $res;
+        }
 
-			unlink($dir . $file);
+        DisplayPlugin::toggle("plugin_area", (count($contents) > 0));
+        $this->createAdd("plugin_area_list", "_component.Top.TopPagePluginAreaListComponent", array(
+            "list" => $contents
+        ));
 
-		}
+        $this->addLabel("widgets", array(
+          "html"=>$this->getWidgetsHTML()
+        ));
 
-		$this->jump("Index");
-	}
+        HTMLHead::addLink("dashboard", array(
+          "rel"=>"stylesheet",
+          "type"=>"text/css",
+          "href"=>SOY2PageController::createRelativeLink("./css/dashboard.css") . "?" . SOYCMS_BUILD_TIME
+        ));
 
-	var $blogIds;
+        $result = $this->run("Entry.RecentListAction"/*, array("limit" => self::NUMBER_OF_ENTRIES)*/);
 
-	function __construct(){
+        $this->createAdd("recentEntries", "_component.Recent.EntryListComponent", array(
+          "list"=>$result->getAttribute("list"),
+          "labels"=>$result->getAttribute("labels")
+        ));
 
-		//記事管理者以上の時
-		if(UserInfoUtil::hasSiteAdminRole()){
+        $this->createAdd("recentPage", "_component.Recent.PageListComponent", array(
+          "list" => $this->run("Page.RecentPageListAction"/*, array("limit" => self::NUMBER_OF_ENTRIES)*/)->getAttribute("list")
+        ));
 
-			$initDetect = $this->run("Init.InitDetectAction");
-			if($initDetect->success()){
+        $result = $this->run("Page.PageListAction", array("buildTree"=>true));
+        $options = $result->getAttribute("PageTree");
 
-				if($initDetect->getAttribute("detect")){
-					// 初めてサイトにアクセスする場合は２択ページに飛ぶ
-					$this->jump("Init");
-					exit;
-				}
-			}
-		}
+        $this->addSelect("page_tree", array(
+          "options"=>$options,
+          "indexOrder"=>true,
+          "onchange"=>"location.href='" . SOY2PageController::createLink("Page.Detail.") . "'+this.value;"
+        ));
 
-		if(!UserInfoUtil::hasSiteAdminRole()){
-			SOY2PageController::jump("Simple");
-		}
+        $this->addModel("is_entry_template_enabled", array(
+          "visible" => CMSUtil::isEntryTemplateEnabled(),
+        ));
+        $this->addModel("is_page_template_enabled", array(
+          "visible" => CMSUtil::isPageTemplateEnabled(),
+        ));
 
-		parent::__construct();
+      // 最近のコメントを出力
+        SOY2::import("domain.cms.BlogPage");
+        $this->outputCommentList();
+        $this->outputTrackbackList();
+    }
 
-		if(self::_getSiteConfig()->isShowOnlyAdministrator()){
-			$this->addMessage("SOYCMS_CONFIG_SHOW_ONLY_ADMINISTRATOR");
-		}
+    public function getWidgetsHTML()
+    {
+        $result = $this->run("Plugin.PluginListAction");
+        $list = $result->getAttribute("plugins");
 
-		//プラグインによるコンテンツの追加
-		$contents = array();
-		$onLoad = CMSPlugin::getEvent('onAdminTop');
-		foreach($onLoad as $plugin){
-			$func = $plugin[0];
-			$res = call_user_func($func);
-			if(!isset($res["title"])) continue;	//コンテンツ名が無い場合はスルー
-			$contents[] = $res;
-		}
+        $box = array(array(), array(), array());
 
-		DisplayPlugin::toggle("plugin_area", (count($contents) > 0));
-		$this->createAdd("plugin_area_list", "_component.Top.TopPagePluginAreaListComponent", array(
-			"list" => $contents
-		));
+        $counter = 0;
+        foreach ($list as $plugin) {
+            if (!$plugin->getCustom()) {
+                continue;
+            }
+            if (!$plugin->isActive()) {
+                continue;
+            }
 
-		$this->addLabel("widgets", array(
-			"html" => self::_getWidgetsHTML()
-		));
+            $customs = $plugin->getCustom();
 
-		HTMLHead::addLink("dashboard", array(
-			"rel" => "stylesheet",
-			"type" => "text/css",
-			"href" => SOY2PageController::createRelativeLink("./css/dashboard.css")."?".SOYCMS_BUILD_TIME
-		));
+            $id = $plugin->getId();
+            $html = "<div class=\"panel-heading\">" . $plugin->getName() . "</div>";
+            $html .= "<div class=\"widget_middle\">";
 
-		$result = $this->run("Entry.RecentListAction", array("limit" => self::NUMBER_OF_ENTRIES));
+            foreach ($customs as $mkey => $custom) {
+                if ($custom["func"]) {
+                    $html .= '<iframe src="' . SOY2PageController::createLink("Plugin.CustomPage") . '?id=' . $id . '&menuId=' . $mkey . '"' . ' style="width:230px;border:0;" frameborder="no"></iframe>';
+                } else {
+                    $html .= $custom["html"];
+                }
+            }
 
-		$this->createAdd("recentEntries", "_component.Recent.EntryListComponent", array(
-			"list"=>$result->getAttribute("list"),
-			"labels"=>$result->getAttribute("labels")
-		));
+            $html .= "</div>";
+            $html .= "<div class=\"widget_bottom\"></div>";
 
-		$this->createAdd("recentPage", "_component.Recent.PageListComponent", array(
-				"list" => $this->run("Page.RecentPageListAction", array("limit" => self::NUMBER_OF_ENTRIES))->getAttribute("list")
-		));
+            $box[$counter][] = $html;
 
-		$result = $this->run("Page.PageListAction", array("buildTree" => true));
-		$options = $result->getAttribute("PageTree");
+            $counter++;
+            if ($counter > 2) {
+                $counter = 0;
+            }
+        }
 
-		$this->addSelect("page_tree", array(
-			"options"=>$options,
-			"indexOrder"=>true,
-			"onchange"=>"location.href='" . SOY2PageController::createLink("Page.Detail.") . "'+this.value;"
-		));
+        $widgets = "<table><tr>";
+        foreach ($box as $key => $htmls) {
+            $widgets .= "<td id=\"widigets_$key\" style=\"width:245px;vertical-align:top;\">";
+            $widgets .= implode("", $htmls);
+            $widgets .= "</td>";
+        }
+        $widgets .= "</tr></table>";
 
-		$this->addModel("is_entry_template_enabled",array(
-				"visible" => CMSUtil::isEntryTemplateEnabled(),
-		));
-		$this->addModel("is_page_template_enabled",array(
-				"visible" => CMSUtil::isPageTemplateEnabled(),
-		));
+        return $widgets;
+    }
 
-		//最近のコメントを出力
-		SOY2::import("domain.cms.BlogPage");
-		self::_outputCommentList();
-		self::_outputTrackbackList();
-	}
+    public function outputCommentList()
+    {
 
-	private function _getWidgetsHTML(){
-		$result = $this->run("Plugin.PluginListAction");
-		$list = $result->getAttribute("plugins");
+        $blogArray = $this->getBlogIds();
+        $blogIds = array_keys($blogArray);
 
-		$box = array(array(), array(), array());
+        $commentListLogic = SOY2Logic::createInstance("logic.site.Entry.EntryCommentLogic");
+        $comments = $commentListLogic->getComments($blogIds, 3, 0);
 
-		$counter = 0;
-		foreach($list as $plugin){
-			if(!$plugin->getCustom()) continue;
-			if(!$plugin->isActive()) continue;
+        if (count($comments) == 0) {
+            DisplayPlugin::hide("only_comment_exists");
+        }
 
-			$customs = $plugin->getCustom();
+        foreach ($comments as $key => $comment) {
+            $comment->info = $this->getBlogId($comment->getEntryId());
+        }
 
-			$id = $plugin->getId();
-			$html = "<div class=\"panel-heading\">" . $plugin->getName() . "</div>";
-			$html .= "<div class=\"widget_middle\">";
+        $this->createAdd("recentComment", "_component.Recent.CommentListComponent", array(
+        "list"=>$comments
+        ));
+    }
 
-			foreach($customs as $mkey => $custom){
-				if($custom["func"]){
-						$html .= '<iframe src="' . SOY2PageController::createLink("Plugin.CustomPage") . '?id=' . $id . '&menuId=' . $mkey . '"' .
-							' style="width:230px;border:0;" frameborder="no"></iframe>';
-				}else{
-					$html .= $custom["html"];
-				}
-			}
+    public function outputTrackbackList()
+    {
 
-			$html.= "</div>";
-			$html.= "<div class=\"widget_bottom\"></div>";
+        $blogArray = $this->getBlogIds();
+        $blogIds = array_keys($blogArray);
 
-			$box[$counter][] = $html;
+        $logic = SOY2Logic::createInstance("logic.site.Entry.EntryTrackbackLogic");
 
-			$counter++;
-			if($counter > 2) $counter = 0;
-		}
+        $trackbacks = $logic->getByLabelIds($blogIds, 3, 0);
 
-		$widgets = "<table><tr>";
-		foreach($box as $key => $htmls){
-			$widgets .= "<td id=\"widigets_$key\" style=\"width:245px;vertical-align:top;\">";
-			$widgets .= implode("", $htmls);
-			$widgets .= "</td>";
-		}
-		$widgets .= "</tr></table>";
+        if (count($trackbacks) == 0) {
+            DisplayPlugin::hide("only_trackback_exists");
+        }
 
-		return $widgets;
-	}
+        foreach ($trackbacks as $key => $trackback) {
+            $trackbacks[$key]->info = $this->getBlogId($trackback->getEntryId());
+        }
 
-	private function _outputCommentList(){
+        $this->createAdd("recentTrackback", "_component.Recent.TrackbackListComponent", array(
+        "list"=>$trackbacks
+        ));
+    }
 
-		$blogArray = self::_getBlogIds();
-		$blogIds = array_keys($blogArray);
+    public function getBlogIds()
+    {
+        if ((null===$this->blogIds)) {
+            $blogs = $this->run("Blog.BlogListAction")->getAttribute("list");
+            $this->blogIds = array();
 
-		$commentListLogic = SOY2Logic::createInstance("logic.site.Entry.EntryCommentLogic");
-		$comments = $commentListLogic->getComments($blogIds, 3, 0);
+            foreach ($blogs as $blog) {
+                if (null!==$blog->getBlogLabelId()) {
+                    $this->blogIds[$blog->getBlogLabelId()] = $blog;
+                }
+            }
+        }
 
-		if(count($comments) == 0){
-			DisplayPlugin::hide("only_comment_exists");
-		}
+        return $this->blogIds;
+    }
 
-		foreach($comments as $key => $comment){
-			$comment->info = self::_getBlogId($comment->getEntryId());
-		}
+    public function getBlogId($entryId)
+    {
 
-		$this->createAdd("recentComment", "_component.Recent.CommentListComponent", array(
-			"list"=>$comments
-		));
-	}
+        $blogIds = $this->getBlogIds();
 
-	private function _outputTrackbackList(){
+        $entryLogic = SOY2Logic::createInstance("logic.site.Entry.EntryLogic");
+        $entry = $entryLogic->getById($entryId);
 
-		$blogArray = self::_getBlogIds();
-		$blogIds = array_keys($blogArray);
+        $labels = $entry->getLabels();
 
-		$logic = SOY2Logic::createInstance("logic.site.Entry.EntryTrackbackLogic");
+        foreach (array_keys($blogIds) as $blogId) {
+            if (in_array($blogId, $labels)) {
+                return array("blog"=>$blogIds[$blogId], "entry" => $entry);
+            }
+        }
+    }
 
-		$trackbacks = $logic->getByLabelIds($blogIds, 3, 0);
-
-		if(count($trackbacks) == 0){
-			DisplayPlugin::hide("only_trackback_exists");
-		}
-
-		foreach($trackbacks as $key => $trackback){
-			$trackbacks[$key]->info = self::_getBlogId($trackback->getEntryId());
-		}
-
-		$this->createAdd("recentTrackback", "_component.Recent.TrackbackListComponent", array(
-			"list"=>$trackbacks
-		));
-	}
-
-	private function _getBlogIds(){
-		if(is_null($this->blogIds)){
-			$blogs = $this->run("Blog.BlogListAction")->getAttribute("list");
-			$this->blogIds = array();
-
-			foreach($blogs as $blog){
-				if(!is_null($blog->getBlogLabelId())){
-					$this->blogIds[$blog->getBlogLabelId()] = $blog;
-				}
-			}
-		}
-
-		return $this->blogIds;
-	}
-
-	private function _getBlogId($entryId){
-
-		$blogIds = self::_getBlogIds();
-
-		$entryLogic = SOY2Logic::createInstance("logic.site.Entry.EntryLogic");
-		$entry = $entryLogic->getById($entryId);
-
-		$labels = $entry->getLabels();
-
-		foreach(array_keys($blogIds) as $blogId){
-			if(in_array($blogId, $labels)){
-				return array("blog"=>$blogIds[$blogId], "entry" => $entry);
-			}
-		}
-	}
-
-	private function _getSiteConfig(){
-		return SOY2ActionFactory::createInstance("SiteConfig.DetailAction")->run()->getAttribute("entity");
-	}
+    private function getSiteConfig()
+    {
+        $result = SOY2ActionFactory::createInstance("SiteConfig.DetailAction")->run();
+        return $result->getAttribute("entity");
+    }
 }

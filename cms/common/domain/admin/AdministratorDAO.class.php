@@ -3,61 +3,61 @@
  * @entity admin.Administrator
  * @date 2007-08-22 18:42:19
  */
-abstract class AdministratorDAO extends SOY2DAO{
-	
-	/**
-	 * @return id
-	 */
-	abstract function insert(Administrator $bean);
+abstract class AdministratorDAO extends SOY2DAO
+{
+    /**
+     * @return id
+     */
+    abstract public function insert(Administrator $bean);
 
-	abstract function update(Administrator $bean);
+    abstract public function update(Administrator $bean);
 
-	abstract function delete($id);
+    abstract public function delete($id);
 
-	abstract function get();
+    abstract public function get();
 
-	/**
-	 * @return object
-	 */
-	abstract function getById($id);
-	
-	/**
-	 * @return object
-	 */
-	abstract function getByUserId($userId);
+    /**
+     * @return object
+     */
+    abstract public function getById($id);
 
-	/**
-	 * @return object
-	 */
-	abstract function getByEmail($email);
-	
-	/**
-	 * @index id
-	 * @column id,#userId#
-	 */
-	abstract function getNameMap();
-	
-	/**
-	 * @return column_count
-	 * @columns count(id) as count
-	 * @query default_user = 1
-	 */
-	abstract function countDefaultUser();
+    /**
+     * @return object
+     */
+    abstract public function getByUserId($userId);
 
-	/**
-	 * @return column_count
-	 * @columns count(id) as count
-	 */
-	abstract function countUser();
+    /**
+     * @return object
+     */
+    abstract public function getByEmail($email);
 
-	/**
-	 * @return object
-	 */
-	abstract function getByToken($token);
+    /**
+     * @index id
+     * @column id,#userId#
+     */
+    abstract public function getNameMap();
 
-	/**
-	 * @return object
-	 * @query #userId# = :userId AND #email# = :email
-	 */
-	abstract function getByUserIdAndEmail($userId, $email);
+    /**
+     * @return column_count
+     * @columns count(id) as count
+     * @query default_user = 1
+     */
+    abstract public function countDefaultUser();
+
+    /**
+     * @return column_count
+     * @columns count(id) as count
+     */
+    abstract public function countUser();
+
+    /**
+     * @return object
+     */
+    abstract public function getByToken($token);
+
+    /**
+     * @return object
+     * @query #userId# = :userId AND #email# = :email
+     */
+    abstract public function getByUserIdAndEmail($userId, $email);
 }

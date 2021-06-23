@@ -1,28 +1,28 @@
 <?php
 
-class RecentLabelListAction extends SOY2Action{
+class RecentLabelListAction extends SOY2Action
+{
+    public function execute()
+    {
+        $limit = SOYCMS_INI_NUMOF_LABEL_RECENT;
 
-    function execute() {
-    	$limit = 4;//とりあえず４件表示
+        $logic = SOY2Logic::createInstance("logic.site.Entry.EntryLogic");
+        $logic->setLimit($limit);
+        $result = $logic->getRecentLabelIds();
 
-    	$logic = SOY2Logic::createInstance("logic.site.Entry.EntryLogic");
-    	$logic->setLimit($limit);
-    	$result = $logic->getRecentLabelIds();
+        //記事管理者の場合
+        if (class_exists("UserInfoUtil") && !UserInfoUtil::hasSiteAdminRole()) {
+            $labelLogic = SOY2Logic::createInstance("logic.site.Label.LabelLogic");
+            $prohibitedLabelIds = $labelLogic->getProhibitedLabelIds();
+            foreach ($result as $key => $labelId) {
+                if (in_array($labelId, $prohibitedLabelIds)) {
+                    unset($result[$key]);
+                }
+            }
+        }
 
-		//記事管理者の場合
-		if(class_exists("UserInfoUtil") && !UserInfoUtil::hasSiteAdminRole()){
-			$labelLogic = SOY2Logic::createInstance("logic.site.Label.LabelLogic");
-			$prohibitedLabelIds = $labelLogic->getProhibitedLabelIds();
-			foreach($result as $key => $labelId){
-				if(in_array($labelId, $prohibitedLabelIds)){
-					unset($result[$key]);
-				}
-			}
-		}
+        $this->setAttribute("list", $result);
 
-    	$this->setAttribute("list",$result);
-
-    	return SOY2Action::SUCCESS;
+        return SOY2Action::SUCCESS;
     }
 }
-?>

@@ -1,101 +1,105 @@
 <?php
 
-class SiteRolePage extends CMSUpdatePageBase{
+class SiteRolePage extends CMSUpdatePageBase
+{
+    private $siteId;
 
-	private $siteId;
+    public function doPost()
+    {
 
-	function doPost(){
+        if (soy2_check_token()) {
+            $action = SOY2ActionFactory::createInstance("SiteRole.UpdateAction");
+            $result = $action->run();
 
-		if(soy2_check_token()){
-			$action = SOY2ActionFactory::createInstance("SiteRole.UpdateAction");
-	    	$result = $action->run();
+            if ($result->success()) {
+                $this->addMessage("UPDATE_SUCCESS");
+                $this->jump("Site.SiteRole." . $this->siteId);
+            } else {
+                $this->jump("Site.SiteRole." . $this->siteId);
+            }
+        }
+    }
 
-	    	if($result->success()){
-				$this->addMessage("UPDATE_SUCCESS");
-	    		$this->jump("Site.SiteRole." . $this->siteId);
-	    	}else{
-	    		$this->jump("Site.SiteRole." . $this->siteId);
-	    	}
-		}
-	}
+    public function __construct($arg)
+    {
 
-    function __construct($arg) {
+        $siteId = (isset($arg[0])) ? $arg[0] : null;
+        if (null===$siteId) {
+            SOY2PageController::jump("Site");
+        }
+        $this->siteId = $siteId;
 
-    	$siteId = (isset($arg[0])) ? $arg[0] : null;
-    	if(is_null($siteId)){
-    		SOY2PageController::jump("Site");
-    	}
-    	$this->siteId = $siteId;
+        if (!UserInfoUtil::isDefaultUser()) {
+            SOY2PageController::jump("Site");
+        }
 
-    	if(!UserInfoUtil::isDefaultUser()){
-    		SOY2PageController::jump("Site");
-    	}
+        parent::__construct();
 
-    	parent::__construct();
+        $action = SOY2ActionFactory::createInstance("SiteRole.ListAction", array(
+            "siteId" => $siteId
+        ));
+        $result = $action->run();
 
-    	$action = SOY2ActionFactory::createInstance("SiteRole.ListAction", array(
-    		"siteId" => $siteId
-    	));
-    	$result = $action->run();
+        if ($result == SOY2Action::FAILED) {
+            SOY2PageController::jump("Site");
+        }
 
-    	if($result == SOY2Action::FAILED){
-    		SOY2PageController::jump("Site");
-    	}
+        $siteRole = $result->getAttribute("siteRole");
+        $userName = $result->getAttribute("adminName");
 
-    	$siteRole = $result->getAttribute("siteRole");
-    	$userName = $result->getAttribute("adminName");
+        $this->createAdd("siterole_block", "SiteRoleList", array(
+            "list" => $siteRole,
+            "user" => $userName,
+            "siteId" => $this->siteId
+        ));
 
-    	$this->createAdd("siterole_block", "SiteRoleList", array(
-    		"list" => $siteRole,
-    		"user" => $userName,
-    		"siteId" => $this->siteId
-    	));
+        $this->addForm("siteRoleForm");
 
-    	$this->addForm("siteRoleForm");
+        $siteInfo = $result->getAttribute("siteTitle");
+        $this->addLabel("site_title", array(
+            "text" => $siteInfo->getSiteId() . CMSMessageManager::get("ADMIN_MASSAGE_ADMIN_LIST")
+        ));
 
-    	$siteInfo = $result->getAttribute("siteTitle");
-    	$this->addLabel("site_title", array(
-    		"text" => $siteInfo->getSiteId() . CMSMessageManager::get("ADMIN_MASSAGE_ADMIN_LIST")
-    	));
+        $this->addInput("modify_button", array(
+            "type" => "submit",
+            "value" => CMSMessageManager::get("ADMIN_CHANGE"),
+            "visible" => (count($siteRole) > 0)
+        ));
 
-    	$this->addInput("modify_button", array(
-    		"type" => "submit",
-    		"value" => CMSMessageManager::get("ADMIN_CHANGE"),
-    		"visible" => (count($siteRole) > 0)
-    	));
-
-		$messages = CMSMessageManager::getMessages();
-    	$this->addLabel("message", array(
-			"text" => implode($messages),
-			"visible" => (count($messages) > 0)
-		));
+        $messages = CMSMessageManager::getMessages();
+        $this->addLabel("message", array(
+            "text" => implode($messages),
+            "visible" => (count($messages) > 0)
+        ));
     }
 }
 
-class SiteRoleList extends HTMLList{
+class SiteRoleList extends HTMLList
+{
+    private $user;
+    private $siteId;
 
-	private $user;
-	private $siteId;
+    public function setUser($user)
+    {
+        $this->user = $user;
+    }
 
-	function setUser($user){
-		$this->user = $user;
-	}
+    public function setSiteId($siteId)
+    {
+        $this->siteId = $siteId;
+    }
 
-	function setSiteId($siteId){
-		$this->siteId = $siteId;
-	}
+    protected function populateItem($entity, $key)
+    {
+        $this->addLabel("user_name", array(
+            "text" => $this->user[$key]
+        ));
 
-
-	protected function populateItem($entity, $key){
-		$this->addLabel("user_name", array(
-			"text" => $this->user[$key]
-		));
-
-		$this->addSelect("site_role", array(
-			"options" => SiteRole::getSiteRoleLists(),
-			"name" => "siteRole[" . $key . "][" . $this->siteId . "]",
-			"indexOrder" => true,
-			"selected" => (int)$entity
-		));
-	}
+        $this->addSelect("site_role", array(
+            "options" => SiteRole::getSiteRoleLists(),
+            "name" => "siteRole[" . $key . "][" . $this->siteId . "]",
+            "indexOrder" => true,
+            "selected" => (int)$entity
+        ));
+    }
 }

@@ -1,65 +1,56 @@
 CREATE TABLE soyinquiry_form (
-  id INTEGER primary key AUTOINCREMENT,
-  form_id VARCHAR unique,
-  name VARCHAR,
-  config VARCHAR
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  form_id VARCHAR(128) UNIQUE,
+  name VARCHAR(255),
+  config TEXT
 );
 
 CREATE TABLE soyinquiry_column(
-  id INTEGER primary key AUTOINCREMENT,
-  form_id VARCHAR,
-  column_id VARCHAR,
-  label VARCHAR,
-  column_type VARCHAR,
-  config VARCHAR,
-  is_require INTEGER default 0,
-  display_order INTEGER default 0
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  form_id VARCHAR(255),
+  column_id VARCHAR(255),
+  label VARCHAR(255),
+  column_type VARCHAR(255),
+  config TEXT,
+  is_require INTEGER DEFAULT 0,
+  display_order INTEGER DEFAULT 0
 );
 
 CREATE TABLE soyinquiry_inquiry (
-  id INTEGER primary key AUTOINCREMENT,
-  tracking_number VARCHAR,
-  form_id VARCHAR NOT NULL,
-  ip_address VARCHAR NOT NULL,
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  tracking_number VARCHAR(255),
+  form_id VARCHAR(255) NOT NULL,
+  ip_address VARCHAR(128),
   content TEXT,
   data TEXT,
-  flag INTEGER default 1,
+  flag INTEGER DEFAULT 1,
   create_date INTEGER NOT NULL,
-  form_url VARCHAR,
+  form_url TEXT,
   UNIQUE(form_id, create_date)
 );
-
-CREATE TABLE soyinquiry_entry_relation (
-	inquiry_id INTEGER NOT NULL,
-	site_id INTEGER,
-	page_id INTEGER,
-	entry_id INTEGER NOT NULL,
-	UNIQUE(inquiry_id, entry_id)
-);
-
 CREATE INDEX soyinquiry_tracking_number_idx on soyinquiry_inquiry(tracking_number);
 
 CREATE TABLE soyinquiry_serverconfig(
-	config VARCHAR
+	config TEXT
 );
 
 CREATE TABLE soyinquiry_comment (
-	id INTEGER primary key AUTOINCREMENT,
-	inquiry_id INTEGER not null,
-	title VARCHAR,
-	author VARCHAR,
-	content VARCHAR,
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	inquiry_id INTEGER NOT NULL,
+	title VARCHAR(255),
+	author VARCHAR(255),
+	content TEXT,
 	create_date INTEGER NOT NULL,
 	UNIQUE(inquiry_id, create_date)
 );
 
 CREATE TABLE soyinquiry_data_sets(
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
-	class_name VARCHAR UNIQUE,
+	class_name VARCHAR(255) UNIQUE,
 	object_data TEXT
 );
 
 CREATE TABLE soyinquiry_ban_ip_address(
-	ip_address VARCHAR NOT NULL UNIQUE,
+	ip_address VARCHAR(128) NOT NULL UNIQUE,
 	log_date INTEGER
 );

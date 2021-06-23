@@ -1,21 +1,19 @@
 <?php
 
-class GetFileInfoPage extends CMSWebPageBase{
-	
-	function doPost(){
-		
-		//パス
-		$path = $_POST["path"];
-		
-		//返り値
-		
-		exit;				
-	}
+class GetFileInfoPage extends CMSWebPageBase
+{
+    public function doPost()
+    {
+        //パス
+        $path = $_POST["path"];
 
+        //返り値
 
-    function __construct() {
-    	parent::__construct();
-    	
+        exit;
+    }
+
+    public function __construct()
+    {
+        parent::__construct();
     }
 }
-?>

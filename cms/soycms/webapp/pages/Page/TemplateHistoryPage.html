@@ -1,24 +1,30 @@
-<html>
-	<head soy:page="_common.HeaderPage" isOverWrite="true">
-	</head>
-	<body class="sub">
-	<div class="table-responsive">
-	<table class="table table-striped">
-		<thead>
-		<tr>
-			<th>保存日時</th>
-			<th>内容</th>
-			<th></th>
-		</tr>
-		</thead>
-		<tbody>
-		<tr soy:id="templateList">
-			<td><a soy:id="date">2008-03-15 15:40</a></td>
-			<td soy:id="contents">内容</td>
-			<td class="function"><form soy:id="restoreForm"><input type="hidden" soy:id="historyId"><input type="submit" value="復元する" class="btn btn-default"></form soy:id="restoreForm"></td>
-		</tr soy:id="templateList">
-		</tbody>
-	</table>
-	</div>
-	</body>
+<!DOCTYPE html>
+<html lang="<?php echo SOYCMS_ADMIN_HTML_LANG; ?>">
+
+<head soy:page="_common.HeaderPage" isOverWrite="true">
+</head soy:page="_common.HeaderPage">
+
+<body class="sub">
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>保存日時</th>
+                    <th>内容</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr soy:id="templateList">
+                    <td><a soy:id="date">2008-03-15 15:40</a></td>
+                    <td soy:id="contents">内容</td>
+                    <td class="function">
+                        <form soy:id="restoreForm"><input type="hidden" soy:id="historyId"><input type="submit" value="復元する" class="btn btn-default"></form soy:id="restoreForm">
+                    </td>
+                </tr soy:id="templateList">
+            </tbody>
+        </table>
+    </div>
+</body>
+
 </html>

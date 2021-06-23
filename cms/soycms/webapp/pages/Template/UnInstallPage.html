@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="<?php echo SOYCMS_ADMIN_HTML_LANG; ?>">
 
 <head soy:page="_common.HeaderPage" isOverWrite="true">
 </head soy:page="_common.HeaderPage">
@@ -7,8 +7,8 @@
 <body>
 
     <div id="wrapper">
-		<!-- Navigation -->
-        <nav  class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0" soy:page="_common.UpperMenuPage"><!-- --></nav>
+        <!-- Navigation -->
+        <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0" soy:page="_common.UpperMenuPage"></nav>
         <div id="page-wrapper">
             <div class="row">
                 <div class="col-lg-12">
@@ -19,68 +19,64 @@
             <div soy:page="_common.MessagePanel" isOverWrite="true"></div>
             <div class="row">
                 <div class="col-lg-12">
-                	<div class="panel panel-green">
-                   	 	<div class="panel-body">
-                   	 		<a soy:link="Template" style="margin-right:10px">ページ雛形管理に戻る</a>
-                   	 	</div>
-					</div>
+                    <div class="panel panel-green">
+                        <div class="panel-body">
+                            <a soy:link="Template" style="margin-right:10px">ページ雛形管理に戻る</a>
+                        </div>
+                    </div>
                 </div>
                 <!-- /.col-lg-12 -->
             </div>
 
             <div class="row">
                 <div class="col-lg-12">
-                	<div class="panel panel-green">
-                		
-                   	 	<div class="panel-body">
-                   	 		<p>『<span soy:id="template_name">ページ雛形名</span>』をアンインストールします。</p>
-							<p>削除するファイルを選択して下さい。</p>
-							<p>配置先に既にファイルが存在していない場合は<span style="color:red;">赤字</span>で表示され、削除することはできません。</p>
-							<div class="table-responsive">
-								<form soy:id="form">
-						
-								<table class="table" id="file_list">
-									<tr>
-										<th style="text-align:center;">
-											<input type="checkbox" onclick="change_checkbox(this.checked);" checked="checked" />
-										</th>
-										<th>パス</th>
-										<th>説明</th>					
-									</tr>
-									<tr soy:id="file_list">
-										<td style="text-align:center;">
-											<input type="checkbox" soy:id="check" class="file_list_checkbox" />
-										</td>
-										<td>
-											<span soy:id="name">ファイルリスト</span>
-										</td>
-										<td>
-											<span soy:id="description">説明</span>
-										</td>
-									</tr soy:id="file_list">			
-								</table>
-					
-								<input type="submit" class="submit_button" style="width:200px;" value="アンインストール" />
-				
-								</form soy:id="form">
-							</div>
-                   	 	</div>
-					</div>
+                    <div class="panel panel-green">
+
+                        <div class="panel-body">
+                            <p>『<span soy:id="template_name">ページ雛形名</span>』をアンインストールします。</p>
+                            <p>削除するファイルを選択して下さい。</p>
+                            <p>配置先に既にファイルが存在していない場合は<span style="color:red;">赤字</span>で表示され、削除することはできません。</p>
+                            <div class="table-responsive">
+                                <form soy:id="form">
+
+                                    <table class="table" id="file_list">
+                                        <tr>
+                                            <th style="text-align:center;">
+                                                <input type="checkbox" onclick="change_checkbox(this.checked);" checked="checked" />
+                                            </th>
+                                            <th>パス</th>
+                                            <th>説明</th>
+                                        </tr>
+                                        <tr soy:id="file_list">
+                                            <td style="text-align:center;">
+                                                <input type="checkbox" soy:id="check" class="file_list_checkbox" />
+                                            </td>
+                                            <td><span soy:id="name">ファイルリスト</span></td>
+                                            <td><span soy:id="description">説明</span></td>
+                                        </tr soy:id="file_list">
+                                    </table>
+
+                                    <input type="submit" class="submit_button" style="width:200px;" value="アンインストール" />
+
+                                </form soy:id="form">
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <!-- /.col-lg-12 -->
             </div>
-            
-			<script type="text/javascript">
-			function change_checkbox(value){
-				$(".file_list_checkbox").each(function(){
-					$(this).prop("checked", value);
-				});
-			}
-			</script>
-          
+
+            <script type="text/javascript">
+                function change_checkbox(value) {
+                    $(".file_list_checkbox").each(function () {
+                        $(this).prop("checked", value);
+                    });
+                }
+            </script>
+
         </div>
         <!-- /#page-wrapper -->
-		<!-- soy:page="_common.FooterPage" /-->
+        <!-- soy:page="_common.FooterPage" /-->
     </div>
     <!-- /#wrapper -->
 

@@ -1,45 +1,48 @@
 <?php
 
-class ModuleListComponent extends HTMLList{
+class ModuleListComponent extends HTMLList
+{
+    private $editorLink;
+    private $removeLink;
 
-	private $editorLink;
-	private $removeLink;
+    protected function populateItem($entity)
+    {
+        $moduleId = $this->convertModuleId($entity["moduleId"]);
 
-	protected function populateItem($entity){
+        $this->addLink("module_name", array(
+            "text" => (isset($entity["name"])) ? $entity["name"] : null,
+            "link" => "", //(isset($moduleId)) ? $this->editorLink . $moduleId : null
+        ));
 
-		$moduleId = self::convertModuleId($entity["moduleId"]);
+        $this->addLabel("module_id", array(
+            "text" => $moduleId
+        ));
 
-		$this->addLink("module_name", array(
-			"text" => (isset($entity["name"])) ? $entity["name"] : null,
-			"link" => "",//(isset($moduleId)) ? $this->editorLink . $moduleId : null
-		));
+        $this->addLink("module_link", array(
+            "link" => (isset($moduleId)) ? $this->editorLink . $moduleId : null
+        ));
 
-		$this->addLabel("module_id", array(
-			"text" => $moduleId
-		));
+        $this->addLink("remove_link", array(
+            "link" => (isset($moduleId)) ? $this->removeLink . $moduleId : null
+        ));
+    }
 
-		$this->addLink("module_link", array(
-			"link" => (isset($moduleId)) ? $this->editorLink . $moduleId : null
-		));
+    private function convertModuleId($moduleId)
+    {
+        if (strpos($moduleId, "html.") === 0) {
+            return str_replace("html.", "", $moduleId);
+        } else {
+            return $moduleId;
+        }
+    }
 
-		$this->addLink("remove_link", array(
-			"link" => (isset($moduleId)) ? $this->removeLink . $moduleId : null
-		));
-	}
+    public function setEditorLink($editorLink)
+    {
+        $this->editorLink = $editorLink;
+    }
 
-	private function convertModuleId($moduleId){
-		if(strpos($moduleId, "html.") === 0){
-			return str_replace("html.", "", $moduleId);
-		}else{
-			return $moduleId;
-		}
-	}
-
-	function setEditorLink($editorLink){
-		$this->editorLink = $editorLink;
-	}
-
-	function setRemoveLink($removeLink){
-		$this->removeLink = $removeLink;
-	}
+    public function setRemoveLink($removeLink)
+    {
+        $this->removeLink = $removeLink;
+    }
 }

@@ -1,44 +1,43 @@
 <?php
 
-class LoginAction extends SOY2Action{
+class LoginAction extends SOY2Action
+{
+    private $siteId;
 
-	var $siteId;
+    public function setSiteId($id)
+    {
+        $this->siteId = $id;
+    }
 
-	function setSiteId($id){
-		$this->siteId = $id;
-	}
+    public function execute()
+    {
+        $userId = UserInfoUtil::getUserId();
+        $siteRoleDao = SOY2DAOFactory::create("admin.SiteRoleDAO");
 
-	function execute(){
+        /*
+         * サイトの権限を取得する
+         */
+        if (UserInfoUtil::isDefaultUser()) {
+            //初期管理者は一般管理者と同等
+            $siteRole = new SiteRole();
+            $siteRole->setUserId($userId);
+            $siteRole->setSiteId($this->siteId);
+            $siteRole->setSiteRole(SiteRole::SITE_SUPER_USER);
+        } else {
+            try {
+                $siteRole = $siteRoleDao->getSiteRole($this->siteId, $userId);
+            } catch (Exception $e) {
+                return SOY2Action::FAILED;
+            }
+        }
 
-		$userId = UserInfoUtil::getUserId();
-		$siteRoleDao = SOY2DAOFactory::create("admin.SiteRoleDAO");
+        try {
+            //ここに来てる時点で複数の管理サイトの権限を持っているので第２引数はfalse
+            UserInfoUtil::loginSite($siteRole, false);
+        } catch (Exception $e) {
+            return SOY2Action::FAILED;
+        }
 
-		/*
-		 * サイトの権限を取得する
-		 */
-		if(UserInfoUtil::isDefaultUser()){
-			//初期管理者は一般管理者と同等
-			$siteRole = new SiteRole();
-			$siteRole->setUserId($userId);
-			$siteRole->setSiteId($this->siteId);
-			$siteRole->setSiteRole(SiteRole::SITE_SUPER_USER);
-		}else{
-			try{
-				$siteRole = $siteRoleDao->getSiteRole($this->siteId, $userId);
-			}catch(Exception $e){
-				return SOY2Action::FAILED;
-			}
-		}
-
-		try{
-			//ここに来てる時点で複数の管理サイトの権限を持っているので第２引数はfalse
-			UserInfoUtil::loginSite($siteRole, false);
-		}catch(Exception $e){
-			return SOY2Action::FAILED;
-		}
-
-		return SOY2Action::SUCCESS;
-	}
-
+        return SOY2Action::SUCCESS;
+    }
 }
-?>

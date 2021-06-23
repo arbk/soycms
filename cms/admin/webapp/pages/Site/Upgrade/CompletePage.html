@@ -1,31 +1,29 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="<?php echo SOYCMS_ADMIN_HTML_LANG; ?>">
 
 <head soy:page="_common.HeaderPage" isOverWrite="true">
 </head soy:page="_common.HeaderPage">
 
 <body>
 
-<div id="wrapper">
-  <!-- Navigation -->
-  <nav  class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0" soy:page="_common.UpperMenuPage"><!-- --></nav>
-  <div id="page-wrapper">
-    <div class="row">
-      <div class="col-lg-12">
+    <div id="wrapper">
+        <!-- Navigation -->
+        <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0" soy:page="_common.UpperMenuPage"></nav>
+        <div id="page-wrapper">
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1>サイト管理 - データベースの更新（完了）</h1>
+                    <p class="message">データベースのバージョンアップが完了しました。→<a soy:link="">トップページへ</a>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
 
-		<h1>サイト管理 - データベースの更新（完了）</h1>
-
-		<p class="message">データベースのバージョンアップが完了しました。→<a soy:link="">トップページへ</a>
-		
-
+        </div>
+        <!-- /#page-wrapper -->
+        <!-- soy:page="_common.FooterPage" /-->
     </div>
-    <!-- /.col-lg-12 -->
-    </div>
+    <!-- /#wrapper -->
 
-  </div>
-  <!-- /#page-wrapper -->
-  <!-- soy:page="_common.FooterPage" /-->
-</div>
-<!-- /#wrapper -->
+</body>
 
 </html>

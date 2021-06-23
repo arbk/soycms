@@ -1,258 +1,276 @@
 <?php
 
-class DateColumn extends SOYInquiry_ColumnBase{
+class DateColumn extends SOYInquiry_ColumnBase
+{
+  //年のセレクトボックスに表示する年の設定
+    private $startYear;
+    private $endYear;
 
-	//年のセレクトボックスに表示する年の設定
-	private $startYear;
-	private $endYear;
+    private $hasToday;
 
-	private $hasToday;
+    private $attribute;
 
-	private $attribute;
+    private $labels = array("y" =>"----", "m" => "--", "d" => "--");
 
-	private $labels = array("y" =>"----", "m" => "--", "d" => "--");
-
-	//HTML5のrequired属性を利用するか？
-	private $requiredProp = false;
+  //HTML5のrequired属性を利用するか？
+    private $requiredProp = false;
 
     /**
-	 * ユーザに表示するようのフォーム
-	 */
-	function getForm($attributes = array()){
+   * ユーザに表示するようのフォーム
+   */
+    public function getForm($attributes = array())
+    {
 
-		$config = $this->getDateConfig();
-		$startYear = $config["startYear"];
-		$endYear = $config["endYear"];
+        $config = $this->getDateConfig();
+        $startYear = $config["startYear"];
+        $endYear = $config["endYear"];
 
-		$attributes = $this->getAttributes();
-		$required = $this->getRequiredProp();
+        $attributes = $this->getAttributes();
+        $required = $this->getRequiredProp();
 
-		$values = $this->getValue();
+        $values = $this->getValue();
 
-		if(!is_array($values)){
-			$hasToday = $this->hasToday;
-			$values = array();
+        if (!is_array($values)) {
+            $hasToday = $this->hasToday;
+            $values = array();
 
-			//ディフォルトで今日を表示する
-			if(isset($hasToday)){
-				//設定した表示年数に今日があるかチェックする
-				if(date("Y") >= $startYear && date("Y") <= $endYear){
-					$values = array("year" => date("Y"), "month" => date("m"), "day" => date("d"));
-				}
-			}else{
-				$values = array("year" => "", "month" => "", "day" => "");
-			}
-		}
+      //ディフォルトで今日を表示する
+            if (isset($hasToday)) {
+              //設定した表示年数に今日があるかチェックする
+                if (date("Y") >= $startYear && date("Y") <= $endYear) {
+                    $values = array("year" => date("Y"), "month" => date("m"), "day" => date("d"));
+                }
+            } else {
+                $values = array("year" => "", "month" => "", "day" => "");
+            }
+        }
 
-		$html = array();
-		$html[] = "<select name=\"data[".$this->getColumnId()."][year]\" ".implode(" ",$attributes)."" . $required . ">";
-		$html[] ="<option value=\"\">" . $this->labels["y"] . "</option>";
+        $html = array();
+        $html[] = "<select name=\"data[".$this->getColumnId()."][year]\" ".implode(" ", $attributes)."" . $required . ">";
+        $html[] ="<option value=\"\">" . $this->labels["y"] . "</option>";
 
-		for($i = $startYear; $i <= $endYear; $i++){
-			if(isset($values["year"]) && $values["year"] == $i){
-				$html[] ="<option selected=\"selected\">".$i."</option>";
-			}else{
-				$html[] ="<option>".$i."</option>";
-			}
-		}
-		$html[] = "</select>";
+        for ($i = $startYear; $i <= $endYear; $i++) {
+            if (isset($values["year"]) && $values["year"] == $i) {
+                $html[] ="<option selected=\"selected\">".$i."</option>";
+            } else {
+                $html[] ="<option>".$i."</option>";
+            }
+        }
+        $html[] = "</select>";
 
-		$html[] = "<select name=\"data[".$this->getColumnId()."][month]\" ".implode(" ",$attributes)."" . $required . ">";
-		$html[] ="<option value=\"\">" . $this->labels["m"] . "</option>";
-		for($i = 1; $i <= 12; $i++){
-			if(isset($values["month"]) && $values["month"] == $i){
-				$html[] = "<option selected=\"selected\">" . sprintf("%0d",$i) . "</option>";
-			}else{
-				$html[] = "<option>" . sprintf("%0d",$i) . "</option>";
-			}
-		}
-		$html[] = "</select>";
+        $html[] = "<select name=\"data[".$this->getColumnId()."][month]\" ".implode(" ", $attributes)."" . $required . ">";
+        $html[] ="<option value=\"\">" . $this->labels["m"] . "</option>";
+        for ($i = 1; $i <= 12; $i++) {
+            if (isset($values["month"]) && $values["month"] == $i) {
+                $html[] = "<option selected=\"selected\">" . sprintf("%0d", $i) . "</option>";
+            } else {
+                $html[] = "<option>" . sprintf("%0d", $i) . "</option>";
+            }
+        }
+        $html[] = "</select>";
 
-		$html[] = "<select name=\"data[".$this->getColumnId()."][day]\" ".implode(" ",$attributes)."" . $required . ">";
-		$html[] ="<option value=\"\">" . $this->labels["d"] . "</option>";
-		for($i = 1; $i <= 31; $i++){
-			if(isset($values["day"]) && $values["day"] == $i){
-				$html[] = "<option selected=\"selected\">" . sprintf("%0d",$i) . "</option>";
-			}else{
-				$html[] = "<option>" . sprintf("%0d",$i) . "</option>";
-			}
-		}
-		$html[] = "</select>";
-		return implode("\n",$html);
-	}
+        $html[] = "<select name=\"data[".$this->getColumnId()."][day]\" ".implode(" ", $attributes)."" . $required . ">";
+        $html[] ="<option value=\"\">" . $this->labels["d"] . "</option>";
+        for ($i = 1; $i <= 31; $i++) {
+            if (isset($values["day"]) && $values["day"] == $i) {
+                $html[] = "<option selected=\"selected\">" . sprintf("%0d", $i) . "</option>";
+            } else {
+                $html[] = "<option>" . sprintf("%0d", $i) . "</option>";
+            }
+        }
+        $html[] = "</select>";
 
-	function getAttributes(){
-		$attributes = array();
+        return implode("\n", $html);
+    }
 
-		//設定したattributeを挿入
-		if(isset($this->attribute) && strlen($this->attribute) > 0){
-			$attribute = str_replace("&quot;","\"",$this->attribute);	//"が消えてしまうから、htmlspecialcharsができない
-			$attributes[] = trim($attribute);
-		}
+    public function getAttributes()
+    {
+        $attributes = array();
 
-		return $attributes;
-	}
+      //設定したattributeを挿入
+        if (isset($this->attribute) && strlen($this->attribute) > 0) {
+            $attribute = str_replace("&quot;", "\"", $this->attribute);  //"が消えてしまうから、htmlspecialcharsができない
+            $attributes[] = trim($attribute);
+        }
 
-	function getRequiredProp(){
-		return (!SOYINQUIRY_FORM_DESIGN_PAGE && $this->requiredProp) ? " required" : "";
-	}
+        return $attributes;
+    }
 
-	/**
-	 * 確認画面で呼び出す
-	 */
-	function getView(){
-		$values = $this->getValue();
-		if(!isset($values["year"]) || !isset($values["month"]) || !isset($values["day"])){
-			return "----/--/--";
-		}else{
-			return htmlspecialchars($values["year"] . "/" . $values["month"] . "/" . $values["day"], ENT_QUOTES, "UTF-8");
-		}
-	}
+    public function getRequiredProp()
+    {
+        return (!SOYINQUIRY_FORM_DESIGN_PAGE && $this->requiredProp) ? " required" : "";
+    }
 
-	/**
-	 * 設定画面で表示する用のフォーム
-	 */
-	function getConfigForm(){
-		$hasToday = $this->hasToday;
+  /**
+   * 確認画面で呼び出す
+   */
+    public function getView()
+    {
+        $values = $this->getValue();
+        if (!isset($values["year"]) || !isset($values["month"]) || !isset($values["day"])) {
+            return "----/--/--";
+        } else {
+            return soy2_h($values["year"] . "/" . $values["month"] . "/" . $values["day"]);
+        }
+    }
 
-		$html  = "表示年数:";
-		$html .= '<input type="text" name="Column[config][startYear]" value="'.$this->startYear.'" size="4" />';
-		$html .= "から";
-		$html .= '<input type="text" name="Column[config][endYear]" value="'.$this->endYear.'" size="4" />まで<br>';
+  /**
+   * 設定画面で表示する用のフォーム
+   */
+    public function getConfigForm()
+    {
+        $hasToday = $this->hasToday;
 
-		$html .= "空の値の表示設定:";
-		$html .= '年:<input type="text" name="Column[config][labels][y]" value="'.$this->labels["y"].'" size="3"> ';
-		$html .= '月:<input type="text" name="Column[config][labels][m]" value="'.$this->labels["m"].'" size="3"> ';
-		$html .= '日:<input type="text" name="Column[config][labels][d]" value="'.$this->labels["d"].'" size="3"><br>';
+        $html  = "表示年数:";
+        $html .= '<input type="text" name="Column[config][startYear]" value="'.$this->startYear.'" size="4">';
+        $html .= "から";
+        $html .= '<input type="text" name="Column[config][endYear]" value="'.$this->endYear.'" size="4">まで<br>';
 
-		if(isset($hasToday)){
-			$html .= '<input type="checkbox" name="Column[config][hasToday]" value="1" checked="checked" />';
-		}else{
-			$html .= '<input type="checkbox" name="Column[config][hasToday]" value="1" />';
-		}
+        $html .= "空の値の表示設定:";
+        $html .= '年:<input type="text" name="Column[config][labels][y]" value="'.$this->labels["y"].'" size="3"> ';
+        $html .= '月:<input type="text" name="Column[config][labels][m]" value="'.$this->labels["m"].'" size="3"> ';
+        $html .= '日:<input type="text" name="Column[config][labels][d]" value="'.$this->labels["d"].'" size="3"><br>';
 
-		$html .= "今日の日付にselected属性を付ける";
+        if (isset($hasToday)) {
+            $html .= '<input type="checkbox" name="Column[config][hasToday]" value="1" checked="checked">';
+        } else {
+            $html .= '<input type="checkbox" name="Column[config][hasToday]" value="1">';
+        }
 
-		$html .= "<br />";
+        $html .= "今日の日付にselected属性を付ける";
 
-		if(is_null($this->attribute) && isset($this->style)){
-			$attribute = "class=&quot;".htmlspecialchars($this->style,ENT_QUOTES,"UTF-8")."&quot;";
-		}else{
-			$attribute = trim($this->attribute);
-		}
+        $html .= "<br>";
 
-		$html .= '<label for="Column[config][style]'.$this->getColumnId().'">属性:</label>';
-		$html .= '<input id="Column[config][style]'.$this->getColumnId().'" name="Column[config][attribute]" type="text" value="'.$attribute.'" style="width:90%;" /><br />';
-		$html .= "※記述例：class=\"sample\" title=\"サンプル\"<br>";
+        if (null===$this->attribute && isset($this->style)) {
+            $attribute = "class=&quot;".soy2_h($this->style)."&quot;";
+        } else {
+            $attribute = trim($this->attribute);
+        }
 
-		$html .= '<label><input type="checkbox" name="Column[config][requiredProp]" value="1"';
-		if($this->requiredProp){
-			$html .= ' checked';
-		}
-		$html .= '>required属性を利用する</label>';
-		return $html;
-	}
+        $html .= '<label for="Column[config][style]'.$this->getColumnId().'">属性:</label>';
+        $html .= '<input id="Column[config][style]'.$this->getColumnId().'" name="Column[config][attribute]" type="text" value="'.$attribute.'" style="width:90%;"><br>';
+        $html .= "※記述例：class=\"sample\" title=\"サンプル\"<br>";
 
-	/**
-	 * 保存された設定値を渡す
-	 */
-	function setConfigure($config){
-		SOYInquiry_ColumnBase::setConfigure($config);
+        $html .= '<label><input type="checkbox" name="Column[config][requiredProp]" value="1"';
+        if ($this->requiredProp) {
+            $html .= ' checked';
+        }
+        $html .= '>required属性を利用する</label>';
 
-		$this->startYear = (isset($config["startYear"]) && is_numeric($config["startYear"])) ? (int)$config["startYear"] : null;
-		$this->endYear = (isset($config["endYear"]) && is_numeric($config["endYear"])) ? (int)$config["endYear"] : null;
-		$this->hasToday = isset($config["hasToday"]) ? 1 : null;
-		$this->attribute = (isset($config["attribute"])) ? str_replace("\"","&quot;",$config["attribute"]) : null;
-		$this->labels = (isset($config["labels"]) && is_array($config["labels"])) ? $config["labels"] : array("y" => "----", "m" => "--", "d" => "--");
-		$this->requiredProp = (isset($config["requiredProp"])) ? $config["requiredProp"] : null;
-	}
+        return $html;
+    }
 
-	function getConfigure(){
-		$config = parent::getConfigure();
-		$config["startYear"] = $this->startYear;
-		$config["endYear"] = $this->endYear;
-		$config["hasToday"] = $this->hasToday;
-		$config["attribute"] = $this->attribute;
-		$config["labels"] = $this->labels;
-		$config["requiredProp"] = $this->requiredProp;
-		return $config;
-	}
+  /**
+   * 保存された設定値を渡す
+   */
+    public function setConfigure($config)
+    {
+        SOYInquiry_ColumnBase::setConfigure($config);
 
-	function validate(){
-		$values = $this->getValue();
+        $this->startYear = (isset($config["startYear"]) && is_numeric($config["startYear"])) ? (int)$config["startYear"] : null;
+        $this->endYear = (isset($config["endYear"]) && is_numeric($config["endYear"])) ? (int)$config["endYear"] : null;
+        $this->hasToday = isset($config["hasToday"]) ? 1 : null;
+        $this->attribute = (isset($config["attribute"])) ? str_replace("\"", "&quot;", $config["attribute"]) : null;
+        $this->labels = (isset($config["labels"]) && is_array($config["labels"])) ? $config["labels"] : array("y" => "----", "m" => "--", "d" => "--");
+        $this->requiredProp = (isset($config["requiredProp"])) ? $config["requiredProp"] : null;
+    }
 
-		if($this->getIsRequire()){
-			if(
-				empty($values)
-				|| !strlen(@$values["year"])
-				|| !strlen(@$values["month"])
-				|| !strlen(@$values["day"])
-			){
-				$this->setErrorMessage($this->getLabel()."を入力してください。");
-				return false;
-			}
-		}
+    public function getConfigure()
+    {
+        $config = parent::getConfigure();
+        $config["startYear"] = $this->startYear;
+        $config["endYear"] = $this->endYear;
+        $config["hasToday"] = $this->hasToday;
+        $config["attribute"] = $this->attribute;
+        $config["labels"] = $this->labels;
+        $config["requiredProp"] = $this->requiredProp;
+        return $config;
+    }
 
-		return true;
-	}
+    public function validate()
+    {
+        $values = $this->getValue();
+
+        if ($this->getIsRequire()) {
+            if (empty($values)
+                || !strlen(@$values["year"])
+                || !strlen(@$values["month"])
+                || !strlen(@$values["day"])
+            ) {
+                $this->setErrorMessage($this->getLabel()."を入力してください。");
+                return false;
+            }
+        }
+
+        return true;
+    }
 
 
-    function getLinkagesSOYMailTo() {
-		return array(
-			SOYMailConverter::SOYMAIL_NONE  => "連携しない",
-			SOYMailConverter::SOYMAIL_BIRTHDAY => "生年月日",
-			SOYMailConverter::SOYMAIL_ATTR1 => "属性A",
-			SOYMailConverter::SOYMAIL_ATTR2 => "属性B",
-			SOYMailConverter::SOYMAIL_ATTR3 => "属性C",
-			SOYMailConverter::SOYMAIL_MEMO  => "備考"
-		);
-	}
+    public function getLinkagesSOYMailTo()
+    {
+        return array(
+        SOYMailConverter::SOYMAIL_NONE  => "連携しない",
+        SOYMailConverter::SOYMAIL_BIRTHDAY => "生年月日",
+        SOYMailConverter::SOYMAIL_ATTR1 => "属性A",
+        SOYMailConverter::SOYMAIL_ATTR2 => "属性B",
+        SOYMailConverter::SOYMAIL_ATTR3 => "属性C",
+        SOYMailConverter::SOYMAIL_MEMO  => "備考"
+        );
+    }
 
-	function getLinkagesSOYShopFrom() {
-		return array(
-			SOYShopConnector::SOYSHOP_NONE  => "連携しない",
-			SOYShopConnector::SOYSHOP_BIRTHDAY => "生年月日",
-		);
-	}
+    // public function getLinkagesSOYShopFrom()
+    // {
+    //     return array(
+    //     SOYShopConnector::SOYSHOP_NONE  => "連携しない",
+    //     SOYShopConnector::SOYSHOP_BIRTHDAY => "生年月日",
+    //     );
+    // }
 
-	function factoryConverter() {
-		return new DateConverter();
-	}
+    public function factoryConverter()
+    {
+        return new DateConverter();
+    }
 
-	function factoryConnector(){
-		return new DateConnector();
-	}
+    public function factoryConnector()
+    {
+        return new DateConnector();
+    }
 
-	/**
-	 * 日付表示の設定を取得する
-	 */
-	function getDateConfig(){
+  /**
+   * 日付表示の設定を取得する
+   */
+    public function getDateConfig()
+    {
 
-		$startYear = $this->startYear;
-		$endYear = $this->endYear;
+        $startYear = $this->startYear;
+        $endYear = $this->endYear;
 
-		if(!is_null($startYear) && !$endYear){
-			$endYear = date("Y");
-		}
+        if (null!==$startYear && !$endYear) {
+            $endYear = date("Y");
+        }
 
-		if(!$startYear && !is_null($endYear)){
-			$startYear = date("Y");
-		}
+        if (!$startYear && null!==$endYear) {
+            $startYear = date("Y");
+        }
 
-		//終りの年が正しいかチェックする
-		if($startYear >= $endYear){
-			$startYear = null;
-			$endYear = null;
-		}
+      //終りの年が正しいかチェックする
+        if ($startYear >= $endYear) {
+            $startYear = null;
+            $endYear = null;
+        }
 
-		//管理画面でフォームに未入力の場合
-		if(!$startYear) $startYear = "1900";
-		if(!$endYear) $endYear = date("Y");
+      //管理画面でフォームに未入力の場合
+        if (!$startYear) {
+            $startYear = "1900";
+        }
+        if (!$endYear) {
+            $endYear = date("Y");
+        }
 
-		$dateConfig = array();
-		$dateConfig["startYear"] = $startYear;
-		$dateConfig["endYear"] = $endYear;
+        $dateConfig = array();
+        $dateConfig["startYear"] = $startYear;
+        $dateConfig["endYear"] = $endYear;
 
-		return $dateConfig;
-	}
+        return $dateConfig;
+    }
 }

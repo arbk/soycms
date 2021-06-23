@@ -1,25 +1,29 @@
-<html>
-	<head soy:page="_common.HeaderPage" isOverWrite="true">
-	</head>
-	<body class="sub">
-		<table class="table" style="margin-bottom:0;">
-			<tr>
-				<th>保存日時</th>
-				<td soy:id="date"></td>
-				<td>
-					<form soy:id="restoreForm" style="margin:0">
-						<input type="hidden" soy:id="historyId"><input type="submit" value="復元する" class="btn btn-success pull-right">
-					</form soy:id="restoreForm">
-				</td>
-			</tr>
-			<tr>
-				<td colspan="3"><textarea soy:id="content" class="form-control" style="height:320px"></textarea></td>
-			</tr>
-			<tr>
-				<td colspan="3">
-					<a soy:id="back" class="btn btn-default btn-sm btn-block">戻る</a>
-				</td>
-			</tr>
-		</table>
-	</body>
+<!DOCTYPE html>
+<html lang="<?php echo SOYCMS_ADMIN_HTML_LANG; ?>">
+
+<head soy:page="_common.HeaderPage" isOverWrite="true">
+</head soy:page="_common.HeaderPage">
+
+<body class="sub">
+    <table class="table" style="margin-bottom:0;">
+        <tr>
+            <th>保存日時</th>
+            <td soy:id="date"></td>
+            <td>
+                <form soy:id="restoreForm" style="margin:0">
+                    <input type="hidden" soy:id="historyId"><input type="submit" value="復元する" class="btn btn-success pull-right">
+                </form soy:id="restoreForm">
+            </td>
+        </tr>
+        <tr>
+            <td colspan="3"><textarea soy:id="content" class="form-control" style="height:320px"></textarea></td>
+        </tr>
+        <tr>
+            <td colspan="3">
+                <a soy:id="back" class="btn btn-default btn-sm btn-block">戻る</a>
+            </td>
+        </tr>
+    </table>
+</body>
+
 </html>

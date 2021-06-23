@@ -5,95 +5,99 @@
  * GD必須
  *
  */
-class TrimmingPage extends CMSWebPageBase {
+class TrimmingPage extends CMSWebPageBase
+{
+    private $responseObject;
 
-	private $responseObject;
+    public function doPost()
+    {
+        if (soy2_check_token()) {
+            $responseObject = new StdClass();
+            $responseObject->result = false;
+            $responseObject->imagePath = null;
 
-	function doPost(){
+            //Siteのアップロードディレクトリを調べる
+            $action = SOY2ActionFactory::createInstance("SiteConfig.DetailAction");
+            $result = $action->run();
+            $entity = $result->getAttribute("entity");
 
-		if(soy2_check_token()){
-			$responseObject = new StdClass();
-			$responseObject->result = false;
-			$responseObject->imagePath = null;
+            $uploadFileDir = str_replace("//", "/", UserInfoUtil::getSiteDirectory() . $entity->getDefaultUploadDirectory()) . "/";
+            $uploadThumbDir = $uploadFileDir . "thumb";
+            if (!file_exists($uploadThumbDir)) {
+                mkdir($uploadThumbDir);
+                @chmod($uploadThumbDir, F_MODE_DIR);
+            }
 
-			//Siteのアップロードディレクトリを調べる
-			$action = SOY2ActionFactory::createInstance("SiteConfig.DetailAction");
-			$result = $action->run();
-			$entity = $result->getAttribute("entity");
+            $imageFileName = substr($_GET["path"], strrpos($_GET["path"], "/") + 1);
 
-			$uploadFileDir = str_replace("//" , "/" , UserInfoUtil::getSiteDirectory() . $entity->getDefaultUploadDirectory()) . "/";
-			$uploadThumbDir = $uploadFileDir . "thumb";
-			if(!file_exists($uploadThumbDir)) mkdir($uploadThumbDir);
+            $jpeg_quality = 90;
 
-			$imageFileName = substr($_GET["path"], strrpos($_GET["path"], "/") + 1);
+            $src = $uploadFileDir . $imageFileName;
 
-			$jpeg_quality = 90;
+            $targ_w = $_POST['w'];
+            $targ_h = $_POST['h'];
 
-			$src = $uploadFileDir . $imageFileName;
+            $img_r = imagecreatefromjpeg($src);
+            $dst_r = ImageCreateTrueColor($targ_w, $targ_h);
 
-			$targ_w = $_POST['w'];
-			$targ_h = $_POST['h'];
+            imagecopyresampled($dst_r, $img_r, 0, 0, $_POST['x'], $_POST['y'], $targ_w, $targ_h, $_POST['w'], $_POST['h']);
 
-			$img_r = imagecreatefromjpeg($src);
-			$dst_r = ImageCreateTrueColor( $targ_w, $targ_h );
+            imagejpeg($dst_r, $uploadThumbDir . "/" . $imageFileName, $jpeg_quality);
 
-			imagecopyresampled($dst_r, $img_r, 0, 0, $_POST['x'], $_POST['y'], $targ_w, $targ_h, $_POST['w'], $_POST['h']);
+            imagedestroy($dst_r);
 
-			imagejpeg($dst_r, $uploadThumbDir . "/" . $imageFileName, $jpeg_quality);
+            $uploadImagePath = "/" . UserInfoUtil::getSite()->getSiteId() . $entity->getDefaultUploadDirectory() . "/thumb/";
 
-			imagedestroy($dst_r);
+            $responseObject->result = true;
+            $responseObject->imagePath = $uploadImagePath . $imageFileName;
+            $this->responseObject = $responseObject;
+        }
+    }
 
-			$uploadImagePath = "/" . UserInfoUtil::getSite()->getSiteId() . $entity->getDefaultUploadDirectory() . "/thumb/";
+    public function __construct($arg)
+    {
+        parent::__construct();
 
-			$responseObject->result = true;
-			$responseObject->imagePath = $uploadImagePath . $imageFileName;
-			$this->responseObject = $responseObject;
-		}
-	}
+        $this->addModel("jcropcss", array(
+            "rel" => "stylesheet",
+            "type" => "text/css",
+            "href" => SOY2PageController::createRelativeLink("./js/jcrop/css/jquery.Jcrop.min.css")
+        ));
 
-	function __construct($arg) {
-		parent::__construct();
+        $this->addModel("jqueryjs", array(
+            "type" => "text/JavaScript",
+            "src" => SOY2PageController::createRelativeLink("./js/jquery.js")
+        ));
 
-		$this->addModel("jcropcss", array(
-			"rel" => "stylesheet",
-			"type" => "text/css",
-			"href" => SOY2PageController::createRelativeLink("./js/jcrop/css/jquery.Jcrop.min.css")
-		));
+        $this->addModel("jcropjs", array(
+            "type" => "text/JavaScript",
+            "src" => SOY2PageController::createRelativeLink("./js/jcrop/js/jquery.Jcrop.min.js")
+        ));
 
-		$this->addModel("jqueryjs", array(
-			"type" => "text/JavaScript",
-			"src" => SOY2PageController::createRelativeLink("./js/jquery.js")
-		));
+        $this->addModel("display_jcrop_image", array(
+            "visible" => (!isset($this->responseObject))
+        ));
 
-		$this->addModel("jcropjs", array(
-			"type" => "text/JavaScript",
-			"src" => SOY2PageController::createRelativeLink("./js/jcrop/js/jquery.Jcrop.min.js")
-		));
+        $this->addImage("jcrop_image", array(
+            "src" => $_GET["path"],
+            "id" => "target"
+        ));
 
-		$this->addModel("display_jcrop_image", array(
-			"visible" => (!isset($this->responseObject))
-		));
+        $this->addForm("form", array(
+            "method" => "post",
+        ));
 
-		$this->addImage("jcrop_image", array(
-			"src" => $_GET["path"],
-			"id" => "target"
-		));
+        $this->addModel("display_jcrop_thumbnail", array(
+            "visible" => (isset($this->responseObject))
+        ));
 
-		$this->addForm("form", array(
-			"method" => "post",
-		));
+        $this->addImage("jcrop_thumbnail", array(
+            "src" => (isset($this->responseObject->imagePath)) ? $this->responseObject->imagePath : "",
+        ));
 
-		$this->addModel("display_jcrop_thumbnail", array(
-			"visible" => (isset($this->responseObject))
-		));
-
-		$this->addImage("jcrop_thumbnail", array(
-			"src" => (isset($this->responseObject->imagePath)) ? $this->responseObject->imagePath : "",
-		));
-
-		$this->addInput("jcrop_thumbnail_path", array(
-			"value" => (isset($this->responseObject->imagePath)) ? $this->responseObject->imagePath : "",
-			"id" => "thumbnail_path"
-		));
-	}
+        $this->addInput("jcrop_thumbnail_path", array(
+            "value" => (isset($this->responseObject->imagePath)) ? $this->responseObject->imagePath : "",
+            "id" => "thumbnail_path"
+        ));
+    }
 }

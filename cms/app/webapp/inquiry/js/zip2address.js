@@ -93,24 +93,24 @@ window.zip2address = zip2address;
 
 (function(){
 	if(document.querySelector(".search-btn")){
-		document.querySelector(".search-btn").addEventListener("click", function(e){
+	document.querySelector(".search-btn").addEventListener("click", function(e){
 			if(document.querySelector(".input-zip")){
 				var zip = inquiry_convert_zipcode(document.querySelector(".input-zip").value);
 			}else{
-				var zip = document.querySelector(".input-zip1").value + document.querySelector(".input-zip2").value;
+		var zip = document.querySelector(".input-zip1").value + document.querySelector(".input-zip2").value;
 			}
 
 
-			zip2address(zip, function(address) {
-				if (address) {
-					document.querySelector(".input-pref").value = prefs[address.pref - 1];
-					document.querySelector(".input-city").value = address.city;
-					document.querySelector(".input-town").value = address.town;
-				} else {
-					alert('正しい郵便番号を入力して下さい。');
-				}
-			});
+		zip2address(zip, function(address) {
+			if (address) {
+				document.querySelector(".input-pref").value = prefs[address.pref - 1];
+				document.querySelector(".input-city").value = address.city;
+				document.querySelector(".input-town").value = address.town;
+			} else {
+				alert('正しい郵便番号を入力して下さい。');
+			}
 		});
+	});
 	//自動検索モード
 	}else{
 		if(document.querySelector(".input-zip")){

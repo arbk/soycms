@@ -1,4 +1,5 @@
 //Help for Block Config
 
-HELP_BLOCK_DISPLAY_NUMBER	=	Specify entries to display by the order in the list.
-HELP_BLOCK_BLOG_LINK		=	Add the link to the specified blog's EntryPage to the title.<br/>You can use cms:id="entry_link" in this block.
+HELP_BLOCK_DISPLAY_NUMBER = Specify entries to display by the order in the list.
+HELP_BLOCK_OUTPUT_DATA = Output items of entries list.<br>All: All items are available.<br>Content: more is unavailable.<br>Title: content, more are unavailable.<br><small>( Reduction of memory usage and Speeding up of processing is expected by limiting the output items. )</small>
+HELP_BLOCK_BLOG_LINK = Add the link to the specified blog's EntryPage to the title.<br>You can use cms:id="entry_link" in this block.

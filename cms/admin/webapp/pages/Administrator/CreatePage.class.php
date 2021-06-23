@@ -1,66 +1,70 @@
 <?php
 
-class CreatePage extends CMSUpdatePageBase{
+class CreatePage extends CMSUpdatePageBase
+{
+    public $failed = false;
 
-	var $failed = false;
+    public function doPost()
+    {
+        if (soy2_check_token()) {
+            $res = $this->createAdministrator();
 
-	function doPost(){
+            if ($res !== false) {
+                $this->addMessage("CREATE_SUCCESS");
+                SOY2PageController::jump("Administrator.SiteRole." . $res);
+            }
+        }
 
-		if(soy2_check_token()){
-			$res = self::createAdministrator();
+        $this->failed = true;
+    }
 
-			if($res !== false){
-				$this->addMessage("CREATE_SUCCESS");
-				SOY2PageController::jump("Administrator.SiteRole." . $res);
-			}
-		}
+    public function __construct()
+    {
+        if (!UserInfoUtil::isDefaultUser()) {
+            $this->jump("Administrator");
+        }
+        parent::__construct();
+        $this->addForm("change_password_form");
 
-		$this->failed = true;
-	}
+        $this->addModel("error", array(
+        "visible" => $this->failed
+        ));
 
-	function __construct(){
-		if(!UserInfoUtil::isDefaultUser()){
-			$this->jump("Administrator");
-		}
-		parent::__construct();
-		$this->addForm("change_password_form");
+        //カスタムフィールド
+        $this->addLabel("customfield", array(
+        "html" => $this->buildCustomField()
+        ));
+    }
 
-		$this->addModel("error", array(
-			"visible" => $this->failed
-		));
+    /**
+     * 管理者を追加する。
+     * Administrator.CreateActionを呼び出す
+     */
+    private function createAdministrator()
+    {
+        $action = SOY2ActionFactory::createInstance("Administrator.CreateAction");
+        $result = $action->run();
 
-		//カスタムフィールド
-		$this->addLabel("customfield", array(
-			"html" => self::buildCustomField()
-		));
+        if ($result->success()) {
+            return $result->getAttribute("id");
+        } else {
+            return false;
+        }
+    }
 
-	}
+    private function buildCustomField()
+    {
+        SOY2::import("domain.admin.AdministratorAttribute");
+        $configs = AdministratorAttributeConfig::load();
+        if (!count($configs)) {
+            return array();
+        }
 
-	/**
-	 * 管理者を追加する。
-	 * Administrator.CreateActionを呼び出す
-	 */
-	private function createAdministrator(){
-		$action = SOY2ActionFactory::createInstance("Administrator.CreateAction");
-		$result = $action->run();
+        $html = array();
+        foreach ($configs as $config) {
+            $html[] = $config->getForm("");
+        }
 
-		if($result->success()){
-			return $result->getAttribute("id");
-		}else{
-			return false;
-		}
-	}
-
-	private function buildCustomField(){
-		SOY2::import("domain.admin.AdministratorAttribute");
-		$configs = AdministratorAttributeConfig::load();
-		if(!count($configs)) return array();
-
-		$html = array();
-		foreach($configs as $config){
-			$html[] = $config->getForm("");
-		}
-
-		return implode("\n", $html);
-	}
+        return implode("\n", $html);
+    }
 }

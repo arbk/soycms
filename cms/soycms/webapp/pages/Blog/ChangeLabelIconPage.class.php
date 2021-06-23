@@ -1,18 +1,18 @@
 <?php
 
-class ChangeLabelIconPage extends CMSWebPageBase{
+class ChangeLabelIconPage extends CMSWebPageBase
+{
+    public function __construct($args)
+    {
+        $action = SOY2ActionFactory::createInstance("Label.ChangeLabelIconAction");
+        $result = $action->run();
 
-    function __construct($args) {
+        if ($result->success()) {
+            $this->addMessage("LABEL_ICON_UPDATE_SUCCESS");
+        } else {
+            $this->addErrorMessage("LABEL_ICON_UPDATE_FAILED");
+        }
 
-    	$action = SOY2ActionFactory::createInstance("Label.ChangeLabelIconAction");
-    	$result = $action->run();
-
-    	if($result->success()){
-    		$this->addMessage("LABEL_ICON_UPDATE_SUCCESS");
-    	}else{
-    		$this->addErrorMessage("LABEL_ICON_UPDATE_FAILED");
-    	}
-
-    	$this->jump("Blog.Category." . $args[0]);    	
+        $this->jump("Blog.Category." . $args[0]);
     }
 }

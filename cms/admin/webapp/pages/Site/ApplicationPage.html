@@ -1,61 +1,56 @@
-<html>
+<!DOCTYPE html>
+<html lang="<?php echo SOYCMS_ADMIN_HTML_LANG; ?>">
 
 <head soy:page="_common.HeaderPage" isOverWrite="true">
 </head soy:page="_common.HeaderPage">
 
 <body>
 
-	<div id="wrapper">
-		<!-- Navigation -->
-		<nav  class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0" soy:page="_common.UpperMenuPage"><!-- --></nav>
-		<div id="page-wrapper">
-			<div class="row">
-				<div class="col-lg-12">
-					<h1 class="page-header"><!-- soy:id="app_name" /-->のログイン</h1>
-				</div>
-				<!-- /.col-lg-12 -->
-			</div>
+    <div id="wrapper">
+        <!-- Navigation -->
+        <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0" soy:page="_common.UpperMenuPage"></nav>
+        <div id="page-wrapper">
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header"><!-- soy:id="app_name" /-->のログイン</h1>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
 
-			<div class="row">
-				<div class="col-lg-12">
-					<div class="panel panel-red">
-						<div class="panel-heading">
-							サイト一覧
-						</div>
-						<div class="panel-body">
-							<!-- soy:id="no_site" -->
-								ログインできるサイトがありません。
-							<!-- /soy:id="no_site" -->
-							<!-- soy:id="has_site" -->
-							<div class="row">
-								<!-- soy:id="list" -->
-								<div class="col-lg-4">
-									<div class="panel panel-default text-nowrap">
-										<div class="panel-heading"  soy:id="site_name">
-											Green Panel
-										</div>
-										<div  class="panel-body">
-											<p class="uri"><a soy:id="domain_root_site_url" href=""></a></p>
-											<p class="uri"><a soy:id="site_link" href=""></a></p>
-											<p class=""><a class="btn btn-info pull-right" soy:id="login_link" href="">ログイン</a></p>
-										</div>
-									</div>
-								</div>
-								<!-- /soy:id="list" -->
-							</div>
-							<!-- /soy:id="has_site" -->
-						</div>
-					</div>
-				</div>
-				<!-- /.col-lg-12 -->
-			</div>
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="panel panel-red">
+                        <div class="panel-heading">サイト一覧</div>
+                        <div class="panel-body">
+                            <!-- soy:id="no_site" -->ログインできるサイトがありません。<!-- /soy:id="no_site" -->
+                            <!-- soy:id="has_site" -->
+                            <div class="row">
+                                <!-- soy:id="list" -->
+                                <div class="col-lg-4">
+                                    <div class="panel panel-default text-nowrap">
+                                        <div class="panel-heading" soy:id="site_name">Green Panel</div>
+                                        <div class="panel-body">
+                                            <p class="uri"><a soy:id="domain_root_site_url" href=""></a></p>
+                                            <p class="uri"><a soy:id="site_link" href=""></a></p>
+                                            <p class=""><a class="btn btn-info pull-right" soy:id="login_link" href="">ログイン</a></p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- /soy:id="list" -->
+                            </div>
+                            <!-- /soy:id="has_site" -->
+                        </div>
+                    </div>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
 
-		</div>
-		<!-- /#page-wrapper -->
-		<!-- soy:page="_common.FooterPage" /-->
-	</div>
-	<!-- /#wrapper -->
+        </div>
+        <!-- /#page-wrapper -->
+        <!-- soy:page="_common.FooterPage" /-->
+    </div>
+    <!-- /#wrapper -->
 
 </body>
-</html>
 
+</html>

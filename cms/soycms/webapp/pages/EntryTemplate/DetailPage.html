@@ -1,112 +1,112 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="<?php echo SOYCMS_ADMIN_HTML_LANG; ?>">
 
 <head soy:page="_common.HeaderPage" isOverWrite="true">
 </head soy:page="_common.HeaderPage">
 
 <body>
 
-	<div id="wrapper">
-		<!-- Navigation -->
-		<nav  class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0" soy:page="_common.UpperMenuPage"><!-- --></nav>
-		<div id="page-wrapper">
+    <div id="wrapper">
+        <!-- Navigation -->
+        <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0" soy:page="_common.UpperMenuPage"></nav>
+        <div id="page-wrapper">
 
-			<div class="row">
-				<div class="col-lg-12">
-					<h1 class="page-header"><small><a soy:link="EntryTemplate">記事雛形一覧</a> &gt;</small> <span soy:id="page_title">詳細</span></h1>
-				</div>
-			</div>
-			<div soy:page="_common.MessagePanel" isOverWrite="true"></div>
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header"><small><a soy:link="EntryTemplate">記事雛形一覧</a> &gt;</small> <span soy:id="page_title">詳細</span></h1>
+                </div>
+            </div>
+            <div soy:page="_common.MessagePanel" isOverWrite="true"></div>
 
- 			<div class="row">
-				<div class="col-lg-12">
-							<form soy:id="update_form">
+            <div class="row">
+                <div class="col-lg-12">
+                    <form soy:id="update_form">
 
-								<div style="margin: 1em; display:none;">
-									<button type="button" onclick="showPreview();" class="btn btn-default" >プレビューを表示</button>
-								</div>
+                        <div style="margin: 1em; display:none;">
+                            <button type="button" onclick="showPreview();" class="btn btn-default">プレビューを表示</button>
+                        </div>
 
-								<div class="table-responsive">
-									<table class="table">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <tr>
+                                    <th>名前<span soy:message="ENTRY_TEMPLATE_NAME"></span></th>
+                                    <td><input type="text" soy:id="name" class="form-control"><input type="hidden" soy:id="template_id"></td>
+                                </tr>
+                                <tr>
+                                    <th>関連ラベル<span soy:message="ENTRY_TEMPLATE_LABEL"></span></th>
+                                    <td>
+                                        <select soy:id="label_list" class="form-control">
+                                            <option value="">------</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>本文<span soy:message="ENTRY_TEMPLATE_CONTENT"></span></th>
+                                    <td><textarea id="template_content" cols="80" rows="10" class="form-control" soy:id="content">aaaaaa</textarea></td>
+                                </tr>
+                                <tr>
+                                    <th>追記<span soy:message="ENTRY_TEMPLATE_MORE"></span></th>
+                                    <td><textarea id="template_more" cols="80" rows="10" class="form-control" soy:id="more"></textarea></td>
+                                </tr>
+                                <tr>
+                                    <th>スタイル<span soy:message="ENTRY_TEMPLATE_STYLE"></span></th>
+                                    <td><textarea id="template_style" cols="40" rows="10" class="form-control" soy:id="style"></textarea></td>
+                                </tr>
+                                <tr>
+                                    <th>説明<span soy:message="ENTRY_TEMPLATE_DESCRIPTION"></span></th>
+                                    <td><textarea cols="40" rows="5" class="form-control" soy:id="description"></textarea></td>
+                                </tr>
+                            </table>
+                        </div>
 
-										<tr>
-											<th>名前<span soy:message="ENTRY_TEMPLATE_NAME"></span></th>
-											<td><input type="text" soy:id="name" class="form-control"><input type="hidden" soy:id="template_id"></td>
-										</tr>
-										<tr>
-											<th>関連ラベル<span soy:message="ENTRY_TEMPLATE_LABEL"></span></th>
-											<td>
-												<select soy:id="label_list" class="form-control">
-													<option value="">------</option>
-												</select>
-											</td>
-										</tr>
-										<tr>
-											<th>本文<span soy:message="ENTRY_TEMPLATE_CONTENT"></span></th>
-											<td><textarea id="template_content" cols="80" rows="10" class="form-control" soy:id="content">aaaaaa</textarea></td>
-										</tr>
-										<tr>
-											<th>追記<span soy:message="ENTRY_TEMPLATE_MORE"></span></th>
-											<td><textarea id="template_more" cols="80" rows="10" class="form-control" soy:id="more"></textarea></td>
-										</tr>
-										<tr>
-											<th>スタイル<span soy:message="ENTRY_TEMPLATE_STYLE"></span></th>
-											<td><textarea id="template_style" cols="40" rows="10" class="form-control" soy:id="style"></textarea></td>
-										</tr>
-										<tr>
-											<th>説明<span soy:message="ENTRY_TEMPLATE_DESCRIPTION"></span></th>
-											<td><textarea cols="40" rows="5" class="form-control" soy:id="description"></textarea></td>
-										</tr>
-									</table>
-								</div>
+                        <div style="margin:1em;">
+                            <input type="submit" class="btn btn-success btn-lg btn-block" soy:id="submit_button" value="更新" />
+                        </div>
 
-								<div style="margin:1em;">
-									<input type="submit" class="btn btn-success btn-lg btn-block" soy:id="submit_button" value="更新" />
-								</div>
-
-							</form soy:id="update_form">
-				</div>
-				<!-- /.col-lg-12 -->
-			</div>
-		</div>
-		<!-- /#page-wrapper -->
-		<!-- soy:page="_common.FooterPage" /-->
-	</div>
-	<!-- /#wrapper -->
+                    </form soy:id="update_form">
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+        </div>
+        <!-- /#page-wrapper -->
+        <!-- soy:page="_common.FooterPage" /-->
+    </div>
+    <!-- /#wrapper -->
 
 
-<script type="text/javascript">
-	function showPreview(){
-		var $iframe = $("#preview_frame");
+    <script type="text/javascript">
+        function showPreview() {
+            var $iframe = $("#preview_frame");
 
-		if($iframe.size() > 0){
-			$iframe.remove();
-		}
+            if ($iframe.size() > 0) {
+                $iframe.remove();
+            }
 
-		var div = document.createElement("div");
-		div.innerHTML = '<iframe id="preview_frame" src="" frameborder="0" style="width:100%;height:100%;background-color:white;border:none;"></iframe>';
-		div.setAttribute("id","preview_frame_wrapper");
-		div.style.position = "absolute";
-		div.style.visibility = "hidden";
-		div.style.backgroundColor = "red";
-		document.body.appendChild(div);
+            var div = document.createElement("div");
+            div.innerHTML = '<iframe id="preview_frame" src="" frameborder="0" style="width:100%;height:100%;background-color:white;border:none;"></iframe>';
+            div.setAttribute("id", "preview_frame_wrapper");
+            div.style.position = "absolute";
+            div.style.visibility = "hidden";
+            div.style.backgroundColor = "red";
+            document.body.appendChild(div);
 
-		$iframe = $("#preview_frame");
+            $iframe = $("#preview_frame");
 
-		common_element_to_layer($iframe);
+            common_element_to_layer($iframe);
 
-		//iframe.parentNode.style.visibility = "visible";
+            //iframe.parentNode.style.visibility = "visible";
 
-		var iframe = $iframe[0];
-		iframe.contentWindow.document.open();
-		iframe.contentWindow.document.write("<html><head><style type=\"text/css\">"+ $("#template_style").val()+ "</style></head><body></body></html>");
-		iframe.contentWindow.document.close();
-		iframe.contentWindow.document.body.innerHTML = "<div>" + $("#template_content").val() + "</div><div>" + $("#template_more").val() + "</div>";
-		iframe.contentWindow.document.body.style.height = "300px";
-		iframe.contentWindow.document.body.style.width = "300px";
+            var iframe = $iframe[0];
+            iframe.contentWindow.document.open();
+            iframe.contentWindow.document.write("<!DOCTYPE html><html><head><title>-</title><style type=\"text/css\">" + $("#template_style").val() + "</style></head><body></body></html>");
+            iframe.contentWindow.document.close();
+            iframe.contentWindow.document.body.innerHTML = "<div>" + $("#template_content").val() + "</div><div>" + $("#template_more").val() + "</div>";
+            iframe.contentWindow.document.body.style.height = "300px";
+            iframe.contentWindow.document.body.style.width = "300px";
 
-	}
-</script>
+        }
+    </script>
 
 </body>
+
 </html>

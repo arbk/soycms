@@ -1,50 +1,50 @@
 <?php
-class ChangeUserInfoPage extends CMSUpdatePageBase{
+class ChangeUserInfoPage extends CMSUpdatePageBase
+{
+    private $account;
 
-	private $account;
+    public function doPost()
+    {
+        if (soy2_check_token()) {
+            $result = $this->run("Administrator.UpdateAction", array("adminId" => UserInfoUtil::getUserId()));
 
-	public function doPost(){
+            if ($result->success()) {
+                $this->jump("Account", array("userinfoChanged" => true));
+            } else {
+                $this->jump("Account.ChangeUserInfo");
+            }
+        }
+    }
 
-		if(soy2_check_token()){
-			$result = $this->run("Administrator.UpdateAction", array("adminId" => UserInfoUtil::getUserId()));
+    public function __construct()
+    {
+        parent::__construct();
 
-			if($result->success()){
-				$this->jump("Account", array("userinfoChanged" => true));
-			}else{
+        $result = $this->run("Administrator.DetailAction", array("adminId" => UserInfoUtil::getUserId()));
 
-				$this->jump("Account.ChangeUserInfo");
-			}
-		}
-	}
+        $userInfo = $result->getAttribute("admin");
 
-	function __construct(){
-		parent::__construct();
+        $this->buildForm($userInfo);
+    }
 
+    private function buildForm($userInfo)
+    {
+        //hiddenで渡す
+        $this->addInput("user_id", array(
+            "name" => "userId",
+            "value" => $userInfo->getUserId()
+        ));
 
-		$result = $this->run("Administrator.DetailAction", array("adminId" => UserInfoUtil::getUserId()));
+        $this->addInput("name", array(
+            "name"=>"name",
+            "value"=>$userInfo->getName()
+        ));
 
-		$userInfo = $result->getAttribute("admin");
+        $this->addInput("email", array(
+            "name"=>"email",
+            "value"=>$userInfo->getEmail()
+        ));
 
-		$this->buildForm($userInfo);
-	}
-
-	private function buildForm($userInfo){
-		//hiddenで渡す
-		$this->addInput("user_id", array(
-			"name" => "userId",
-			"value" => $userInfo->getUserId()
-		));
-
-		$this->addInput("name", array(
-			"name"=>"name",
-			"value"=>$userInfo->getName()
-		));
-
-		$this->addInput("email", array(
-			"name"=>"email",
-			"value"=>$userInfo->getEmail()
-		));
-
-		$this->addForm("changeform");
-	}
+        $this->addForm("changeform");
+    }
 }

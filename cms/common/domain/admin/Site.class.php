@@ -3,132 +3,147 @@
  * @table Site
  * @date 2007-08-22 18:42:19
  */
-class Site {
+class Site
+{
+    const TYPE_SOY_CMS = 1;
+//  const TYPE_SOY_SHOP = 2;
 
-	const TYPE_SOY_CMS = 1;
-	const TYPE_SOY_SHOP = 2;
+    /**
+     * @id identity
+     */
+    private $id;
 
+    /**
+     * @column site_id
+     */
+    private $siteId;
 
-	/**
-	 * @id identity
-	 */
-	private $id;
+    /**
+     * @column site_name
+     */
+    private $siteName;
 
-	/**
-	 * @column site_id
-	 */
-	private $siteId;
+    /**
+     * @column site_type
+     */
+    private $siteType = self::TYPE_SOY_CMS;
 
-	/**
-	 * @column site_name
-	 */
-	private $siteName;
+    private $url;
 
-	/**
-	 * @column site_type
-	 */
-	private $siteType = self::TYPE_SOY_CMS;
+    private $path;
 
+    /**
+     * @column data_source_name
+     */
+    private $dataSourceName;
 
-	private $url;
+    private $isDomainRoot = false;
 
-	private $path;
+    public function setId($id)
+    {
+        $this->id = $id;
+    }
 
-	/**
-	 * @column data_source_name
-	 */
-	private $dataSourceName;
+    public function getId()
+    {
+        return $this->id;
+    }
 
-	private $isDomainRoot = false;
+    public function setSiteId($siteId)
+    {
+        $this->siteId = $siteId;
+    }
 
-	public function setId($id){
-		$this->id = $id;
-	}
+    public function getSiteId()
+    {
+        return $this->siteId;
+    }
 
-	public function getId(){
-		return $this->id;
-	}
+    public function getSiteName()
+    {
+        return $this->siteName;
+    }
+    public function setSiteName($siteName)
+    {
+        $this->siteName = $siteName;
+    }
+    public function getSiteType()
+    {
+        return $this->siteType;
+    }
+    public function setSiteType($siteType)
+    {
+        $this->siteType = $siteType;
+    }
+    public function getIsDomainRoot()
+    {
+        return (int)$this->isDomainRoot;
+    }
+    public function setIsDomainRoot($isDomainRoot)
+    {
+        $this->isDomainRoot = $isDomainRoot;
+    }
 
-	public function setSiteId($siteId){
-		$this->siteId = $siteId;
-	}
+    public function getUrl()
+    {
+        return $this->url;
+    }
+    public function setUrl($url)
+    {
+        $this->url = $url;
+    }
+    public function getPath()
+    {
+        return $this->path;
+    }
+    public function setPath($path)
+    {
+        $this->path = $path;
+    }
 
-	public function getSiteId(){
-		return $this->siteId;
-	}
+    public function getDataSourceName()
+    {
+        return $this->dataSourceName;
+    }
+    public function setDataSourceName($dataSourceName)
+    {
+        $this->dataSourceName = $dataSourceName;
+    }
 
-	function getSiteName() {
-		return $this->siteName;
-	}
-	function setSiteName($siteName) {
-		$this->siteName = $siteName;
-	}
-	public function getSiteType() {
-		return $this->siteType;
-	}
-	public function setSiteType($siteType) {
-		$this->siteType = $siteType;
-	}
-	function getIsDomainRoot() {
-		return (int)$this->isDomainRoot;
-	}
-	function setIsDomainRoot($isDomainRoot) {
-		$this->isDomainRoot = $isDomainRoot;
-	}
+    /* Site */
+    public static function getSiteTypes()
+    {
+        return array(
+            "SOY CMS" => self::TYPE_SOY_CMS,
+//          "SOY Shop" => self::TYPE_SOY_SHOP
+        );
+    }
 
-	function getUrl() {
-		return $this->url;
-	}
-	function setUrl($url) {
-		$this->url = $url;
-	}
-	function getPath() {
-		return $this->path;
-	}
-	function setPath($path) {
-		$this->path = $path;
-	}
+    /* util */
+    public function getLoginLink($param = array())
+    {
+        $link = SOY2PageController::createLink("Site.Login.".$this->getId());
 
-	function getDataSourceName() {
-		return $this->dataSourceName;
-	}
-	function setDataSourceName($dataSourceName) {
-		$this->dataSourceName = $dataSourceName;
-	}
+        switch ($this->getSiteType()) {
+            // case self::TYPE_SOY_SHOP:
+            //     $param = array();//リセット
+            //     $param["site_id"] = $this->getSiteId();
+            //     $link = SOY2PageController::createLink("Site.Login.0").( count($param) ? "?".http_build_query($param) : "" );
+            //     break;
+            case self::TYPE_SOY_CMS:
+            default:
+                $link = SOY2PageController::createLink("Site.Login.".$this->getId()).( count($param) ? "?".http_build_query($param) : "" );
+        }
 
-	/* Site */
-	static public function getSiteTypes(){
-		return array(
-			"SOY CMS" => self::TYPE_SOY_CMS,
-			"SOY Shop" => self::TYPE_SOY_SHOP
-		);
-	}
+        return $link;
+    }
 
-	/* util */
-	function getLoginLink($param = array()){
+    public function getIsMySQL()
+    {
+        $dsn = $this->getDataSourceName();
+        $str = substr($dsn, 0, 6);
+        $res = strpos($str, "mysql");
 
-		$link = SOY2PageController::createLink("Site.Login.".$this->getId());
-
-		switch($this->getSiteType()){
-			case self::TYPE_SOY_SHOP:
-				$param = array();//リセット
-				$param["site_id"] = $this->getSiteId();
-				$link = SOY2PageController::createLink("Site.Login.0").( count($param) ? "?".http_build_query($param) : "" );
-				break;
-			case self::TYPE_SOY_CMS:
-			default:
-				$link = SOY2PageController::createLink("Site.Login.".$this->getId()).( count($param) ? "?".http_build_query($param) : "" );
-		}
-
-		return $link;
-	}
-
-	function getIsMySQL(){
-		$dsn = $this->getDataSourceName();
-		$str = substr($dsn,0,6);
-		$res = strpos($str,"mysql");
-
-		return is_int($res);
-	}
+        return is_int($res);
+    }
 }
-?>

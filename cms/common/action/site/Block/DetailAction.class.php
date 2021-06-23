@@ -1,17 +1,18 @@
 <?php
 
-class DetailAction extends SOY2Action{
+class DetailAction extends SOY2Action
+{
+    private $id;
 
-	private $id;
-	
-	function setId($id){
-		$this->id = $id;
-	}
+    public function setId($id)
+    {
+        $this->id = $id;
+    }
 
-    function execute() {
-    	$dao = SOY2DAOFactory::create("cms.BlockDAO");
-    	$this->setAttribute("Block",$dao->getById($this->id));
-    	return SOY2Action::SUCCESS;
+    public function execute()
+    {
+        $dao = SOY2DAOFactory::create("cms.BlockDAO");
+        $this->setAttribute("Block", $dao->getById($this->id));
+        return SOY2Action::SUCCESS;
     }
 }
-?>

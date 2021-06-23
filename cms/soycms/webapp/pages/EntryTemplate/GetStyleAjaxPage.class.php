@@ -1,21 +1,21 @@
 <?php
 
-class GetStyleAjaxPage extends CMSWebPageBase{
+class GetStyleAjaxPage extends CMSWebPageBase
+{
+    public function __construct($args)
+    {
+        $id = @$args[0];
 
-	function __construct($args) {
+        $result = SOY2ActionFactory::createInstance("EntryTemplate.TemplateDetailAction", array(
+            "id" => $id
+        ))->run();
+        $template = $result->getAttribute("entity");
 
-		$id = @$args[0];
+        $templates = $template->getTemplates();
 
-		$result = SOY2ActionFactory::createInstance("EntryTemplate.TemplateDetailAction",array(
-			"id" => $id
-		))->run();
-		$template = $result->getAttribute("entity");
+        header("Content-Type: text/css");
+        echo $templates["style"];
 
-		$templates = $template->getTemplates();
-
-		header("Content-Type: text/css");
-		echo $templates["style"];
-
-		exit;
-	}
+        exit;
+    }
 }

@@ -1,70 +1,83 @@
 <?php
 
-class CreatePage extends CMSWebPageBase{
+class CreatePage extends CMSWebPageBase
+{
+    private $moduleId;
+    private $moduleName;
 
-	private $moduleId;
-	private $moduleName;
+    public function doPost()
+    {
+        if (isset($_POST["Module"])) {
+            $moduleId = (isset($_POST["Module"]["id"])) ? str_replace("/", ".", $_POST["Module"]["id"]) : null;
+            $this->moduleId = soy2_h($moduleId);
+            $this->moduleName = $_POST["Module"]["name"];
 
-	function doPost(){
+            if (strlen($this->moduleName) < 1) {
+                $this->moduleName = $this->moduleId;
+            }
 
-		if(isset($_POST["Module"])){
+            //禁止文字が含まれているか？
+            if (!SOY2Logic::createInstance("logic.site.Module.ModuleCreateLogic")->validate($this->moduleName)) {
+                $this->jump("Module.Create?invalid&moduleId=" . $this->moduleId);
+            }
 
-			$moduleId = (isset($_POST["Module"]["id"])) ? str_replace("/", ".", $_POST["Module"]["id"]) : null;
-			$this->moduleId = htmlspecialchars($moduleId);
-			$this->moduleName = $_POST["Module"]["name"];
+            $moduleDir = $this->getModuleDirectory();
 
-			if(strlen($this->moduleName) < 1) $this->moduleName = $this->moduleId;
+            $modulePath = $moduleDir . str_replace(".", "/", $this->moduleId) . ".php";
+            $iniPath =$moduleDir . str_replace(".", "/", $this->moduleId) . ".ini";
 
-			//禁止文字が含まれているか？
-			if(!SOY2Logic::createInstance("logic.site.Module.ModuleCreateLogic")->validate($this->moduleName)){
-				$this->jump("Module.Create?invalid&moduleId=" . $this->moduleId);
-			}
+            if (soy2_check_token()) {
+                if (preg_match('/^[a-zA-Z0-9\._]+$/', $this->moduleId) &&
+                 strpos($this->moduleId, ".") &&
+                 !preg_match("/^common./", $this->moduleId) &&
+                 !preg_match("/^html./", $this->moduleId) &&
+                 !file_exists($modulePath)
+                ) {
+                    if (!is_dir(dirname($modulePath))) {
+                        mkdir(dirname($modulePath), F_MODE_DIR, true);
+                    }
+                    file_put_contents($modulePath, "<?php ?>");
+                    chmod($modulePath, F_MODE_FILE);
+                    file_put_contents($iniPath, "name=" . $this->moduleName);
+                    chmod($iniPath, F_MODE_FILE);
 
-			$moduleDir = self::getModuleDirectory();
+                    $this->jump("Module.Editor?updated&moduleId=" . $this->moduleId);
+                }
+            }
+        }
+    }
 
-			$modulePath = $moduleDir . str_replace(".","/",$this->moduleId) . ".php";
-			$iniPath =$moduleDir . str_replace(".","/",$this->moduleId) . ".ini";
+    public function __construct()
+    {
+        //PHPモジュールの使用が許可されていない場合はモジュール一覧に遷移
+        if (!SOYCMS_ALLOW_PHP_MODULE) {
+            SOY2PageController::jump("Module");
+        }
 
-			if(soy2_check_token()){
-				if(preg_match('/^[a-zA-Z0-9\._]+$/', $this->moduleId) &&
-				   strpos($this->moduleId, ".") &&
-				   !preg_match("/^common./", $this->moduleId) &&
-				   !preg_match("/^html./", $this->moduleId) &&
-				   !file_exists($modulePath)
-				){
-					@mkdir(dirname($modulePath), 0766, true);
-					file_put_contents($modulePath, "<?php ?>");
-					file_put_contents($iniPath,"name=" . $this->moduleName);
+        parent::__construct();
 
-					$this->jump("Module.Editor?updated&moduleId=" . $this->moduleId);
-				}
-			}
-		}
-	}
+        DisplayPlugin::visible("updated");
+        if ($this->moduleId) {
+            DisplayPlugin::visible("failed");
+        }
 
-	function __construct(){
-		//PHPモジュールの使用が許可されていない場合はモジュール一覧に遷移
-		if(!defined("SOYCMS_ALLOW_PHP_MODULE") || !SOYCMS_ALLOW_PHP_MODULE) SOY2PageController::jump("Module");
+        $this->addForm("form");
 
-		parent::__construct();
+        $this->addInput("module_id", array(
+        "name" => "Module[id]",
+        "value" => (isset($_GET["moduleId"])) ? str_replace("/", ".", soy2_h($_GET["moduleId"])) : $this->moduleId,
+        "style" => "padding: 3px; width:300px;"
+        ));
 
-		DisplayPlugin::visible("updated");
-		if($this->moduleId) DisplayPlugin::visible("failed");
+        $this->addInput("module_name", array(
+        "name" => "Module[name]",
+        "value" => $this->moduleName,
+        "style" => "padding: 3px; width:300px;"
+        ));
+    }
 
-		$this->addForm("form");
-
-		$this->addInput("module_id", array(
-			"name" => "Module[id]",
-			"value" => (isset($_GET["moduleId"])) ? str_replace("/", ".", htmlspecialchars($_GET["moduleId"], ENT_QUOTES, "UTF-8")) : $this->moduleId
-		));
-
-		$this->addInput("module_name", array(
-			"name" => "Module[name]",
-			"value" => $this->moduleName,
-		));
-	}
-
-	private function getModuleDirectory(){
-		return UserInfoUtil::getSiteDirectory() . ".module/";
-	}
+    private function getModuleDirectory()
+    {
+        return UserInfoUtil::getSiteDirectory() . ".module/";
+    }
 }

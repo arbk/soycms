@@ -1,144 +1,142 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="<?php echo SOYCMS_ADMIN_HTML_LANG; ?>">
 
 <head soy:page="_common.HeaderPage" isOverWrite="true">
 </head soy:page="_common.HeaderPage">
 
 <body>
 
-	<div id="wrapper">
-		<!-- Navigation -->
-		<nav  class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0" soy:page="_common.UpperMenuPage"><!-- --></nav>
-		<div id="page-wrapper">
-			<div class="row">
-				<div class="col-lg-12">
-					<h1 class="page-header">ダッシュボード</h1>
-				</div>
-				<!-- /.col-lg-12 -->
-			</div>
-			<div soy:page="_common.MessagePanel" isOverWrite="true"></div>
-			<div class="row">
-				<div class="col-lg-3">
-					<div class="panel panel-default">
-						<div class="panel-heading">機能</div>
-						<div class="panel-body">
-							<ul class="nav nav-pills">
-								<li class="icon_v"><a soy:link="Entry.Create"><img soy:src="./image/simplemode/new.gif" /><span>記事の新規作成</span></a></li>
-								<li class="icon_v"><a soy:link="Entry.Search"><img soy:src="./image/simplemode/search.gif" /><span>記事の検索</span></a></li>
-							</ul>
-						</div>
-					 </div>
-				</div>
-				<!-- /.col-lg-3 -->
-				<div class="col-lg-6">
-					<div class="panel panel-default">
-						<div class="panel-heading">最近使用したラベル</div>
-						<div class="panel-body">
-							<ul class="nav nav-pills">
-								<!-- soy:id="recent_labels" -->
-								<li class="icon_v">
-									<a soy:id="label_link">
-										<img soy:src="./image/simplemode/new.gif" soy:id="label_icon"/>
-										<span soy:id="label_entries_count" class="badge">42</span>
-										<span soy:id="label_title" class="">ラベル名</span>
-									</a>
-								</li>
-								<!-- /soy:id="recent_labels" -->
-							</ul>
-						</div>
-					</div>
-				</div>
-				<!-- /.col-lg-9 -->
+    <div id="wrapper">
+        <!-- Navigation -->
+        <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0" soy:page="_common.UpperMenuPage"></nav>
+        <div id="page-wrapper">
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header">ダッシュボード</h1>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+            <div soy:page="_common.MessagePanel" isOverWrite="true"></div>
+            <div class="row">
+                <div class="col-lg-3">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">機能</div>
+                        <div class="panel-body">
+                            <ul class="nav nav-pills">
+                                <li class="icon_v"><a soy:link="Entry.Create"><img soy:src="./image/simplemode/new.gif" /><span>記事の新規作成</span></a></li>
+                                <li class="icon_v"><a soy:link="Entry.Search"><img soy:src="./image/simplemode/search.gif" /><span>記事の検索</span></a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <!-- /.col-lg-3 -->
+                <div class="col-lg-6">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">最近使用したラベル</div>
+                        <div class="panel-body">
+                            <ul class="nav nav-pills">
+                                <!-- soy:id="recent_labels" -->
+                                <li class="icon_v">
+                                    <a soy:id="label_link">
+                                        <img soy:src="./image/simplemode/new.gif" soy:id="label_icon" />
+                                        <span soy:id="label_entries_count" class="badge">42</span>
+                                        <span soy:id="label_title" class="">ラベル名</span>
+                                    </a>
+                                </li>
+                                <!-- /soy:id="recent_labels" -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <!-- /.col-lg-9 -->
 
-				<div class="col-lg-3 hidden-xs hide" soy:panel="toolbox">
-					<div class="" soy:page="_common.ToolBoxPage"></div>
-				</div soy:panel="toolbox">
-			</div>
-			<!-- /.row -->
+                <div class="col-lg-3 hidden-xs hide" soy:panel="toolbox">
+                    <div class="" soy:page="_common.ToolBoxPage"></div>
+                </div soy:panel="toolbox">
+            </div>
+            <!-- /.row -->
 
-			<div class="row">
-				<div class="col-lg-12">
+            <div class="row">
+                <div class="col-lg-12">
 
-					<div class="panel panel-soygreen">
-						<div class="panel-heading">最新記事</div>
-						<table class="table table-striped">
-							<thead>
-								<tr>
-									<th>タイトル</th>
-									<th>ラベル</th>
-									<th>日時</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr soy:id="recentEntries">
-									<td class="title">
-										<a soy:id="title">What's new</a>
-									</td>
-									<td class="content"><span  soy:id="content">「2007/11/24 Aboutを更新しました」</span></td>
-									<td class="date" soy:id="udate">2007/11/28</td>
-								</tr soy:id="recentEntries">
-							</tbody>
-						</table>
-					</div>
+                    <div class="panel panel-soygreen">
+                        <div class="panel-heading">最新記事</div>
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>タイトル</th>
+                                    <th>ラベル</th>
+                                    <th>日時</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr soy:id="recentEntries">
+                                    <td class="title"><a soy:id="title">What's new</a></td>
+                                    <td class="content"><span soy:id="content">「2007/11/24 Aboutを更新しました」</span></td>
+                                    <td class="date" soy:id="udate">2007/11/28</td>
+                                </tr soy:id="recentEntries">
+                            </tbody>
+                        </table>
+                    </div>
 
-			<!--  soy:display="only_comment_exists" -->
-					<div class="panel panel-soygreen">
-						<div class="panel-heading">新着コメント</div>
-						<table class="table table-striped">
-							<thead>
-								<tr>
-									<th>タイトル（名前）</th>
-									<th>記事タイトル（ブログ）</th>
-									<th>更新日時</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr soy:id="recentComment">
-									<td class="title"><a soy:id="title">What's new</a></td>
-									<td class="content"><span  soy:id="content">「2007/11/24 Aboutを更新しました」</span></td>
-									<td class="date" soy:id="udate">2007/11/28</td>
-								</tr soy:id="recentComment">
-							</tbody>
-						</table>
-					</div>
-			<!--  /soy:display="only_comment_exists" -->
-			<!--  soy:display="only_trackback_exists" -->
-					<div class="panel panel-soygreen">
-						<div class="panel-heading">新着トラックバック</div>
-						<table class="table table-striped">
-							<thead>
-								<tr>
-									<th>タイトル（名前）</th>
-									<th>記事タイトル（ブログ）</th>
-									<th>日時</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr soy:id="recentTrackback">
-									<td class="title"><a soy:id="title">What's new</a></td>
-									<td class="content"><span soy:id="content">「2007/11/24 Aboutを更新しました」</span></td>
-									<td class="date" soy:id="udate">2007/11/28</td>
-								</tr soy:id="recentTrackback">
-							</tbody>
-						</table>
-					</div>
-			<!--  /soy:display="only_trackback_exists" -->
+                    <!--  soy:display="only_comment_exists" -->
+                    <div class="panel panel-soygreen">
+                        <div class="panel-heading">新着コメント</div>
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>タイトル（名前）</th>
+                                    <th>記事タイトル（ブログ）</th>
+                                    <th>更新日時</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr soy:id="recentComment">
+                                    <td class="title"><a soy:id="title">What's new</a></td>
+                                    <td class="content"><span soy:id="content">「2007/11/24 Aboutを更新しました」</span></td>
+                                    <td class="date" soy:id="udate">2007/11/28</td>
+                                </tr soy:id="recentComment">
+                            </tbody>
+                        </table>
+                    </div>
+                    <!--  /soy:display="only_comment_exists" -->
+                    <!--  soy:display="only_trackback_exists" -->
+                    <div class="panel panel-soygreen">
+                        <div class="panel-heading">新着トラックバック</div>
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>タイトル（名前）</th>
+                                    <th>記事タイトル（ブログ）</th>
+                                    <th>日時</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr soy:id="recentTrackback">
+                                    <td class="title"><a soy:id="title">What's new</a></td>
+                                    <td class="content"><span soy:id="content">「2007/11/24 Aboutを更新しました」</span></td>
+                                    <td class="date" soy:id="udate">2007/11/28</td>
+                                </tr soy:id="recentTrackback">
+                            </tbody>
+                        </table>
+                    </div>
+                    <!--  /soy:display="only_trackback_exists" -->
 
-				</div>
-			</div>
-			<!-- /.row -->
+                </div>
+            </div>
+            <!-- /.row -->
 
-			<div class="row _visible-xs hide">
-				<div class="col-lg-12">
-					<div soy:panel="toolbox"></div>
-				</div>
-			</div>
+            <div class="row _visible-xs hide">
+                <div class="col-lg-12">
+                    <div soy:panel="toolbox"></div>
+                </div>
+            </div>
 
-		</div>
-		<!-- /#page-wrapper -->
-		<!-- soy:page="_common.FooterPage" /-->
-	</div>
-	<!-- /#wrapper -->
+        </div>
+        <!-- /#page-wrapper -->
+        <!-- soy:page="_common.FooterPage" /-->
+    </div>
+    <!-- /#wrapper -->
 
 </body>
 

@@ -1,135 +1,135 @@
 <?php
 
-class TemplateAddStage extends StageBase{
+class TemplateAddStage extends StageBase
+{
+    public function getStageTitle()
+    {
+        return "ページ雛形の新規作成 (2/5)";
+    }
 
-	public function getStageTitle(){
-		return "ページ雛形の新規作成 (2/5)";
-	}
+    public function execute()
+    {
 
-	public function execute(){
+        $this->createAdd("import", "HTMLCheckbox", array(
+        "name"=>"operation",
+        "value"=>"import",
+        "label"=>CMSMessageManager::get("SOYCMS_TEMPLATE_CREATE_FROM_WEBPAGE"),
+        "type"=>"radio"
+        ));
 
-		$this->createAdd("import","HTMLCheckbox",array(
-			"name" => "operation",
-			"value" => "import",
-			"label" => CMSMessageManager::get("SOYCMS_TEMPLATE_CREATE_FROM_WEBPAGE"),
-			"type" => "radio"
-		));
+        $this->createAdd("create", "HTMLCheckbox", array(
+        "name"=>"operation",
+        "value"=>"create",
+        "label"=>CMSMessageManager::get("SOYCMS_TEMPLATE_CREATE_NEW_WEBPAGE"),
+            "selected" => true,
+        "type"=>"radio"
+        ));
 
-		$this->createAdd("create","HTMLCheckbox",array(
-			"name" => "operation",
-			"value" => "create",
-			"label" => CMSMessageManager::get("SOYCMS_TEMPLATE_CREATE_NEW_WEBPAGE"),
-			"selected" => true,
-			"type" => "radio"
-		));
+        $this->createAdd("name", "HTMLInput", array(
+        "name"=>"name",
+        "value"=>""
+        ));
 
-		$this->createAdd("name","HTMLInput",array(
-			"name"=>"name",
-			"value"=>""
-		));
+        $dao = SOY2DAOFActory::create("cms.PageDAO");
+        $pages = $dao->get();
 
-		$dao = SOY2DAOFActory::create("cms.PageDAO");
-		$pages = $dao->get();
+        $pageList = array();
 
-		$pageList = array();
+        foreach ($pages as $page) {
+            if ($page->getPageType() == Page::PAGE_TYPE_NORMAL) {
+                $pageList[$page->getId()] = soy2_h($page->getTitle());
+            }
+        }
 
-		foreach($pages as $page){
-			if($page->getPageType() == Page::PAGE_TYPE_NORMAL){
-				$pageList[$page->getId()] = htmlspecialchars($page->getTitle(), ENT_QUOTES, "UTF-8");
-			}
-		}
+        $this->createAdd("page_list", "HTMLSelect", array(
+        "name"=>"page_id",
+        "options"=>$pageList
+        ));
 
-		$this->createAdd("page_list","HTMLSelect",array(
-			"name"=>"page_id",
-			"options"=>$pageList
-		));
+        $dao = null;
+    }
 
-		$dao = null;
+  // 次へが押された際の動作
+    public function checkNext()
+    {
 
-	}
+        $operation = @$_POST["operation"];
+        $pageId = @$_POST["page_id"];
+        $name = @$_POST["name"];
 
-	//次へが押された際の動作
-	public function checkNext(){
+        if ((null===$name) || strlen($name) == 0) {
+            $this->addMessage("TEMPLATE_FILE_NAME_IS_BLANK");
+            return false;
+        }
 
-		$operation = @$_POST["operation"];
-		$pageId = @$_POST["page_id"];
-		$name = @$_POST["name"];
+        $tmpDir = $this->getTempDir();
 
-		if(is_null($name) || strlen($name) == 0){
-			$this->addMessage("TEMPLATE_FILE_NAME_IS_BLANK");
-			return false;
-		}
+        $dao = SOY2DAOFactory::create("cms.PageDAO");
+        $id = md5(mt_rand());
 
-		$tmpDir = $this->getTempDir();
+        if ($operation == "import") {
+            try {
+                $page = $dao->getById($pageId);
+            } catch (Exception $e) {
+                $this->addMessage("TEMPLATE_GET_PAGE_ERROR");
+                return false;
+            }
 
-		$dao = SOY2DAOFactory::create("cms.PageDAO");
-		$id = md5(mt_rand());
+            file_put_contents($tmpDir . "/" . $id, $page->getTemplate());
+            @chmod($tmpDir . "/" . $id, F_MODE_FILE);
 
-		if($operation == "import"){
+            $this->wizardObj->template->addTemplate(array(
+            $id=>array("name"=>$name)
+            ));
+        } else {
+            file_put_contents($tmpDir . "/" . $id, "");
+            @chmod($tmpDir . "/" . $id, F_MODE_FILE);
+            $this->wizardObj->template->addTemplate(array(
+              $id=>array("name"=>$name)
+            ));
+        }
 
-			try{
-				$page = $dao->getById($pageId);
-			}catch(Exception $e){
-				$this->addMessage("TEMPLATE_GET_PAGE_ERROR");
-				return false;
-			}
+        $this->wizardObj->currentEditTemplateId = $id;
 
-			file_put_contents($tmpDir ."/". $id , $page->getTemplate());
+        return true;
+    }
 
-			$this->wizardObj->template->addTemplate(array(
-				$id => array(
-					"name" => $name,
-				)
-			));
+  // 前へが押された際の動作
+    public function checkBack()
+    {
+        return true;
+    }
 
-		}else{
-			file_put_contents($tmpDir ."/". $id , "");
-			$this->wizardObj->template->addTemplate(array(
-				$id => array(
-					"name" => $name,
-				)
-			));
-		}
+  // 次のオブジェクト名、終了の際はEndStageを呼び出す
+    public function getNextObject()
+    {
+        return "TemplateEditStage";
+    }
 
-		$this->wizardObj->currentEditTemplateId = $id;
+  // 前のオブジェクト名、nullの場合は表示しない
+    public function getBackObject()
+    {
+        if ($this->wizardObj->template->getPageType() == Page::PAGE_TYPE_NORMAL) {
+            return "StartStage";
+        }
+        return "TemplateSettingStage";
+    }
 
-		return true;
-	}
+    public function getNextString()
+    {
+        return CMSMessageManager::get("SOYCMS_WIZARD_NEXT");
+    }
 
-	//前へが押された際の動作
-	public function checkBack(){
-		return true;
-	}
-
-	//次のオブジェクト名、終了の際はEndStageを呼び出す
-	public function getNextObject(){
-		return "TemplateEditStage";
-	}
-
-	//前のオブジェクト名、nullの場合は表示しない
-	public function getBackObject(){
-		if($this->wizardObj->template->getPageType() == Page::PAGE_TYPE_NORMAL){
-			return "StartStage";
-		}
-
-		return "TemplateSettingStage";
-	}
-
-	public function getNextString(){
-		return CMSMessageManager::get("SOYCMS_WIZARD_NEXT");
-	}
-
-	public function getBackString(){
-		$template = $this->wizardObj->template->getTemplate();
-
-		if(empty($template)){
-			if($this->wizardObj->template->getPageType() == Page::PAGE_TYPE_NORMAL){
-				return CMSMessageManager::get("SOYCMS_WIZARD_PREV");
-			}
-
-			return "";
-		}else{
-			return CMSMessageManager::get("SOYCMS_WIZARD_PREV");
-		}
-	}
+    public function getBackString()
+    {
+        $template = $this->wizardObj->template->getTemplate();
+        if (empty($template)) {
+            if ($this->wizardObj->template->getPageType() == Page::PAGE_TYPE_NORMAL) {
+                return CMSMessageManager::get("SOYCMS_WIZARD_PREV");
+            }
+            return "";
+        } else {
+            return CMSMessageManager::get("SOYCMS_WIZARD_PREV");
+        }
+    }
 }

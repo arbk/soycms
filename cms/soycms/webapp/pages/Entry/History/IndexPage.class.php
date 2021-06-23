@@ -1,102 +1,108 @@
 <?php
 
-class IndexPage extends CMSWebPageBase {
+class IndexPage extends CMSWebPageBase
+{
+    private $entryId;
+    private $page = 0;
 
-	private $entryId;
-	private $page = 0;
+    public function doPost()
+    {
+        if (soy2_check_token()) {
+            $result = $this->run("Entry.History.RollbackAction", array("entryId"=>$this->entryId));
+            if ($result->success()) {
+                echo "<script type=\"text/javascript\">";
+                echo "window.parent.location.reload();";
+                echo "</script>";
 
-	function doPost(){
-		if(soy2_check_token()){
-			$result = $this->run("Entry.History.RollbackAction",array("entryId"=>$this->entryId));
-			if($result->success()){
+                exit;
+            }
+        }
+    }
 
-				echo "<script type=\"text/javascript\">";
-				echo "window.parent.location.reload();";
-				echo "</script>";
+    public function __construct($arg)
+    {
+        if (isset($arg[0])) {
+            $this->entryId = $arg[0];
+        }
+        if (isset($arg[1])) {
+            $this->page    = $arg[1];
+        }
 
-				exit;
-			}
-		}
-	}
+        parent::__construct();
 
-	function __construct($arg) {
-		if(isset($arg[0]))$this->entryId = $arg[0];
-		if(isset($arg[1]))$this->page    = $arg[1];
+        $result = $this->run("Entry.History.HistoryListAction", array(
+            "entryId" => $this->entryId,
+            "page"  => $this->page,
+        ));
 
-		parent::__construct();
+        if (!$result->success()) {
+            $this->jump("Entry.Detail.".$this->entryId);
+        }
 
-		$result = $this->run("Entry.History.HistoryListAction",array(
-			"entryId" => $this->entryId,
-			"page"  => $this->page,
-		));
+        $list  = $result->getAttribute("historyList");
+        $hasNext = $result->getAttribute("hasNext");
+        $hasPrev = $result->getAttribute("hasPrev");
 
-		if(!$result->success()){
-			$this->jump("Entry.Detail.".$this->entryId);
-		}
+        $this->createAdd("history_list", "HistoryList", array(
+            "list"   => $list,
+            "entryId" => $this->entryId
+        ));
 
-		$list  = $result->getAttribute("historyList");
-		$hasNext = $result->getAttribute("hasNext");
-		$hasPrev = $result->getAttribute("hasPrev");
+        $this->addLink("prev_link", array(
+            "link" => SOY2PageController::createLink("Entry.History.".$this->entryId.($this->page>1 ? ".".($this->page-1) : "")),
+            "visible" => $hasPrev
+        ));
 
-		$this->createAdd("history_list","HistoryList",array(
-			"list"   => $list,
-			"entryId" => $this->entryId
-		));
-
-		$this->addLink("prev_link",array(
-			"link" => SOY2PageController::createLink("Entry.History.".$this->entryId.($this->page>1 ? ".".($this->page-1) : "")),
-			"visible" => $hasPrev
-		));
-
-		$this->addLink("next_link",array(
-			"link" => SOY2PageController::createLink("Entry.History.".$this->entryId.".".($this->page+1)),
-			"visible" => $hasNext
-		));
-
-	}
+        $this->addLink("next_link", array(
+            "link" => SOY2PageController::createLink("Entry.History.".$this->entryId.".".($this->page+1)),
+            "visible" => $hasNext
+        ));
+    }
 }
 
-class HistoryList extends HTMLList{
+class HistoryList extends HTMLList
+{
+    private $entryId;
 
-	private $entryId;
+    public function populateItem($entity, $key, $counter, $length)
+    {
+        $this->createAdd("date", "HTMLLink", array(
+            "link" => SOY2PageController::createLink("Entry.History.Detail.{$this->entryId}.{$entity->getId()}"),
+            "text"=> date("Y-m-d H:i:s", $entity->getCdate())
+        ));
 
-	function populateItem($entity,$key,$counter,$length){
-		$this->createAdd("date","HTMLLink",array(
-			"link" => SOY2PageController::createLink("Entry.History.Detail.{$this->entryId}.{$entity->getId()}"),
-			"text"=> (is_numeric($entity->getCdate())) ? date("Y-m-d H:i:s", $entity->getCdate()) : ""
-		));
+        $this->createAdd("id", "HTMLLabel", array(
+            "text" => $entity->getId(),
+        ));
 
-		$this->createAdd("id","HTMLLabel",array(
-			"text" => $entity->getId(),
-		));
+        $this->createAdd("action", "HTMLLabel", array(
+            "text" => $entity->getActionTypeText(),
+        ));
 
-		$this->createAdd("action","HTMLLabel",array(
-			"text" => $entity->getActionTypeText(),
-		));
+        $this->createAdd("published", "HTMLLabel", array(
+            "text" => $entity->getPublishStatusText(),
+        ));
 
-		$this->createAdd("published","HTMLLabel",array(
-			"text" => $entity->getPublishStatusText(),
-		));
+        $this->createAdd("change", "HTMLLabel", array(
+            "text" => $entity->getChangeText(),
+        ));
 
-		$this->createAdd("change","HTMLLabel",array(
-			"text" => $entity->getChangeText(),
-		));
+        $this->createAdd("rollback_form", "HTMLForm", array(
+            "disabled" => ($counter == 1)
+        ));
 
-		$this->createAdd("rollback_form","HTMLForm",array(
-			"disabled" => ($counter == 1)
-		));
+        $this->createAdd("rollback_id", "HTMLInput", array(
+            "name" => "historyId",
+            "value" => $entity->getId(),
+        ));
 
-		$this->createAdd("rollback_id","HTMLInput",array(
-			"name" => "historyId",
-			"value" => $entity->getId(),
-		));
+        $this->createAdd("rollback_button", "HTMLModel", array(
+            "visible" => ($counter > 1)
+        ));
+    }
 
-		$this->createAdd("rollback_button","HTMLModel",array(
-			"visible" => ($counter > 1)
-		));
-	}
-
-	function setEntryId($entryId){
-		$this->entryId = $entryId;
-	}
+    public function setEntryId($entryId)
+    {
+        $this->entryId = $entryId;
+    }
 }

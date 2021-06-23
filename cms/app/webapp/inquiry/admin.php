@@ -1,154 +1,153 @@
 <?php
 
-class SOYInquiryApplication{
+class SOYInquiryApplication
+{
+    public function init()
+    {
+        $level = CMSApplication::getAppAuthLevel();
 
-	function init(){
+        CMSApplication::setTabs(array(
+        array(
+        "label"=>"新着",
+        "href" => SOY2PageController::createLink(APPLICATION_ID),
+        "icon" => "home"
+        ),
+        array(
+        "label"=>"問い合わせ",
+        "href" => SOY2PageController::createLink(APPLICATION_ID . ".Inquiry"),
+        "icon" => "list-alt"
+        ),
+        array(
+        "label"=>"フォーム",
+        "href" => SOY2PageController::createLink(APPLICATION_ID . ".Form"),
+        "icon" => "edit"
+        ),
+        array(
+        "label"=>"設定",
+        "href"=>SOY2PageController::createLink(APPLICATION_ID . ".Config"),
+        "visible" => ($level == 1) ? true : false,
+        "icon" => "cog"
+        ),
+        array(
+        "label"=>"ヘルプ",
+        "href"=>SOY2PageController::createLink(APPLICATION_ID . ".Help"),
+        "visible" => ($level == 1) ? true : false,
+        "icon" => "question"
+        )
+        ));
 
-		$level = CMSApplication::getAppAuthLevel();
+        CMSApplication::main(array($this, "main"));
 
-		CMSApplication::setTabs(array(
-			array(
-				"label" => "新着",
-				"href" => SOY2PageController::createLink(APPLICATION_ID),
-				"icon" => "home"
-			),
-			array(
-				"label" => "問い合わせ",
-				"href" => SOY2PageController::createLink(APPLICATION_ID . ".Inquiry"),
-				"icon" => "list-alt"
-			),
-			array(
-				"label" => "フォーム",
-				"href" => SOY2PageController::createLink(APPLICATION_ID . ".Form"),
-				"icon" => "edit"
-			),
-			array(
-				"label" => "設定",
-				"href" => SOY2PageController::createLink(APPLICATION_ID . ".Config"),
-				"visible" => ($level == 1) ? true : false,
-				"icon" => "cog"
-			),
-			array(
-				"label" => "ヘルプ",
-				"href" => SOY2PageController::createLink(APPLICATION_ID . ".Help"),
-				"visible" => ($level == 1) ? true : false,
-				"icon" => "question"
-			)
-		));
+        CMSApplication::addLink(SOY2PageController::createRelativeLink("./webapp/" . APPLICATION_ID . "/js/tools/soy2_data_picker.css"));
+        CMSApplication::addScript(SOY2PageController::createRelativeLink("./webapp/" . APPLICATION_ID . "/js/tools/soy2_data_picker.js"));
 
-		CMSApplication::main(array($this,"main"));
+        // 設定の読み込み
+        require_once(__DIR__ . "/config.php");
 
-		CMSApplication::addLink(SOY2PageController::createRelativeLink("./webapp/" . APPLICATION_ID . "/js/tools/soy2_data_picker.css"));
-		CMSApplication::addScript(SOY2PageController::createRelativeLink("./webapp/" . APPLICATION_ID . "/js/tools/soy2_data_picker.js"));
+        // DBの初期化を行う
+        if (!file_exists(SOYINQUIRY_DB_FILE)) {
+            SOY2Logic::createInstance("logic.InitLogic", array(
+            "initCheckFile" => SOYINQUIRY_DB_FILE,
+            ))->init();
+        }
 
-		//設定の読み込み
-		include_once(dirname(__FILE__) . "/config.php");
+        //DBの初期化に失敗することが多いので再度作成を試みる。エラーが出るFormとInquiryのページに限定
+        if ((strpos($_SERVER["REQUEST_URI"], "/Inquiry") || strpos($_SERVER["REQUEST_URI"], "/Form"))) {
+            if (is_bool(strpos($_SERVER["REQUEST_URI"], "/Detail/"))) {
+                SOY2Logic::createInstance("logic.InitLogic", array(
+                    "initCheckFile" => SOYINQUIRY_DB_FILE,
+                ))->checkAndCreateTable();
+            }
+        }
 
-		//DBの初期化を行う
-		if(!file_exists(SOYINQUIRY_DB_FILE)){
-			SOY2Logic::createInstance("logic.InitLogic", array(
-				"initCheckFile" => SOYINQUIRY_DB_FILE,
-			))->init();
-		}
+        // SOY2HTMLの設定
+        SOY2HTMLPlugin::addPlugin("page", "PagePlugin");
+        SOY2HTMLPlugin::addPlugin("link", "LinkPlugin");
+        SOY2HTMLPlugin::addPlugin("src", "SrcPlugin");
+        SOY2HTMLPlugin::addPlugin("display", "DisplayPlugin");
+        SOY2HTMLPlugin::addPlugin("panel", "PanelPlugin");
 
-		//DBの初期化に失敗することが多いので再度作成を試みる。エラーが出るFormとInquiryのページに限定
-		if((strpos($_SERVER["REQUEST_URI"], "/Inquiry") || strpos($_SERVER["REQUEST_URI"], "/Form"))){
-			if(is_bool(strpos($_SERVER["REQUEST_URI"], "/Detail/"))){
-				SOY2Logic::createInstance("logic.InitLogic", array(
-					"initCheckFile" => SOYINQUIRY_DB_FILE,
-				))->checkAndCreateTable();
-			}
-		}
+        // CSSの読み込み
+        $cssLink = SOY2PageController::createRelativeLink("./webapp/" . APPLICATION_ID . "/css/three.css");
+        if (method_exists("CMSApplication", "getVersion")) {
+            $cssLink .= "?" . CMSApplication::getVersion();
+        }
+        CMSApplication::addLink($cssLink);
+    }
 
-		//SOY2HTMLの設定
-		SOY2HTMLPlugin::addPlugin("page","PagePlugin");
-		SOY2HTMLPlugin::addPlugin("link","LinkPlugin");
-		SOY2HTMLPlugin::addPlugin("src","SrcPlugin");
-		SOY2HTMLPlugin::addPlugin("display","DisplayPlugin");
-		SOY2HTMLPlugin::addPlugin("panel","PanelPlugin");
+    public function main()
+    {
+        //アップグレードバッチ→廃止
+        // if(isset($_GET["bat"]) && file_exists(dirname(__FILE__) . "/src/bat/" . $_GET["bat"] . ".php")){
+        //  include(dirname(__FILE__) . "/src/bat/" . $_GET["bat"] . ".php");
+        //  exit;
+        // }
 
-		//CSSの読み込み
-		$cssLink = SOY2PageController::createRelativeLink("./webapp/".APPLICATION_ID."/css/three.css");
-		if(method_exists("CMSApplication", "getVersion")){
-			$cssLink .= "?".CMSApplication::getVersion();
-		}
-		CMSApplication::addLink($cssLink);
+        $arguments = CMSApplication::getArguments();
 
-	}
+        $classPath = array();
+        $args = array();
+        $flag = false;
+        foreach ($arguments as $key => $value) {
+            if (is_numeric($value)) {
+                $flag = true;
+            }
 
-	function main(){
+            if ($flag) {
+                $args[] = $value;
+            } else {
+                $classPath[] = $value;
+            }
+        }
+        $path = implode(".", $classPath);
+        $classPath = $path;
 
-		//アップグレードバッチ→廃止
-		// if(isset($_GET["bat"]) && file_exists(dirname(__FILE__) . "/src/bat/" . $_GET["bat"] . ".php")){
-		// 	include(dirname(__FILE__) . "/src/bat/" . $_GET["bat"] . ".php");
-		// 	exit;
-		// }
+        if (strlen($classPath) < 1) {
+            $classPath = "Index";
+        }
+        $classPath .= 'Page';
 
-		$arguments = CMSApplication::getArguments();
+        // 一回だけIndexPageを試す。
+        if (!SOY2HTMLFactory::pageExists($classPath)) {
+            $classPath = $path;
 
-		$classPath = array();
-		$args = array();
-		$flag = false;
-		foreach($arguments as $key => $value){
-			if(is_numeric($value)){
-				$flag = true;
-			}
+            if (!preg_match('/.+Page$/', $classPath)) {
+                $classPath .= '.IndexPage';
+            }
+        }
 
-			if($flag){
-				$args[] = $value;
-			}else{
-				$classPath[] = $value;
-			}
-		}
-		$path = implode(".",$classPath);
-		$classPath = $path;
+        // タブの設定
+        if (preg_match('/^Inquiry/', $classPath)) {
+            CMSApplication::setActiveTab(1);
+        }
+        if (preg_match('/^Form/', $classPath)) {
+            CMSApplication::setActiveTab(2);
+        }
+        if (preg_match('/^Config/', $classPath)) {
+            CMSApplication::setActiveTab(3);
+        }
+        if (preg_match('/^Help/', $classPath)) {
+            CMSApplication::setActiveTab(4);
+        }
 
-		if(strlen($classPath)<1)$classPath = "Index";
-		$classPath .= 'Page';
+        if (!SOY2HTMLFactory::pageExists($classPath)) {
+            return soy2_h($classPath);
+        }
 
-		//一回だけIndexPageを試す。
-		if(!SOY2HTMLFactory::pageExists($classPath)){
-			$classPath = $path;
+        $webPage = &SOY2HTMLFactory::createInstance($classPath, array(
+        "arguments"=>$args
+        ));
 
-			if(!preg_match('/.+Page$/',$classPath)){
-				$classPath .= '.IndexPage';
-			}
-		}
+        try {
+            ob_start();
+            $webPage->display();
+            $html = ob_get_contents();
+            ob_end_clean();
+        } catch (Exception $e) {
+        }
 
-		//タブの設定
-		if(preg_match('/^Inquiry/',$classPath)){
-			CMSApplication::setActiveTab(1);
-		}
-		if(preg_match('/^Form/',$classPath)){
-			CMSApplication::setActiveTab(2);
-		}
-		if(preg_match('/^Config/',$classPath)){
-			CMSApplication::setActiveTab(3);
-		}
-		if(preg_match('/^Help/',$classPath)){
-			CMSApplication::setActiveTab(4);
-		}
-
-		if(!SOY2HTMLFactory::pageExists($classPath)){
-			return htmlspecialchars($classPath, ENT_QUOTES, "UTF-8");
-		}
-
-		$webPage = &SOY2HTMLFactory::createInstance($classPath, array(
-			"arguments" => $args
-		));
-
-		try{
-			ob_start();
-			$webPage->display();
-			$html = ob_get_contents();
-			ob_end_clean();
-		}catch(Exception $e){
-
-		}
-
-		return $html;
-	}
-
+        return $html;
+    }
 }
 
 $app = new SOYInquiryApplication();

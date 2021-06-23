@@ -1,58 +1,61 @@
 <?php
 
-class PreviewPage extends WebPage{
+class PreviewPage extends WebPage
+{
+    public $id;
+    public $dao;
+    public $form;
 
-	var $id;
-	var $dao;
-	var $form;
+    public function prepare()
+    {
+        $this->dao = SOY2DAOFactory::create("SOYInquiry_FormDAO");
+        $this->form = new SOYInquiry_Form();
 
-	function prepare(){
-		$this->dao = SOY2DAOFactory::create("SOYInquiry_FormDAO");
-    	$this->form = new SOYInquiry_Form();
+        parent::prepare();
+    }
 
-    	parent::prepare();
-	}
+    public function __construct($args)
+    {
 
-    function __construct($args) {
+        if (count($args)<1) {
+            CMSApplication::jump("Form");
+        }
+        $this->id = $args[0];
 
-    	if(count($args)<1)CMSApplication::jump("Form");
-    	$this->id = $args[0];
+        //レイヤーモードで
+        CMSApplication::setMode("layer");
 
-    	//レイヤーモードで
-    	CMSApplication::setMode("layer");
+        parent::__construct();
 
-    	parent::__construct();
+        try {
+            $this->form = $this->dao->getById($this->id);
+        } catch (Exception $e) {
+            CMSApplication::jump("Form");
+        }
 
-    	try{
-    		$this->form = $this->dao->getById($this->id);
-    	}catch(Exception $e){
-    		CMSApplication::jump("Form");
-    	}
+        $config = $this->form->getConfigObject();
 
-    	$config = $this->form->getConfigObject();
+        //template directory setting
+        $designConfig = $config->getDesign();
+        if (isset($designConfig["theme"]) && strlen($designConfig["theme"])  > 0 && is_dir(SOY2::RootDir() . "template/". $designConfig["theme"])) {
+            $templateDir = SOY2::RootDir() . "template/". $designConfig["theme"] . "/";
+        } else {
+            $templateDir = SOY2::RootDir() . "template/default/";
+        }
 
-		//template directory setting
-		$designConfig = $config->getDesign();
-		if(isset($designConfig["theme"]) && strlen($designConfig["theme"])  > 0 && is_dir(SOY2::RootDir() . "template/". $designConfig["theme"])){
-			$templateDir = SOY2::RootDir() . "template/". $designConfig["theme"] . "/";
-		}else{
-			$templateDir = SOY2::RootDir() . "template/default/";
-		}
+        //ランダムな値を作成
+        $random_hash = md5(mt_rand());
 
-    	//ランダムな値を作成
-		$random_hash = md5(mt_rand());
+        $columnDAO = SOY2DAOFactory::create("SOYInquiry_ColumnDAO");
+        $columns = $columnDAO->getOrderedColumnsByFormId($this->id);
 
-    	$columnDAO = SOY2DAOFactory::create("SOYInquiry_ColumnDAO");
-    	$columns = $columnDAO->getOrderedColumnsByFormId($this->id);
+        ob_start();
+        include($templateDir . "form.php");
+        $html = ob_get_contents();
+        ob_end_clean();
 
-    	ob_start();
-    	include_once($templateDir . "form.php");
-    	$html = ob_get_contents();
-    	ob_end_clean();
-
-    	$this->createAdd("preview","HTMLLabel",array(
-    		"html" => $html
-    	));
-
+        $this->createAdd("preview", "HTMLLabel", array(
+            "html" => $html
+        ));
     }
 }

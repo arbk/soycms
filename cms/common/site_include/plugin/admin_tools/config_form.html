@@ -1,0 +1,114 @@
+<script type="text/javascript">
+    function chk() {
+        if (window.confirm('本当に 実行しても 良いですか？')) { return true; }
+        return false;
+    }
+</script>
+
+<section style="font-size:1.2em; font-weight:bold; margin:20px 5%; padding:10px 1em; border:solid 1px black;" soy:id="proc_msg_v">
+    処理結果:
+    <div style="margin-left:1em;" soy:id="proc_msg"></div>
+</section>
+
+<form method="post" onSubmit="return chk();" soy:id="admin_tools_form">
+
+    <nav style="margin:30px 0 30px 1em;">
+        <ul>
+            <li><a href="#admin_tools_cache">キャッシュ 管理</a></li>
+            <li><a href="#admin_tools_file">ファイル 管理</a></li>
+            <li><a href="#admin_tools_db">DB 管理</a></li>
+        </ul>
+    </nav>
+
+    <section id="admin_tools_cache">
+        <h4 style="border-bottom: solid cadetblue 2px; border-left: solid cadetblue 5px; margin-bottom:20px;">キャッシュ 管理</h4>
+        <div style="margin-left:1em;">
+            <div>
+                <ul>
+                    <li style="margin-bottom:10px;">
+                        現在 ページキャッシュを <strong soy:id="cache_pstg"></strong> 設定になっています.<br>
+                        <span soy:id="cache_pstg_v">ページキャッシュの有効期間は <strong soy:id="cache_pstg_lt"></strong> となっています.</span><br>
+                        <small>・ページキャッシュの設定は user.config.php で行います.</small>
+                    </li>
+                    <li>
+                        処理対象ディレクトリ:<br>
+                        <span soy:id="cache_targ_d"></span>
+                    </li>
+                </ul>
+            </div>
+            <div style="display:table;">
+                <div style="display:table-row;">
+                    <div style="display:table-cell; width:65%; padding-right:1.5em;">
+                        <p>サイトのキャッシュ（ページキャッシュ, オブジェクトキャッシュ, サムネイル）を削除します.</p>
+                    </div>
+                    <div style="display:table-cell;"><input type="submit" name="cache_clear" value="キャッシュを削除する"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="admin_tools_file">
+        <h4 style="border-bottom: solid cadetblue 2px; border-left: solid cadetblue 5px; margin-bottom:20px;">ファイル 管理</h4>
+        <div style="margin-left:1em;">
+            <div>
+                <ul>
+                    <li style="margin-bottom:10px;">
+                        ユーザーファイルのモードの既定値は <strong>[ファイル: <span soy:id="file_fmd_f"></span>], [ ディレクトリ: <span soy:id="file_fmd_d"></span>]</strong> です.<br>
+                        <small>・ファイルモードの設定は php.config.php で行います.</small>
+                    </li>
+                    <li>
+                        処理対象ディレクトリ（ユーザーファイルディレクトリ）:<br>
+                        <span soy:id="file_targ_d"></span><br>
+                        <span style="color:red;" soy:id="file_targ_d_alert_v">※ 処理対象ディレクトリが存在しません.<br></span>
+                        <small>・ユーザーファイルディレクトリの設定は user.config.php で行います.</small>
+                    </li>
+                </ul>
+            </div>
+            <div style="display:table;" soy:id="file_mdchg_v">
+                <div style="display:table-row;">
+                    <div style="display:table-cell; width:65%; padding-right:1.5em;">
+                        <p>ユーザーファイルのファイル／ディレクトリのモード（パーミッション）を既定値に設定します.</p>
+                    </div>
+                    <div style="display:table-cell;"><input type="submit" name="file_mdchg" value="ユーザーファイルのモードを設定する"></div>
+                </div>
+            </div soy:id="file_mdchg_v">
+        </div>
+    </section>
+
+    <section id="admin_tools_db">
+        <h4 style="border-bottom: solid cadetblue 2px; border-left: solid cadetblue 5px; margin-bottom:20px;">DB 管理</h4>
+        <div style="margin-left:1em;">
+            <div>
+                <ul>
+                    <li>現在のDBは <strong soy:id="db_type"></strong> です.</li>
+                    <li>DB管理機能を利用する前に DBをバックアップ してください.</li>
+                </ul>
+            </div>
+            <div style="display:table;">
+                <div style="display:table-row;">
+                    <div style="display:table-cell; width:65%; padding-right:1.5em;">
+                        <p style="margin-bottom:0.5em;">DBに格納された ヒストリデータを削除します.</p>
+                        <p>処理対象テーブル:<br>
+                            <span style="display:block; margin-left:1em;" soy:id="db_targ_t"></span>
+                        </p>
+                    </div>
+                    <div style="display:table-cell;"><input type="submit" name="db_hclear" value="ヒストリーデータを削除する"></div>
+                </div>
+                <div style="display:table-row;">
+                    <div style="display:table-cell; width:65%; padding-right:1.5em;">
+                        <p>DBを最適化します.<br>
+                            （SQLite: "VACUUM" "REINDEX" を実行, MySQL: "OPTIMIZE TABLE" を実行.）</p>
+                    </div>
+                    <div style="display:table-cell;"><input type="submit" name="db_optimize" value="DBを最適化する"></div>
+                </div>
+                <div style="display:table-row;">
+                    <div style="display:table-cell; width:65%; padding-right:1.5em;">
+                        <p>ヒストリデータの削除 と DBの最適化 を続けて実行します.</p>
+                    </div>
+                    <div style="display:table-cell;"><input type="submit" name="db_hclr_opt" value="ヒストリーデータを削除し, DBを最適化する"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</form soy:id="admin_tools_form">

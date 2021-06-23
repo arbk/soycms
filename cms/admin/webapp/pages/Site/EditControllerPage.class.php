@@ -1,164 +1,170 @@
 <?php
 
-class EditControllerPage extends CMSUpdatePageBase {
+class EditControllerPage extends CMSUpdatePageBase
+{
+    public $id;
 
-	const FILENAME = "index.php";
-	var $id;
+    public function doPost()
+    {
+        if (soy2_check_token() && soy2_check_referer()) {
+            if ($this->id == $_POST["site_id"] && $this->saveFile($_POST["contents"])) {
+                $this->addMessage("UPDATE_SUCCESS");
+            }
+            $this->reload();
+            exit;
+        }
+    }
 
-	function doPost(){
+    public function __construct($args)
+    {
+        if (!UserInfoUtil::isDefaultUser()) {
+            $this->jump("Site");
+        }
+        $id = (isset($args[0])) ? $args[0] : null;
+        $this->id = $id;
 
-		if(soy2_check_token() && soy2_check_referer()){
-			if($this->id == $_POST["site_id"] && $this->saveFile($_POST["contents"])){
-				$this->addMessage("UPDATE_SUCCESS");
-			}
+        parent::__construct();
 
-			$this->reload();
-			exit;
-		}
-	}
+        $site = $this->getSite();
 
-	function __construct($args) {
-		if(!UserInfoUtil::isDefaultUser()){
-			$this->jump("Site");
-		}
-		$id = (isset($args[0])) ? $args[0] : null;
-		$this->id = $id;
+        if (!is_writable($site->getPath() . F_FRCTRLER)) {
+            $this->addErrorMessage("SOYCMS_NOT_WRITABLE");
+        }
 
-		parent::__construct();
+        $this->addLabel("site_name", array(
+        "text"=>$site->getSiteName()
+        ));
 
-		$site = $this->getSite();
+        $this->buildSubMenu();
+        $this->buildForm($site);
+        $this->showDefault($site);
+        $this->showMessage();
+        $this->showBackupFiles($site->getPath() . F_FRCTRLER);
+    }
 
-		if(!is_writable($site->getPath() . self::FILENAME)){
-			$this->addErrorMessage("SOYCMS_NOT_WRITABLE");
-		}
+    private function buildForm($site)
+    {
+        $filepath = $site->getPath() . F_FRCTRLER;
 
-		$this->addLabel("site_name", array(
-			"text" => $site->getSiteName()
-		));
+        $this->addForm("update_site_form", array(
+            "disabled" => !is_writable($site->getPath() . F_FRCTRLER)
+        ));
 
-		$this->buildSubMenu();
-		$this->buildForm($site);
-		$this->showDefault($site);
-		$this->showMessage();
-		$this->showBackupFiles($site->getPath() . self::FILENAME);
-	}
+        $this->addInput("site_id", array(
+        "type"=>"hidden",
+        "name"=>"site_id",
+        "value"=>$this->id
+        ));
 
-	private function buildForm($site){
+        $content = file_exists($filepath) ? file_get_contents($filepath) : "";
+        $this->addTextArea("contents", array(
+        "name"=>"contents",
+            "value" => $content,
+            "rows" => count(explode("\n", $content)),
+            "readonly" => !is_writable($filepath)
+        ));
 
-		$filepath = $site->getPath() . self::FILENAME;
+        $this->addInput("button", array(
+        "value"=>CMSMessageManager::get("SOYCMS_SAVE"),
+            "disabled" => !is_writable($filepath)
+        ));
+    }
 
-		$this->addForm("update_site_form", array(
-			"disabled" => !is_writable($site->getPath() . self::FILENAME)
-		));
+    private function buildSubMenu()
+    {
+        $this->addLink("detail_link", array(
+                "link" => SOY2PageController::createLink("Site.Detail." . $this->id),
+        ));
+    }
 
-		$this->addInput("site_id", array(
-			"type"  => "hidden",
-			"name"  => "site_id",
-			"value" => $this->id
-		));
+    private function showDefault($site)
+    {
+        $logic = SOY2Logic::createInstance("logic.admin.Site.SiteCreateLogic");
 
-		$content = file_exists($filepath) ? file_get_contents($filepath) : "";
-		$this->addTextArea("contents", array(
-			"name"  => "contents",
-			"value" => $content,
-			"rows" => count(explode("\n", $content)),
-			"readonly" => !is_writable($filepath)
-		));
+        $this->addTextArea("default_contents", array(
+                "name"  => "default_contents",
+                "value" => $logic->getController($site->getSiteId()),
+                "readonly" => true,
+        ));
+    }
 
-		$this->addInput("button", array(
-			"value"	 => CMSMessageManager::get("SOYCMS_SAVE"),
-			"disabled" => !is_writable($filepath)
-		));
-	}
+    private function showBackupFiles($filepath)
+    {
+        $list = CMSUtil::getBackupList($filepath);
+        $this->addModel("has_backup", array(
+                "visible" => count($list),
+        ));
+        $this->createAdd("backup_file_list", "BackupFileList", array(
+                "list" => $list,
+        ));
+    }
 
-	private function buildSubMenu(){
-		$this->addLink("detail_link", array(
-				"link" => SOY2PageController::createLink("Site.Detail." . $this->id),
-		));
-	}
+    private function showMessage()
+    {
+        $messages = CMSMessageManager::getMessages();
+        $errors= CMSMessageManager::getErrorMessages();
+        $this->addLabel("message", array(
+        "text"=>implode($messages),
+        "visible"=>(count($messages) > 0)
+        ));
+        $this->addLabel("error", array(
+            "text" => implode($errors),
+            "visible" => (count($errors) > 0)
+        ));
+        $this->addModel("has_message_or_error", array(
+                "visible" => count($messages) || count($errors),
+        ));
+    }
 
-	private function showDefault($site){
-		$logic = SOY2Logic::createInstance("logic.admin.Site.SiteCreateLogic");
+    public function saveFile($contents)
+    {
+        $site = $this->getSite();
+        return file_put_contents($site->getPath() . F_FRCTRLER, $contents);
+    }
 
-		$this->addTextArea("default_contents", array(
-				"name"  => "default_contents",
-				"value" => $logic->getController($site->getSiteId()),
-				"readonly" => true,
-		));
-	}
-
-	private function showBackupFiles($filepath){
-		$list = CMSUtil::getBackupList($filepath);
-		$this->addModel("has_backup",array(
-				"visible" => count($list),
-		));
-		$this->createAdd("backup_file_list","BackupFileList",array(
-				"list" => $list,
-		));
-	}
-
-	private function showMessage(){
-		$messages = CMSMessageManager::getMessages();
-		$errors= CMSMessageManager::getErrorMessages();
-		$this->addLabel("message", array(
-			"text" => implode($messages),
-			"visible" => (count($messages) > 0)
-		));
-		$this->addLabel("error", array(
-			"text" => implode($errors),
-			"visible" => (count($errors) > 0)
-		));
-		$this->addModel("has_message_or_error",array(
-				"visible" => count($messages) || count($errors),
-		));
-	}
-
-	function saveFile($contents){
-		$site = $this->getSite();
-		return file_put_contents($site->getPath() . self::FILENAME, $contents);
-	}
-
-	function getSite(){
-		try{
-			$site = SOY2DAOFactory::create("admin.SiteDAO")->getById($this->id);
-		}catch(Exception $e){
-			SOY2PageController::jump("Site");
-		}
-
-		return $site;
-	}
+    public function getSite()
+    {
+        try {
+            $site = SOY2DAOFactory::create("admin.SiteDAO")->getById($this->id);
+        } catch (Exception $e) {
+            SOY2PageController::jump("Site");
+        }
+        return $site;
+    }
 }
 
-class BackupFileList extends HTMLList{
-	protected function populateItem($filepath, $key, $counter){
-		$this->addModel("heading",array(
-				"id" => "heading_".$counter,
-		));
+class BackupFileList extends HTMLList
+{
+    protected function populateItem($filepath, $key, $counter)
+    {
+        $this->addModel("heading", array(
+                "id" => "heading_".$counter,
+        ));
 
-		$this->addLink("collapse-link",array(
-				"link" => "#collapse_".$counter,
-		));
-		$this->addLabel("filename",array(
-				"text" => basename($filepath),
-		));
+        $this->addLink("collapse-link", array(
+                "link" => "#collapse_".$counter,
+        ));
+        $this->addLabel("filename", array(
+                "text" => basename($filepath),
+        ));
 
-		$this->addLabel("filemtime",array(
-				"text" => date("Y-m-d H:i:s", filemtime($filepath)),
-		));
+        $this->addLabel("filemtime", array(
+                "text" => date("Y-m-d H:i:s", filemtime($filepath)),
+        ));
 
-		$this->addModel("collapse-body",array(
-				"aria-labelledby" => "heading_".$counter,
-				"class" => "panel-collapse collapse" . ( $counter ==1 ? " in" : "" ),
-				"id" => "collapse_".$counter,
-		));
+        $this->addModel("collapse-body", array(
+                "aria-labelledby" => "heading_".$counter,
+                "class" => "panel-collapse collapse" . ( $counter ==1 ? " in" : "" ),
+                "id" => "collapse_".$counter,
+        ));
 
-		$content= is_readable($filepath) ? file_get_contents($filepath) : "";
-		$this->addTextArea("contents", array(
-				"name"  => "contents",
-				"value" => $content,
-				"rows" => count(explode("\n",$content)),
-				"readonly" => true,
-				"style" => "background: white;"
-		));
-	}
+        $content= is_readable($filepath) ? file_get_contents($filepath) : "";
+        $this->addTextArea("contents", array(
+                "name"  => "contents",
+                "value" => $content,
+                "rows" => count(explode("\n", $content)),
+                "readonly" => true,
+                "style" => "background: white;"
+        ));
+    }
 }

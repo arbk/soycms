@@ -1,35 +1,36 @@
 <?php
 
-class RedirectPage extends CMSHTMLPageBase{
+class RedirectPage extends CMSHTMLPageBase
+{
+    public $userId;
 
-	var $userId;
+    public function __construct()
+    {
+      // ログインIDの指定がなければただちにログイン画面へ
+        if (!isset($_GET["userId"]) || strlen($_GET["userId"]) < 1) {
+            SOY2PageController::redirect("");
+        }
 
-	function __construct(){
+        define("HEAD_TITLE", CMSUtil::getCMSName() . " Redirect ");
+        parent::__construct();
 
-		//ログインIDの指定がなければただちにログイン画面へ
-		if(!isset($_GET["userId"]) || strlen($_GET["userId"])<1){
-			SOY2PageController::redirect("");
-		}
+        $this->addLabel("user_id", array(
+        "text"=>$_GET["userId"]
+        ));
 
-		define("HEAD_TITLE", CMSUtil::getCMSName() . " Redirect ");
-		parent::__construct();
+        $this->addLabel("redirect_link", array(
+        "text"=>SOY2PageController::createLink("")
+        ));
 
-		$this->addLabel("user_id", array(
-			"text" => $_GET["userId"],
-		));
+  //    $this->addImage("biglogo", array(
+  //      "src" => CMSUtil::getLogoFile()
+  //    ));
+    }
 
-		$this->addLabel("redirect_link", array(
-			"text" => SOY2PageController::createLink("")
-		));
-
-		$this->addImage("biglogo", array(
-			"src" => CMSUtil::getLogoFile()
-		));
-	}
-
-	function setUserId($userId){
-		error_log(__LINE__." user id $userId");
-		$this->userId = $userId;
-		echo $userId;
-	}
+    public function setUserId($userId)
+    {
+        error_log(__LINE__ . " user id $userId");
+        $this->userId = $userId;
+        echo $userId;
+    }
 }

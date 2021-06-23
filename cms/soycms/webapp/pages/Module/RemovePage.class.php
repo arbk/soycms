@@ -1,21 +1,21 @@
 <?php
 
-class RemovePage extends CMSWebPageBase{
+class RemovePage extends CMSWebPageBase
+{
+    public function __construct($args)
+    {
+        $moduleId = $_GET["moduleId"];
+        $modulePath = UserInfoUtil::getSiteDirectory() . ".module/" . str_replace(".", "/", $moduleId) . ".php";
+        $moduleIniPath = UserInfoUtil::getSiteDirectory() . ".module/" . str_replace(".", "/", $moduleId) . ".ini";
 
-    function __construct($args) {
+        //モジュールのPHPファイルとiniファイルを削除
+        try {
+            unlink($modulePath);
+            unlink($moduleIniPath);
+        } catch (Exception $e) {
+            //
+        }
 
-    	$moduleId = $_GET["moduleId"];
-    	$modulePath = UserInfoUtil::getSiteDirectory() . ".module/" . str_replace(".", "/", $moduleId) . ".php";
-    	$moduleIniPath = UserInfoUtil::getSiteDirectory() . ".module/" . str_replace(".", "/", $moduleId) . ".ini";
-
-    	//モジュールのPHPファイルとiniファイルを削除
-    	try{
-    		unlink($modulePath);
-    		unlink($moduleIniPath);
-    	}catch(Exception $e){
-    		//
-    	}
-
-    	$this->jump("Module");
+        $this->jump("Module");
     }
 }

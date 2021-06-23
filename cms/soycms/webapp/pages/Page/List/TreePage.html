@@ -1,98 +1,99 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="<?php echo SOYCMS_ADMIN_HTML_LANG; ?>">
 
 <head soy:page="_common.HeaderPage" isOverWrite="true">
 </head soy:page="_common.HeaderPage">
 
 <body>
 
-	<div id="wrapper">
-		<!-- Navigation -->
-		<nav  class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0" soy:page="_common.UpperMenuPage"><!-- --></nav>
-		<div id="page-wrapper">
-			<div class="row">
-				<div class="col-lg-12">
-					<h1 class="page-header">ページ一覧</h1>
-				</div>
-				<!-- /.col-lg-12 -->
-			</div>
+    <div id="wrapper">
+        <!-- Navigation -->
+        <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0" soy:page="_common.UpperMenuPage"></nav>
+        <div id="page-wrapper">
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header">ページ一覧</h1>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
 
-			<div soy:page="_common.MessagePanel" isOverWrite="true"></div>
+            <div soy:page="_common.MessagePanel" isOverWrite="true"></div>
 
-			<div class="row">
-				<div class="col-lg-12">
-					<div class="panel panel-default">
-						<div class="panel-body">
-							<a class="btn btn-default" soy:link="Page.Create" onclick="return common_click_to_layer(this,{height:540});">ページ新規作成</a>
-							<a class="btn btn-default" soy:link="Blog">ブログ一覧</a>
-							<!-- soy:display="is_page_template_enabled" --><a class="btn btn-default" soy:link="Template">ページ雛型管理</a><!-- /soy:display="is_page_template_enabled" -->
-							<a class="btn btn-default" soy:link="Module">モジュール管理</a>
-						</div>
-					</div>
-				</div>
-				<!-- /.col-lg-12 -->
-			</div>
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="panel panel-default">
+                        <div class="panel-body">
+                            <a class="btn btn-default" soy:link="Page.Create" onclick="return common_click_to_layer(this,{height:540});">ページ新規作成</a>
+                            <a class="btn btn-default" soy:link="Blog">ブログ一覧</a>
+                            <!-- soy:display="is_page_template_enabled" --><a class="btn btn-default" soy:link="Template">ページ雛型管理</a><!-- /soy:display="is_page_template_enabled" -->
+                            <a class="btn btn-default" soy:link="Module">モジュール管理</a>
+                        </div>
+                    </div>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
 
-			<div class="row">
-				<div class="col-lg-12">
-					<div class="panel panel-green" id="page-list">
-						<div class="panel-heading">ページ一覧
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="panel panel-green" id="page-list">
+                        <div class="panel-heading">ページ一覧
 
-							<small class="pull-right">
-							<label><input class="form-input-check" type="checkbox" id="hide-draft" soy:id="hide-draft">下書きを隠す</label>
-							<label><input class="form-input-check" type="checkbox" id="hide-out-of-publishing-period" soy:id="hide-out-of-publishing-period">公開期間外を隠す</label>
-							</small>
-						</div>
-						<div class="panel-body">
-							<div class="soycms-page-tree">
-							<!-- soy:id="page_list" -->
-								<ul>
-									<li></li>
-								</ul>
-							<!-- /soy:id="page_list" -->
-							</div>
-						</div>
-					</div>
+                            <small class="pull-right">
+                                <label><input class="form-input-check" type="checkbox" id="hide-draft" soy:id="hide-draft">下書きを隠す</label>
+                                <label><input class="form-input-check" type="checkbox" id="hide-out-of-publishing-period" soy:id="hide-out-of-publishing-period">公開期間外を隠す</label>
+                            </small>
+                        </div>
+                        <div class="panel-body">
+                            <div class="soycms-page-tree">
+                                <!-- soy:id="page_list" -->
+                                <ul>
+                                    <li></li>
+                                </ul>
+                                <!-- /soy:id="page_list" -->
+                            </div>
+                        </div>
+                    </div>
 
-					<!-- soy:display="not_empty_trash" -->
-					<div class="panel panel-default" id="deleted-page-list">
-						<div class="panel-heading">
-							<i class="fa fa-trash-o fa-fw"></i>ごみ箱
-						</div>
-						<div class="panel-body">
-							<div class="soycms-page-tree">
-							<!-- soy:id="trash_page_list" -->
-							<ul>
-								<li></li>
-							</ul>
-							<!-- /soy:id="trash_page_list" -->
-							</div>
-						</div>
-					</div>
-					<!-- /soy:display="not_empty_trash" -->
-				</div>
-				<!-- /.col-lg-12 -->
-			</div>
-		</div>
-		<!-- /#page-wrapper -->
-		<!-- soy:page="_common.FooterPage" /-->
-	</div>
-	<!-- /#wrapper -->
+                    <!-- soy:display="not_empty_trash" -->
+                    <div class="panel panel-default" id="deleted-page-list">
+                        <div class="panel-heading">
+                            <i class="fa fa-trash-o fa-fw"></i>ごみ箱
+                        </div>
+                        <div class="panel-body">
+                            <div class="soycms-page-tree">
+                                <!-- soy:id="trash_page_list" -->
+                                <ul>
+                                    <li></li>
+                                </ul>
+                                <!-- /soy:id="trash_page_list" -->
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /soy:display="not_empty_trash" -->
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+        </div>
+        <!-- /#page-wrapper -->
+        <!-- soy:page="_common.FooterPage" /-->
+    </div>
+    <!-- /#wrapper -->
 
-<script>
-	$(function(){
-		$('#hide-out-of-publishing-period').click(function(){
-			//$('#page-list .out_of_open_period').toggle(!$('#hide-out-of-publishing-period').prop('checked'))
-			$('#page-list .out_of_open_period').collapse('toggle')
-			$.cookie('page-index-hide-out-of-publishing-period', $('#hide-out-of-publishing-period').prop('checked'));
-		})
-		$('#hide-draft').click(function(){
-			//$('#page-list .draft').toggle(!$('#hide-draft').prop('checked'))
-			$('#page-list .draft').collapse('toggle')
-			$.cookie('page-index-hide-draft', $('#hide-draft').prop('checked'));
-		})
-	})
-</script>
+    <script>
+        $(function () {
+            $('#hide-out-of-publishing-period').click(function () {
+                //$('#page-list .out_of_open_period').toggle(!$('#hide-out-of-publishing-period').prop('checked'))
+                $('#page-list .out_of_open_period').collapse('toggle')
+                $.cookie('page-index-hide-out-of-publishing-period', $('#hide-out-of-publishing-period').prop('checked'));
+            })
+            $('#hide-draft').click(function () {
+                //$('#page-list .draft').toggle(!$('#hide-draft').prop('checked'))
+                $('#page-list .draft').collapse('toggle')
+                $.cookie('page-index-hide-draft', $('#hide-draft').prop('checked'));
+            })
+        })
+    </script>
 
 </body>
+
 </html>

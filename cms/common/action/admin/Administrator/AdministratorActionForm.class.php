@@ -1,43 +1,46 @@
 <?php
-class AdministratorActionForm extends SOY2ActionForm{
-	var $id;
-	var $userId;
-	var $password;
-	var $name;
-	var $email;
+class AdministratorActionForm extends SOY2ActionForm
+{
+    public $id;
+    public $userId;
+    public $password;
+    public $name;
+    public $email;
 
-	function setId($value){
-		$this->id = $value;
-	}
+    public function setId($value)
+    {
+        $this->id = $value;
+    }
 
-	/**
+    /**
      * @validator string {"max" : 30, "min" : 4, "require" : true }
      */
-	function setUserId($value){
-		$this->userId = $value;
-	}
+    public function setUserId($value)
+    {
+        $this->userId = $value;
+    }
 
-	/**
+    /**
      * @validator string {"max" : 30, "min" : 6, "require" : true }
      */
-	function setPassword($value){
-		$this->password = $value;
-	}
+    public function setPassword($value)
+    {
+        $this->password = $value;
+    }
 
-	/**
+    /**
      * @validator string {"max" : 255, "min" : 0}
      */
-	function setName($value){
-		$this->name = $value;
-	}
+    public function setName($value)
+    {
+        $this->name = $value;
+    }
 
-	/**
+    /**
      * @validator string {"max" : 255, "min" : 0}
      */
-	function setEmail($value){
-		$this->email = $value;
-	}
-
-
+    public function setEmail($value)
+    {
+        $this->email = $value;
+    }
 }
-?>

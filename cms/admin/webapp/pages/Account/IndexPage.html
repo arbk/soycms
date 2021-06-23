@@ -1,54 +1,51 @@
-<html>
+<!DOCTYPE html>
+<html lang="<?php echo SOYCMS_ADMIN_HTML_LANG; ?>">
+
 <head soy:page="_common.HeaderPage" isOverWrite="true">
-</head>
+</head soy:page="_common.HeaderPage">
+
 <body class="sub">
 
-	<div class="panel panel-default">
-		<div class="panel-heading">
-			<form soy:id="changeuser_form">
-			<h1>
-				登録情報
-				<input class="btn btn-primary pull-right" type="submit" name="changeuser" value="登録情報を変更する" />
-			</h1>
-			</form soy:id="changeuser_form">
-		</div>
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <form soy:id="changeuser_form">
+                <h1>登録情報<input class="btn btn-primary pull-right" type="submit" name="changeuser" value="登録情報を変更する" /></h1>
+            </form soy:id="changeuser_form">
+        </div>
 
-		<div class="panel-body">
-			<div class="alert alert-success alert-dismissable" soy:id="changeuserinfo_message">
-				<i class="fa fa-bell fa-fw"></i>登録情報を変更しました。
-			</div>
-			<div class="form-group">
-				<label>姓名</label>
-				<span soy:id="name" class="form-control-static"></span>
-			</div>
-			<div class="form-group">
-				<label>メールアドレス</label>
-				<span soy:id="email" class="form-control-static">user@example.com</span>
-			</div>
-		</div>
-	</div>
+        <div class="panel-body">
+            <div class="alert alert-success alert-dismissable" soy:id="changeuserinfo_message">
+                <i class="fa fa-bell fa-fw"></i>登録情報を変更しました。
+            </div>
+            <div class="form-group">
+                <label>姓名</label>
+                <span soy:id="name" class="form-control-static"></span>
+            </div>
+            <div class="form-group">
+                <label>メールアドレス</label>
+                <span soy:id="email" class="form-control-static">user@example.com</span>
+            </div>
+        </div>
+    </div>
 
-	<div class="panel panel-default">
-		<div class="panel-heading">
-			<form soy:id="changepassword_form">
-			<h1>
-				パスワード
-				<input class="btn btn-primary pull-right"  style="float:right;" type="submit" name="changepassword" value="パスワードを変更する" />
-			</h1>
-			</form soy:id="changepassword_form">
-		</div>
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <form soy:id="changepassword_form">
+                <h1>パスワード<input class="btn btn-primary pull-right" style="float:right;" type="submit" name="changepassword" value="パスワードを変更する" /></h1>
+            </form soy:id="changepassword_form">
+        </div>
 
-		<div class="panel-body">
-			<div class="alert alert-success alert-dismissable" soy:id="changepassword_message">
-				<i class="fa fa-bell fa-fw"></i>パスワードを変更しました。
-			</div>
-			<div class="form-group">
-				<label>パスワード</label>
-				<span class="form-control-static">（セキュリティのために表示されません）</span>
-			</div>
-		</div>
-	</div>
-
+        <div class="panel-body">
+            <div class="alert alert-success alert-dismissable" soy:id="changepassword_message">
+                <i class="fa fa-bell fa-fw"></i>パスワードを変更しました。
+            </div>
+            <div class="form-group">
+                <label>パスワード</label>
+                <span class="form-control-static">（セキュリティのために表示されません）</span>
+            </div>
+        </div>
+    </div>
 
 </body>
+
 </html>

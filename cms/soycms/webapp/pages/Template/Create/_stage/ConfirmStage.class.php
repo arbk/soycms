@@ -1,229 +1,236 @@
 <?php
 
-class ConfirmStage extends StageBase{
+class ConfirmStage extends StageBase
+{
+    public function getStageTitle()
+    {
+        return "ページ雛形の新規作成 (4/5) - 作成内容の確認";
+    }
 
-	public function getStageTitle(){
-		return "ページ雛形の新規作成 (4/5) - 作成内容の確認";
-	}
+    //表示部分はここに書く
+    public function execute()
+    {
+        $this->createAdd("template_id", "HTMLInput", array(
+            "value" => $this->wizardObj->template->getId(),
+            "readonly" => true,
+        ));
 
-	//表示部分はここに書く
-	public function execute(){
+        $this->createAdd("template_name", "HTMLInput", array(
+            "value" => $this->wizardObj->template->getName(),
+            "readonly" => true,
+        ));
 
-		$this->createAdd("template_id","HTMLInput",array(
-			"value" => $this->wizardObj->template->getId(),
-			"readonly" => true,
-		));
+        $this->createAdd("template_description", "HTMLTextArea", array(
+            "value" => $this->wizardObj->template->getDescription(),
+            "readonly" => true,
+        ));
 
-		$this->createAdd("template_name","HTMLInput",array(
-			"value" => $this->wizardObj->template->getName(),
-			"readonly" => true,
-		));
+        $this->createAdd("template_list", "TemplateList", array(
+        "list" => $this->wizardObj->template->getTemplate()
+        ));
 
-		$this->createAdd("template_description","HTMLTextArea",array(
-			"value" => $this->wizardObj->template->getDescription(),
-			"readonly" => true,
-		));
+        $this->createAdd("add_file_list", "FileList", array(
+        "list" => $this->wizardObj->template->getFileList()
+        ));
+    }
 
-		$this->createAdd("template_list","TemplateList",array(
-			"list" => $this->wizardObj->template->getTemplate()
-		));
+    //次へが押された際の動作
+    public function checkNext()
+    {
 
-		$this->createAdd("add_file_list","FileList",array(
-			"list" => $this->wizardObj->template->getFileList()
-		));
+        $template = $this->wizardObj->template;
 
+        //manifestファイルの作成。
+        $doc = new DOMDocument();
+        $doc->encoding = SOY2::CHARSET;
 
-	}
+        //root
+        $root = $doc->createElement("soycms");
+        $doc->appendChild($root);
 
-	//次へが押された際の動作
-	public function checkNext(){
+        //id
+        $id = $doc->createElement("id");
+        $id->appendChild($doc->createTextNode($template->getId()));
+        $root->appendChild($id);
 
-		$template = $this->wizardObj->template;
+        //name
+        $name = $doc->createElement("name");
+        $name->appendChild($doc->createTextNode($template->getName()));
+        $root->appendChild($name);
 
-		//manifestファイルの作成。
-		$doc = new DOMDocument();
-		$doc->encoding = "UTF-8";
+        //type
+        $type = $doc->createElement("type");
+        $type->appendChild($doc->createTextNode($template->getPageType()));
+        $root->appendChild($type);
 
-		//root
-		$root = $doc->createElement("soycms");
-		$doc->appendChild($root);
+        //description
+        $description = $doc->createElement("description");
+        $description->appendChild($doc->createCDATASection($template->getDescription()));
+        $root->appendChild($description);
 
-		//id
-		$id = $doc->createElement("id");
-		$id->appendChild($doc->createTextNode($template->getId()));
-		$root->appendChild($id);
+        //files
+        $files = $doc->createElement("files");
+        $root->appendChild($files);
 
-		//name
-		$name = $doc->createElement("name");
-		$name->appendChild($doc->createTextNode($template->getName()));
-		$root->appendChild($name);
+//      SOY2::import("util.CMSFileManager");
+        $siteRoot = UserInfoUtil::getSiteDirectory();
+        $siteRoot = str_replace("\\", "/", $siteRoot);
 
-		//type
-		$type = $doc->createElement("type");
-		$type->appendChild($doc->createTextNode($template->getPageType()));
-		$root->appendChild($type);
+        $siteUrl = UserInfoUtil::getSiteURL();
+        $tmpDir = $this->getTempDir();
 
-		//description
-		$description = $doc->createElement("description");
-		$description->appendChild($doc->createCDATASection($template->getDescription()));
-		$root->appendChild($description);
+        $fileReplaceList = array();
 
-		//files
-		$files = $doc->createElement("files");
-		$root->appendChild($files);
+//      foreach ($template->getFileList() as $key => $value) {
+//          $fileNode = $doc->createElement("file");
+//          $id = $value["id"];
+//
+//          try {
+//              $file = CMSFileManager::get($siteRoot, $value["path"]);
+//          } catch (Exception $e) {
+//              //todo エラーリストに追加
+//              continue;
+//          }
+//
+//          $newName = str_replace("/", "_", str_replace($siteRoot, "", $file->getPath()));
+//
+////      if(defined("SOYCMS_ASP_MODE")){
+////          $filePath = str_replace($siteUrl,"",$file->getUrl());
+////      }
+////      else{
+//          $oldPath = str_replace("\\", "/", $file->getPath());
+//          $filePath = str_replace($siteRoot, "", $oldPath);
+//          if ($filePath[0] != "/") {
+//              $filePath = "/" . $filePath;
+//          }
+////      }
+//
+//          $fileReplaceList[$file->getUrl()] = $filePath;
+//
+//          //ファイルのコピー
+//          copy($file->getPath(), $tmpDir . "/" . $newName);
+//
+//          $files->appendChild($fileNode);
+//
+//          //name
+//          $name = $doc->createElement("name");
+//          $name->appendChild($doc->createTextNode($newName));
+//          $fileNode->appendChild($name);
+//
+//           //path
+//          $path = $doc->createElement("path");
+//          $path->appendChild($doc->createTextNode($filePath));
+//          $fileNode->appendChild($path);
+//
+//         //description
+//          $description = $doc->createElement("description");
+//          $description->appendChild($doc->createCDATASection(@$value["description"]));
+//          $fileNode->appendChild($description);
+//      }
 
-		SOY2::import("util.CMSFileManager");
-		$siteRoot = UserInfoUtil::getSiteDirectory();
-		$siteRoot = str_replace("\\","/",$siteRoot);
+        //templates
+        $templates = $doc->createElement("templates");
+        $root->appendChild($templates);
+        $templateFileList = array();
 
-		$siteUrl = UserInfoUtil::getSiteURL();
-		$tmpDir = $this->getTempDir();
+        foreach ($template->getTemplate() as $key => $array) {
+            $templateNode = $doc->createElement("template");
+            $templates->appendChild($templateNode);
 
-		$fileReplaceList = array();
+            //id
+            $id = $doc->createElement("id");
+            $id->appendChild($doc->createTextNode($key));
+            $templateNode->appendChild($id);
 
-		foreach($template->getFileList() as $key => $value){
-			$fileNode = $doc->createElement("file");
-			$id = $value["id"];
+            //name
+            $name = $doc->createElement("name");
+            $name->appendChild($doc->createTextNode($array["name"]));
+            $templateNode->appendChild($name);
 
-			try{
-				$file = CMSFileManager::get($siteRoot, $value["path"]);
-			}catch(Exception $e){
-				//todo エラーリストに追加
-				continue;
-			}
+            //description
+            $description = $doc->createElement("description");
+            $description->appendChild($doc->createCDATASection(@$array["description"]));
+            $templateNode->appendChild($description);
 
-			$newName = str_replace("/","_",str_replace($siteRoot,"",$file->getPath()));
+            $templateFileList[] = $this->getTempDir() . "/" . $key;
+        }
 
-			if(defined("SOYCMS_ASP_MODE")){
-				$filePath = str_replace($siteUrl,"",$file->getUrl());
-			}else{
-				$oldPath = str_replace("\\","/",$file->getPath());
-				$filePath = str_replace($siteRoot,"",$oldPath);
-				if($filePath[0] != "/")$filePath = "/" . $filePath;
-			}
+        file_put_contents($this->getTempDir()."/manifest.xml", $doc->saveXml());
+        @chmod($this->getTempDir()."/manifest.xml", F_MODE_FILE);
 
-			$fileReplaceList[$file->getUrl()] = $filePath;
+        //zipファイルの作成
+        $logic = SOY2Logic::createInstance("logic.site.Template.TemplateLogic");
 
-			//ファイルのコピー
-			copy($file->getPath(),$tmpDir . "/" . $newName);
+        //テンプレート内部の相対パスを変更する
+        $logic->replaceURL($siteUrl, $templateFileList, $fileReplaceList);
 
-			$files->appendChild($fileNode);
+        try {
+            $zipFilePath = $logic->createTemplatePack($template->getId(), $tmpDir);
+        } catch (Exception $e) {
+            $this->addMessage("TEMPLATE_CREATE_ERROR");
+            return false;
+        }
 
-			//name
-			$name = $doc->createElement("name");
-			$name->appendChild($doc->createTextNode($newName));
-			$fileNode->appendChild($name);
+        $result = $logic->uploadTemplate(null, $zipFilePath);
 
-			//path
-			$path = $doc->createElement("path");
-			$path->appendChild($doc->createTextNode($filePath));
-			$fileNode->appendChild($path);
+        @unlink($zipFilePath);
 
-			//description
-			$description = $doc->createElement("description");
-			$description->appendChild($doc->createCDATASection(@$value["description"]));
-			$fileNode->appendChild($description);
+        $this->addMessage("TEMPLATE_CREATE_SUCCESS");
+        return true;
+    }
 
-		}
+    //前へが押された際の動作
+    public function checkBack()
+    {
+        return true;
+    }
 
-		//templates
-		$templates = $doc->createElement("templates");
-		$root->appendChild($templates);
-		$templateFileList = array();
+    public function getBackObject()
+    {
+        return "FileSettingStage";
+    }
 
-		foreach($template->getTemplate() as $key => $array){
+    public function getNextObject()
+    {
+        return "EndStage";
+    }
 
-			$templateNode = $doc->createElement("template");
-			$templates->appendChild($templateNode);
+    public function getNextString()
+    {
+        return CMSMessageManager::get("SOYCMS_CREATE");
+    }
 
-			//id
-			$id = $doc->createElement("id");
-			$id->appendChild($doc->createTextNode($key));
-			$templateNode->appendChild($id);
-
-			//name
-			$name = $doc->createElement("name");
-			$name->appendChild($doc->createTextNode($array["name"]));
-			$templateNode->appendChild($name);
-
-			//description
-			$description = $doc->createElement("description");
-			$description->appendChild($doc->createCDATASection(@$array["description"]));
-			$templateNode->appendChild($description);
-
-			$templateFileList[] = $this->getTempDir() . "/" . $key;
-		}
-
-		file_put_contents($this->getTempDir() . "/manifest.xml",$doc->saveXml());
-
-		//zipファイルの作成
-		$logic = SOY2Logic::createInstance("logic.site.Template.TemplateLogic");
-
-		//テンプレート内部の相対パスを変更する
-		$logic->replaceURL($siteUrl,$templateFileList,$fileReplaceList);
-
-		try{
-			$zipFilePath = $logic->createTemplatePack($template->getId(),$tmpDir);
-		}catch(Exception $e){
-			$this->addMessage("TEMPLATE_CREATE_ERROR");
-			return false;
-		}
-
-		$result = $logic->uploadTemplate(null,$zipFilePath);
-
-		@unlink($zipFilePath);
-
-		$this->addMessage("TEMPLATE_CREATE_SUCCESS");
-		return true;
-	}
-
-	//前へが押された際の動作
-	public function checkBack(){
-		return true;
-	}
-
-	public function getBackObject(){
-		return "FileSettingStage";
-	}
-
-	public function getNextObject(){
-		return "EndStage";
-	}
-
-	public function getNextString(){
-		return CMSMessageManager::get("SOYCMS_CREATE");
-	}
-
-	public function getBackString(){
-		return CMSMessageManager::get("SOYCMS_BACK");
-	}
+    public function getBackString()
+    {
+        return CMSMessageManager::get("SOYCMS_BACK");
+    }
 }
 
-class TemplateList extends HTMLList{
+class TemplateList extends HTMLList
+{
+    protected function populateItem($entity)
+    {
+        $this->createAdd("template_list_name", "HTMLLabel", array(
+        "text" => $entity["name"]
+        ));
 
-	protected function populateItem($entity){
-		$this->createAdd("template_list_name","HTMLLabel",array(
-			"text" => $entity["name"]
-		));
-
-		$this->createAdd("template_list_description","HTMLLabel",array(
-			"text" => @$entity["description"]
-		));
-	}
-
+        $this->createAdd("template_list_description", "HTMLLabel", array(
+        "text" => @$entity["description"]
+        ));
+    }
 }
 
-class FileList extends HTMLList{
-
-	protected function populateItem($entity){
-		$this->createAdd("add_file_url","HTMLLink",array(
-				"link" => $entity["url"],
-				"text" => $entity["path"],
-				"target" => "_blank"
-		));
-		$this->createAdd("add_file_description","HTMLLabel",array(
-				"text" => $entity["description"],
-		));
-	}
-
+class FileList extends HTMLList
+{
+    protected function populateItem($entity)
+    {
+        $this->createAdd("add_file_url", "HTMLLink", array(
+        "link" => $entity["url"],
+        "text" => $entity["path"],
+        "target" => "_blank"
+        ));
+        $this->createAdd("add_file_description", "HTMLLabel", array(
+                "text" => $entity["description"],
+        ));
+    }
 }

@@ -1,12 +1,13 @@
 <?php
-
-error_reporting(0); // Set E_ALL for debuging
+//error_reporting(0); // Set E_ALL for debuging
 
 //ログインしていなければelfinderを実行させない
-include_once("../../../../common/common.inc.php");
+include_once(dirname(dirname(dirname(dirname(__DIR__))))."/common/common.inc.php");
 SOY2::import("util.UserInfoUtil");
 
-if(!UserInfoUtil::isLoggined()) exit;
+if (!UserInfoUtil::isLoggined()) {
+    exit;
+}
 
 // // Optional exec path settings (Default is called with command name only)
 // define('ELFINDER_TAR_PATH',      '/PATH/TO/tar');
@@ -138,95 +139,101 @@ elFinder::$netDrivers['ftp'] = 'FTP';
  * @param  string    $relpath file path relative to volume root directory started with directory separator
  * @return bool|null
  **/
-function access($attr, $path, $data, $volume, $isDir, $relpath) {
-	$basename = basename($path);
-	return $basename[0] === '.'                  // if file/folder begins with '.' (dot)
-			 && strlen($relpath) !== 1           // but with out volume root
-		? !($attr == 'read' || $attr == 'write') // set read+write to false, other (locked+hidden) set to true
-		:  null;                                 // else elFinder decide it itself
-}
-if(isset($_GET["site_id"])){
-	//SOY CMSとの接続:サイトのパスを取得
-	SOY2::import("domain.admin.Site");
-	SOY2::import("domain.admin.SiteDAO");
-
-	include_once(SOY2::RootDir() . "/config/db/" . SOYCMS_DB_TYPE . ".php");
-	SOY2DAOConfig::Dsn(ADMIN_DB_DSN);
-	SOY2DAOConfig::user(ADMIN_DB_USER);
-	SOY2DAOConfig::pass(ADMIN_DB_PASS);
-	try{
-		$site = SOY2DAOFactory::create("admin.SiteDAO")->getBySiteId($_GET["site_id"]);
-	}catch(Exception $e){
-		exit;
-	}
-
-	$path = $site->getPath();
-	$url = $site->getUrl();
-
-	//URLで末尾にサイトIDが無い場合は付与する。ダメな対応かもしれない
-	if(!strpos($url, "/" . $_GET["site_id"] . "/")){
-		$url = rtrim($url, "/") . "/" . $_GET["site_id"] . "/";
-	}
-}else if(isset($_GET["shop_id"])){
-	//SOY Shopとの接続:サイトのパスを取得
-	$shopId = strtr($_GET["shop_id"], array("." => "", "/" => "", "\\" => "", "\0" => ""));//余計な文字列は削除
-	$shopConfigFilePath = preg_replace('/\/soycms$/', "/soyshop", dirname(dirname(dirname(dirname(__FILE__))))) . "/webapp/conf/shop/" . $shopId . ".conf.php";
-	if(!file_exists($shopConfigFilePath)) exit;
-	//if(!file_exists(dirname(dirname(dirname(dirname($shopConfigFilePath)))). "/" . SOYCMS_SYSTEM_DIRECTORY")) exit;//soyshop/webapp/conf/shop/shopid.conf.phpでなければ終了
-
-	include_once($shopConfigFilePath);
-
-	$path = SOYSHOP_SITE_DIRECTORY;
-	$url = SOYSHOP_SITE_URL;
+function access($attr, $path, $data, $volume, $isDir, $relpath)
+{
+    $basename = basename($path);
+    return $basename[0] === '.'                  // if file/folder begins with '.' (dot)
+             && strlen($relpath) !== 1           // but with out volume root
+        ? !($attr == 'read' || $attr == 'write') // set read+write to false, other (locked+hidden) set to true
+        :  null;                                 // else elFinder decide it itself
 }
 
-if(file_exists(SOY2::RootDir() . "/config/upload.config.php")){
-	include_once(SOY2::RootDir() . "/config/upload.config.php");
+if (isset($_GET["site_id"])) {
+    $siteId = $_GET["site_id"];
+
+    //SOY CMSとの接続:サイトのパスを取得
+    SOY2::import("domain.admin.Site");
+    SOY2::import("domain.admin.SiteDAO");
+
+    include_once(SOY2::RootDir() . "/config/db/" . SOYCMS_DB_TYPE . ".php");
+    SOY2DAOConfig::Dsn(ADMIN_DB_DSN);
+    SOY2DAOConfig::user(ADMIN_DB_USER);
+    SOY2DAOConfig::pass(ADMIN_DB_PASS);
+    try {
+        $site = SOY2DAOFactory::create("admin.SiteDAO")->getBySiteId($siteId);
+    } catch (Exception $e) {
+        exit;
+    }
+
+    $path = $site->getPath();
+    $url = $site->getUrl();
+    //URLで末尾にサイトIDが無い場合は付与する。ダメな対応かもしれない
+    if (!strpos($url, "/" . $siteId . "/")) {
+        $url = rtrim($url, "/") . "/" . $siteId . "/";
+    }
+    $tmbPath = dirname(SOYCMS_COMMON_DIR) . "/soycms/tmb/" . $siteId;
+} elseif (isset($_GET["shop_id"])) {
+    $shopId = $_GET["shop_id"];
+
+    //SOY Shopとの接続:サイトのパスを取得
+    $shopId = strtr($shopId, array("." => "", "/" => "", "\\" => "", "\0" => ""));//余計な文字列は削除
+    $shopConfigFilePath = preg_replace('/\/soycms$/', "/soyshop", dirname(dirname(dirname(dirname(__FILE__))))) . "/webapp/conf/shop/" . $shopId . ".conf.php";
+    if (!file_exists($shopConfigFilePath)) {
+        exit;
+    }
+    //if(!file_exists(dirname(dirname(dirname(dirname($shopConfigFilePath)))). "/" . SOYCMS_SYSTEM_DIRECTORY")) exit;//soyshop/webapp/conf/shop/shopid.conf.phpでなければ終了
+
+    include_once($shopConfigFilePath);
+
+    $path = SOYSHOP_SITE_DIRECTORY;
+    $url = SOYSHOP_SITE_URL;
+    $tmbPath = dirname(SOYCMS_COMMON_DIR) . "/soyshop/tmb/" . $shopId;
 }
-if(!isset($mimetypes) || !is_array($mimetypes)){
-	$mimetypes = array('image/x-ms-bmp', 'image/gif', 'image/jpeg', 'image/png', 'image/x-icon', 'text/plain', "text/css", "application/pdf");
-}
+$tmbURL = str_replace($_SERVER["DOCUMENT_ROOT"], "/", $tmbPath);
 
 // Documentation for connector options:
 // https://github.com/Studio-42/elFinder/wiki/Connector-configuration-options
 $opts = array(
-	// 'debug' => true,
-	'roots' => array(
-		// Items volume
-		array(
-			'driver'        => 'LocalFileSystem',           // driver for accessing file system (REQUIRED)
-			'path'          => $path,                 // path to files (REQUIRED)
-			'URL'           => $url, // URL to files (REQUIRED)
-			'trashHash'     => 't1_Lw',                     // elFinder's hash of trash folder
-			'winHashFix'    => DIRECTORY_SEPARATOR !== '/', // to make hash same to Linux one on windows too
-			'uploadDeny'    => array('all'),                // All Mimetypes not allowed to upload
-			'uploadAllow'   => $mimetypes, // Mimetype `image` and `text/plain` allowed to upload
-			'uploadOrder'   => array('deny', 'allow'),      // allowed Mimetype `image` and `text/plain` only
-			'accessControl' => 'access',                     // disable and hide dot starting files (OPTIONAL)
-			'attributes' => array(
-					//フロントコントローラー
-					array(
-							'pattern' => '/\\.php(\\.old(\\.[0-9][0-9])?)?$/',
-							'read' => false,
-							'write' => false,
-							'locked' => true,
-							'hidden' => true,
-					),
-			)
-		),
-		// Trash volume
-		array(
-			'id'            => '1',
-			'driver'        => 'Trash',
-			'path'          => '../files/.trash/',
-			'tmbURL'        => dirname($_SERVER['PHP_SELF']) . '/../files/.trash/.tmb/',
-			'winHashFix'    => DIRECTORY_SEPARATOR !== '/', // to make hash same to Linux one on windows too
-			'uploadDeny'    => array('all'),                // Recomend the same settings as the original volume that uses the trash
-			'uploadAllow'   => array('image/x-ms-bmp', 'image/gif', 'image/jpeg', 'image/png', 'image/x-icon', 'text/plain', 'text/css', "application/pdf"), // Same as above
-			'uploadOrder'   => array('deny', 'allow'),      // Same as above
-			'accessControl' => 'access',                    // Same as above
-		),
-	)
+    // 'debug' => true,
+    'roots' => array(
+        // Items volume
+        array(
+            'driver'        => 'LocalFileSystem',           // driver for accessing file system (REQUIRED)
+            'path'          => $path,                       // path to files (REQUIRED)
+            'URL'           => $url,                        // URL to files (REQUIRED)
+            'tmbPath'       => $tmbPath,                    // directory for thumbnails
+            'tmbPathMode'   => F_MODE_DIR,                  // mode to create thumbnails dir
+            'tmbURL'        => $tmbURL,                     // thumbnails dir URL. Set it if store thumbnails outside root directory
+//          'trashHash'     => 't1_Lw',                     // elFinder's hash of trash folder
+            'winHashFix'    => DIRECTORY_SEPARATOR !== '/', // to make hash same to Linux one on windows too
+            'uploadDeny'    => array('all'),                // All Mimetypes not allowed to upload
+            'uploadAllow'   => array('image/x-ms-bmp', 'image/gif', 'image/jpeg', 'image/png', 'image/x-icon', 'text/plain', "text/css", "application/pdf"), // Mimetype `image` and `text/plain` allowed to upload
+            'uploadOrder'   => array('deny', 'allow'),      // allowed Mimetype `image` and `text/plain` only
+            'accessControl' => 'access',                    // disable and hide dot starting files (OPTIONAL)
+            'attributes' => array(
+                    //フロントコントローラー
+                    array(
+                            'pattern' => '/\\.php(\\.old(\\.[0-9][0-9])?)?$/',
+                            'read' => false,
+                            'write' => false,
+                            'locked' => true,
+                            'hidden' => true,
+                    ),
+            )
+        ),
+//      // Trash volume
+//      array(
+//          'id'            => '1',
+//          'driver'        => 'Trash',
+//          'path'          => '../files/.trash/',
+//          'tmbURL'        => dirname($_SERVER['PHP_SELF']) . '/../files/.trash/.tmb/',
+//          'winHashFix'    => DIRECTORY_SEPARATOR !== '/', // to make hash same to Linux one on windows too
+//          'uploadDeny'    => array('all'),                // Recomend the same settings as the original volume that uses the trash
+//          'uploadAllow'   => array('image/x-ms-bmp', 'image/gif', 'image/jpeg', 'image/png', 'image/x-icon', 'text/plain', 'text/css', "application/pdf"), // Same as above
+//          'uploadOrder'   => array('deny', 'allow'),      // Same as above
+//          'accessControl' => 'access',                    // Same as above
+//      ),
+    )
 );
 
 // run elFinder

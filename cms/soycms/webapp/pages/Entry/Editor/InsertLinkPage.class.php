@@ -1,137 +1,139 @@
 <?php
 
-class InsertLinkPage extends CMSWebPageBase{
+class InsertLinkPage extends CMSWebPageBase
+{
+    public function __construct($arg)
+    {
+        $old = $this->changeDsn();
+        $logic = SOY2Logic::createInstance("logic.admin.Site.SiteLogic");
+        $sites = $logic->getSiteOnly();
+        if (isset($arg[0])) {
+            $site = $logic->getById($arg[0]);
+            if ((null===$site)) {
+                $site = new Site();
+            }
 
-	function __construct($arg) {
-		$old = $this->changeDsn();
-		$logic = SOY2Logic::createInstance("logic.admin.Site.SiteLogic");
-		$sites = $logic->getSiteOnly();
-		if(isset($arg[0])){
+            $this->changeDsn($arg[0]);
+        } else {
+            $this->restoreDsn($old);
+            $site = new Site();
+        }
+        parent::__construct();
+        $this->createAdd("current_site", "HTMLLabel", array(
+            "text"=>" (".$site->getSiteName().")",
+            "visible"=>isset($arg[0])
+        ));
 
-			$site = $logic->getById($arg[0]);
-			if(is_null($site)){
-				$site = new Site();
-			}
+        $links = array();
+        $links['null_insert_link'] = CMSMessageManager::get("SOYCMS_SELECT_LINK_TYPE");
 
-			$this->changeDsn($arg[0]);
-		}else{
-			$this->restoreDsn($old);
-			$site = new Site();
-		}
-		parent::__construct();
-		$this->createAdd("current_site","HTMLLabel",array(
-			"text"=>" (".$site->getSiteName().")",
-			"visible"=>isset($arg[0])
-		));
+        foreach ($this->getParentPageList() as $key => $page) {
+            $links[$key] = $page;
+        }
+//      $links = array_merge($links,$this->getParentPageList());
 
-		$links = array();
-		$links['null_insert_link'] = CMSMessageManager::get("SOYCMS_SELECT_LINK_TYPE");
+        $links['foreign_address'] = CMSMessageManager::get("SOYCMS_INSERT_EXTERNAL_LINK");
 
-		foreach($this->getParentPageList() as $key => $page){
-			$links[$key] = $page;
-		}
-		//$links = array_merge($links,$this->getParentPageList());
+        //他サイトへのリンクはASPでは使用不可
+        if (/*!defined("SOYCMS_ASP_MODE") ||*/ count($sites)>1) {
+            $links['foreign_site'] = CMSMessageManager::get("SOYCMS_ANOTHER_SOYCMS_WEBSITE_LINK");
+        }
 
-		$links['foreign_address'] = CMSMessageManager::get("SOYCMS_INSERT_EXTERNAL_LINK");
+        $this->createAdd("insert_link", "HTMLSelect", array(
+            "indexOrder"=>true,
+            "options"=>$links,
+            "name"=>"insert_select",
+            "selected"=>"foreign_address"
+        ));
 
-		//他サイトへのリンクはASPでは使用不可
-		if(!defined("SOYCMS_ASP_MODE") || count($sites)>1) $links['foreign_site'] = CMSMessageManager::get("SOYCMS_ANOTHER_SOYCMS_WEBSITE_LINK");
+        $blogList = $this->blogPageList();
 
-		$this->createAdd("insert_link","HTMLSelect",array(
-			"indexOrder"=>true,
-			"options"=>$links,
-			"name"=>"insert_select",
-			"selected"=>"foreign_address"
-		));
+        $this->createAdd("otherdata", "HTMLScript", array(
+            "type" => "text/JavaScript",
+            "script" => 'var page_list = '.json_encode($blogList).';' .
+                    'var blogLinkAddress = "'.SOY2PageController::createLink("Entry.Editor.InsertBlogLink").'";'.
+//                  'var mobileLinkAddress = "'.SOY2PageController::createLink("Entry.Editor.InsertMobileLink").'";'.
+                    'var foreignLinkAddress = "'.SOY2PageController::createLink("Entry.Editor.InsertSiteLink").'";'.
+                    'var siteId = "'.((isset($arg[0]))? $arg[0]: '').'";'
+        ));
 
+        $this->createAdd("create_label", "HTMLForm");
 
-		$blogList = $this->blogPageList();
+        $this->createAdd("jqueryjs", "HTMLModel", array(
+            "type" => "text/JavaScript",
+            "src" => SOY2PageController::createRelativeLink("./js/jquery.js")
+        ));
 
-		$this->createAdd("otherdata","HTMLScript",array(
-			"type" => "text/JavaScript",
-			"script" => 'var page_list = '.json_encode($blogList).';' .
-					'var blogLinkAddress = "'.SOY2PageController::createLink("Entry.Editor.InsertBlogLink").'";'.
-					'var mobileLinkAddress = "'.SOY2PageController::createLink("Entry.Editor.InsertMobileLink").'";'.
-					'var foreignLinkAddress = "'.SOY2PageController::createLink("Entry.Editor.InsertSiteLink").'";'.
-					'var siteId = "'.((isset($arg[0]))? $arg[0]: '').'";'
-		));
+        $this->createAdd("file_manager_iframe", "HTMLModel", array(
+            "target_src"=>SOY2PageController::createLink("FileManager.File")
+        ));
 
+        if (is_array(@$old)) {
+            $this->restoreDsn($old);
+        }
+    }
 
-		$this->createAdd("create_label","HTMLForm");
+    public function getParentPageList()
+    {
+        return SOY2ActionFactory::createInstance("Page.PageListAction", array(
+            "buildTree" => true
+        ))->run()->getAttribute("PageTree");
+    }
 
-		$this->createAdd("jqueryjs","HTMLModel",array(
-			"type" => "text/JavaScript",
-			"src" => SOY2PageController::createRelativeLink("./js/jquery.js")
-		));
+    /**
+     * ページのid,uri,title,pagetypeのArrayを作る
+     */
+    public function blogPageList()
+    {
+        $pages =  $this->run("Page.ListAction")->getAttribute("list");
 
-		$this->createAdd("file_manager_iframe","HTMLModel",array(
-			"target_src"=>SOY2PageController::createLink("FileManager.File")
-		));
+        $ret_val = array();
+        foreach ($pages as $page) {
+            $obj = new stdClass();
+            $obj->id = $page->getId();
+            $obj->title = $page->getTitle();
+            $obj->uri = $page->getUri();
+            $obj->pageType  = $page->getPageType();
+            $ret_val[$page->getId()] = $obj;
+        }
 
-		if(is_array(@$old)){
-			$this->restoreDsn($old);
-		}
+        return $ret_val;
+    }
 
-	}
+    public function changeDsn($siteId = null)
+    {
+        $oldDsn = SOY2DAOConfig::Dsn();
+        $oldUser = SOY2DAOConfig::user();
+        $oldPass = SOY2DAOConfig::pass();
 
-	function getParentPageList(){
-		return SOY2ActionFactory::createInstance("Page.PageListAction",array(
-			"buildTree" => true
-		))->run()->getAttribute("PageTree");
-	}
+        SOY2DAOConfig::Dsn(ADMIN_DB_DSN);
 
-	/**
-	 * ページのid,uri,title,pagetypeのArrayを作る
-	 */
-	function blogPageList(){
-		$pages =  $this->run("Page.ListAction")->getAttribute("list");
+        if ($siteId == null) {
+            return array("dsn"=>$oldDsn,
+            "user"=>$oldUser,
+            "pass"=>$oldPass);
+        }
 
-		$ret_val = array();
-		foreach($pages as $page){
-			$obj = new stdClass();
-			$obj->id = $page->getId();
-			$obj->title = $page->getTitle();
-			$obj->uri = $page->getUri();
-			$obj->pageType  = $page->getPageType();
-			$ret_val[$page->getId()] = $obj;
-		}
+        try {
+            $dao = SOY2DAOFactory::create("admin.SiteDAO");
+            $site = $dao->getById($siteId);
+            $this->siteRoot = $site->getUrl();
 
-		return $ret_val;
-	}
+            SOY2DAOConfig::Dsn($site->getDataSourceName());
+        } catch (Exception $e) {
+        }
 
-	function changeDsn($siteId = null){
-		$oldDsn = SOY2DAOConfig::Dsn();
-		$oldUser = SOY2DAOConfig::user();
-		$oldPass = SOY2DAOConfig::pass();
+        return array(
+            "dsn"=>$oldDsn,
+            "user"=>$oldUser,
+            "pass"=>$oldPass
+        );
+    }
 
-		SOY2DAOConfig::Dsn(ADMIN_DB_DSN);
-
-		if($siteId == null){
-			return array("dsn"=>$oldDsn,
-			"user"=>$oldUser,
-			"pass"=>$oldPass);
-		}
-
-		try{
-			$dao = SOY2DAOFactory::create("admin.SiteDAO");
-			$site = $dao->getById($siteId);
-			$this->siteRoot = $site->getUrl();
-
-			SOY2DAOConfig::Dsn($site->getDataSourceName());
-		}catch(Exception $e){
-
-		}
-
-		return array(
-			"dsn"=>$oldDsn,
-			"user"=>$oldUser,
-			"pass"=>$oldPass
-		);
-	}
-
-	function restoreDsn($array){
-		SOY2DAOConfig::Dsn($array["dsn"]);
-		SOY2DAOConfig::user($array["user"]);
-		SOY2DAOConfig::pass($array["pass"]);
-	}
+    public function restoreDsn($array)
+    {
+        SOY2DAOConfig::Dsn($array["dsn"]);
+        SOY2DAOConfig::user($array["user"]);
+        SOY2DAOConfig::pass($array["pass"]);
+    }
 }

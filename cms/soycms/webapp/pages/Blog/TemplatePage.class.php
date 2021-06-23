@@ -1,188 +1,194 @@
 <?php
 
-class TemplatePage extends CMSWebPageBase{
+class TemplatePage extends CMSWebPageBase
+{
+    public $id;
+    public $mode;
 
-	var $id;
-	var $mode;
+    public function doPost()
+    {
+        if (soy2_check_token()) {
+            $result = $this->run("Blog.UpdateTemplateAction", array(
+            "id"=>$this->id,
+            "mode"=>$this->mode
+            ));
 
-	function doPost(){
-		if(soy2_check_token()){
+            if ($result == SOY2ACtion::SUCCESS) {
+                  $this->addMessage("BLOG_TEMPLATE_UPDATE_SUCCESS");
+            } else {
+                $this->addErrorMessage("BLOG_TEMPLATE_UPDATE_FAILED");
+            }
+        }
 
-			$result = $this->run("Blog.UpdateTemplateAction",array(
-				"id"=>$this->id,
-				"mode"=>$this->mode
-			));
+        $this->jump("Blog.Template.".$this->id.".".$this->mode);
+    }
 
-			if($result == SOY2ACtion::SUCCESS){
-				$this->addMessage("BLOG_TEMPLATE_UPDATE_SUCCESS");
-			}else{
-				$this->addErrorMessage("BLOG_TEMPLATE_UPDATE_FAILED");
-			}
+    public function __construct($args)
+    {
+        $this->id = $args[0];
+        $this->mode = @$args[1];
 
-		}
+        if (!$this->mode) {
+            $this->mode = "top";
+        }
 
-		$this->jump("Blog.Template.".$this->id.".".$this->mode);
-	}
+        parent::__construct();
 
-	function __construct($args) {
+        $result = $this->run("Blog.DetailAction", array("id"=>$this->id));
+        if (!$result->success()) {
+            $this->addMessage("PAGE_DETAIL_GET_FAILED");
+            $this->jump("Page");
+            exit;
+        }
 
-		$this->id = $args[0];
-		$this->mode = @$args[1];
+        $page = $result->getAttribute("Page");
 
-		if(!$this->mode)$this->mode = "top";
+        //テンプレート別の動作
+        switch ($this->mode) {
+            case "entry":
+                $templateTypeText = CMSMessageManager::get("SOYCMS_ENTRY");
+                $template = $page->getEntryTemplate();
+                break;
+            case "popup":
+                $templateTypeText = CMSMessageManager::get("SOYCMS_POPUPCOMMENT");
+                $template = $page->getPopUpTemplate();
+                break;
+            case "top":
+                $templateTypeText = CMSMessageManager::get("SOYCMS_BLOG_TOPPAGE");
+                $template = $page->getTopTemplate();
+                break;
+            case "archive":
+            default:
+                $templateTypeText = CMSMessageManager::get("SOYCMS_BLOG_ARCHIVEPAGE");
+                $template = $page->getArchiveTemplate();
+        }
 
-		parent::__construct();
+        //ブログメニュー
+        $this->createAdd("BlogMenu", "Blog.BlogMenuPage", array(
+            "arguments" => array($this->id)
+        ));
 
-		$result = $this->run("Blog.DetailAction",array("id"=>$this->id));
-		if(!$result->success()){
-			$this->addMessage("PAGE_DETAIL_GET_FAILED");
-			$this->jump("Page");
-			exit;
-		}
+        //テンプレートの種類を選択
+        $this->createAdd("template_type", "HTMLLabel", array(
+            "text" => $templateTypeText
+        ));
 
-		$page = $result->getAttribute("Page");
+        //ブログ名
+        $this->createAdd("blog_name", "HTMLLabel", array(
+            "text" => $page->getTitle()
+        ));
 
-		//テンプレート別の動作
-		switch($this->mode){
-			case "entry":
-				$templateTypeText = CMSMessageManager::get("SOYCMS_ENTRY");
-				$template = $page->getEntryTemplate();
-				break;
-			case "popup":
-				$templateTypeText = CMSMessageManager::get("SOYCMS_POPUPCOMMENT");
-				$template = $page->getPopUpTemplate();
-				break;
-			case "top":
-				$templateTypeText = CMSMessageManager::get("SOYCMS_BLOG_TOPPAGE");
-				$template = $page->getTopTemplate();
-				break;
-			case "archive":
-			default:
-				$templateTypeText = CMSMessageManager::get("SOYCMS_BLOG_ARCHIVEPAGE");
-				$template = $page->getArchiveTemplate();
-		}
+        //Editorの読み込み
+        $this->addScript("TemplateEditor", array(
+            "src" => SOY2PageController::createRelativeLink("./js/editor/template_editor.js")
+        ));
 
-		//ブログメニュー
-		$this->createAdd("BlogMenu","Blog.BlogMenuPage",array(
-			"arguments" => array($this->id)
-		));
+        //見出しに現在編集しているページ名を表示
+        $this->createAdd("page_name", "HTMLLabel", array("text"=>$page->getTitle()));
+//      $this->addScript("cssmenu",array(
+//          "src" => SOY2PageController::createRelativeLink("js/editor/cssMenu.js")
+//      ));
 
-		//テンプレートの種類を選択
-		$this->createAdd("template_type","HTMLLabel",array(
-			"text" => $templateTypeText
-		));
+        $this->addScript("siteinfo", array(
+        "script"=>'var siteId="'.UserInfoUtil::getSite()->getSiteId().'";' .
+         'var siteURL = "'.UserInfoUtil::getSiteUrl().'";'
+        ));
 
-		//ブログ名
-		$this->createAdd("blog_name","HTMLLabel",array(
-			"text" => $page->getTitle()
-		));
+//      //CSS保存先URLをJavaScriptに埋め込みます
+//      $this->addScript("cssurl", array(
+//      "script"=>//'var cssURL = "'.SOY2PageController::createLink("Page.Editor").'";' .
+//          'var siteId="'.UserInfoUtil::getSite()->getSiteId().'";' .
+//          //'var editorLink = "'.SOY2PageController::createLink("Page.Editor").'";'.
+//          'var siteURL = "'.UserInfoUtil::getSiteUrl().'";'
+//      ));
 
-		//Editorの読み込み
-		$this->addScript("TemplateEditor",array(
-			"src" => SOY2PageController::createRelativeLink("./js/editor/template_editor.js")
-		));
+//      //絵文字入力用
+//      $this->addScript("mceSOYCMSEmojiURL",array(
+//          "script" => 'var mceSOYCMSEmojiURL = "'.SOYCMSEmojiUtil::getEmojiInputPageUrl().'";',
+//          "visible" => SOYCMSEmojiUtil::isInstalled(),
+//      ));
 
-		//見出しに現在編集しているページ名を表示
-		$this->createAdd("page_name","HTMLLabel",array("text"=>$page->getTitle()));
-		$this->addScript("cssmenu",array(
-				"src" => SOY2PageController::createRelativeLink("js/editor/cssMenu.js")
-			));
+        HTMLHead::addLink("editorcss", array(
+            "rel" => "stylesheet",
+            "type" => "text/css",
+            "href" => SOY2PageController::createRelativeLink("./css/editor/editor.css")
+        ));
 
-		//CSS保存先URLをJavaScriptに埋め込みます
-		$this->addScript("cssurl",array(
-			"script"=>'var cssURL = "'.SOY2PageController::createLink("Page.Editor").'";' .
-					  'var siteId="'.UserInfoUtil::getSite()->getSiteId().'";' .
-					  'var editorLink = "'.SOY2PageController::createLink("Page.Editor").'";'.
-					  'var siteURL = "'.UserInfoUtil::getSiteUrl().'";'
-		));
+        $this->addScript("PanelManager.js", array(
+            "src" => SOY2PageController::createRelativeLink("./js/cms/PanelManager.js")
+        ));
 
-		//絵文字入力用
-		$this->addScript("mceSOYCMSEmojiURL",array(
-			"script" => 'var mceSOYCMSEmojiURL = "'.SOYCMSEmojiUtil::getEmojiInputPageUrl().'";',
-			"visible" => SOYCMSEmojiUtil::isInstalled(),
-		));
+        HTMLHead::addLink("form", array(
+            "rel" => "stylesheet",
+            "type" => "text/css",
+            "href" => SOY2PageController::createRelativeLink("./js/cms/PanelManager.css")
+        ));
 
-		HTMLHead::addLink("editorcss",array(
-				"rel" => "stylesheet",
-				"type" => "text/css",
-				"href" => SOY2PageController::createRelativeLink("./css/editor/editor.css")
-		));
+        //template保存のボタン追加
+        $this->createAdd("save_template_button", "HTMLModel", array(
+            "id" => "save_template_button",
+            "onclick" => "javascript:save_template('".SOY2PageController::createLink("Page.Editor.SaveTemplate." . $page->getId() . "/" . $this->mode)."',this);",
+            "visible" => function_exists("json_encode")
+        ));
 
-		$this->addScript("PanelManager.js",array(
-			"src" => SOY2PageController::createRelativeLink("./js/cms/PanelManager.js")
-		));
+//      //CSS保存のボタン
+//      $this->createAdd("save_css_button", "HTMLModel", array(
+//          "visible" => function_exists("json_encode")
+//      ));
 
-		HTMLHead::addLink("form",array(
-			"rel" => "stylesheet",
-			"type" => "text/css",
-			"href" => SOY2PageController::createRelativeLink("./js/cms/PanelManager.css")
-		));
+        //フォームの追加
+        $this->createAdd("template", "HTMLTextArea", array(
+            "name" => "template",
+            "value" => $template
+        ));
 
-		//template保存のボタン追加
-		$this->createAdd("save_template_button","HTMLModel",array(
-			"id" => "save_template_button",
-			"onclick" => "javascript:save_template('".SOY2PageController::createLink("Page.Editor.SaveTemplate." . $page->getId() . "/" . $this->mode)."',this);",
-			"visible" => function_exists("json_encode")
-		));
+//      $this->createAdd("template_editor","HTMLModel",array(
+//          "_src"=>SOY2PageController::createRelativeLink("./js/editor/template_editor.html"),
+//      ));
 
-		//CSS保存のボタン
-		$this->createAdd("save_css_button", "HTMLModel", array(
-			"visible" => function_exists("json_encode")
-		));
+        $this->createAdd("page_detail_form", "HTMLForm", array(
+            "name" => "main_form"
+        ));
+        //フォームの追加　ここまで
 
-		//フォームの追加
-		$this->createAdd("template","HTMLTextArea",array(
-			"name" => "template",
-			"value" => $template
-		));
+        //ブロック
+        $this->createAdd("page_block_info", "Block.BlockListPage", array(
+            "pageId" => $this->id
+        ));
 
-		$this->createAdd("template_editor","HTMLModel",array(
-			"_src"=>SOY2PageController::createRelativeLink("./js/editor/template_editor.html"),
-		));
+        //以下、テンプレートのリンク
+        $this->createAdd("blog_template_link_top", "HTMLLink", array(
+            "link" => SOY2PageController::createLink("Blog.Template.".$this->id.".top"),
+        ));
+        $this->addModel("blog_template_link_top_wrapper", array(
+            "class" => ($this->mode == "top") ? "active" : ""
+        ));
+        $this->createAdd("blog_template_link_archive", "HTMLLink", array(
+            "link" => SOY2PageController::createLink("Blog.Template.".$this->id.".archive"),
+        ));
+        $this->addModel("blog_template_link_archive_wrapper", array(
+            "class" => ($this->mode == "archive") ? "active" : ""
+        ));
+        $this->createAdd("blog_template_link_entry", "HTMLLink", array(
+            "link" => SOY2PageController::createLink("Blog.Template.".$this->id.".entry"),
+        ));
+        $this->addModel("blog_template_link_entry_wrapper", array(
+            "class" => ($this->mode == "entry") ? "active" : ""
+        ));
+        $this->createAdd("blog_template_link_popup", "HTMLLink", array(
+            "link" => SOY2PageController::createLink("Blog.Template.".$this->id.".popup"),
+        ));
+        $this->addModel("blog_template_link_popup_wrapper", array(
+            "class" => ($this->mode == "popup") ? "active" : ""
+        ));
 
-		$this->createAdd("page_detail_form","HTMLForm",array(
-			"name" => "main_form"
-		));
-		//フォームの追加　ここまで
-
-		//ブロック
-		$this->createAdd("page_block_info","Block.BlockListPage",array(
-			"pageId" => $this->id
-		));
-
-		//以下、テンプレートのリンク
-		$this->createAdd("blog_template_link_top","HTMLLink",array(
-				"link" => SOY2PageController::createLink("Blog.Template.".$this->id.".top"),
-		));
-		$this->addModel("blog_template_link_top_wrapper",array(
-				"class" => ($this->mode == "top") ? "active" : ""
-		));
-		$this->createAdd("blog_template_link_archive","HTMLLink",array(
-				"link" => SOY2PageController::createLink("Blog.Template.".$this->id.".archive"),
-		));
-		$this->addModel("blog_template_link_archive_wrapper",array(
-				"class" => ($this->mode == "archive") ? "active" : ""
-		));
-		$this->createAdd("blog_template_link_entry","HTMLLink",array(
-				"link" => SOY2PageController::createLink("Blog.Template.".$this->id.".entry"),
-		));
-		$this->addModel("blog_template_link_entry_wrapper",array(
-				"class" => ($this->mode == "entry") ? "active" : ""
-		));
-		$this->createAdd("blog_template_link_popup","HTMLLink",array(
-				"link" => SOY2PageController::createLink("Blog.Template.".$this->id.".popup"),
-		));
-		$this->addModel("blog_template_link_popup_wrapper",array(
-				"class" => ($this->mode == "popup") ? "active" : ""
-		));
-
-		CMSToolBox::enableFileTree();
-		CMSToolBox::addLink(CMSMessageManager::get("SOYCMS_TEMPLATE_HISTORY"),SOY2PageController::createLink("Blog.TemplateHistory.".$this->id.".".$this->mode),true);
-		CMSToolBox::addLink(CMSMessageManager::get("SOYCMS_DYNAMIC_EDIT"),SOY2PageController::createLink("Page.Preview.".$this->id),false,"this.target = '_blank'");
-		CMSToolBox::addLink(CMSMessageManager::get("SOYCMS_DOWNLOAD_TEMPLATE"),SOY2PageController::createLink("Blog.ExportTemplate.".$this->id.".".$this->mode),false);
-		if(CMSUtil::isPageTemplateEnabled()){
-			CMSToolBox::addLink(CMSMessageManager::get("SOYCMS_APPLY_WEBPAGE_TEMPLATEPACK"),SOY2PageController::createLink("Blog.ApplyTemplate.".$page->getId().".".$this->mode),true);
-		}
-		CMSToolBox::addPageJumpBox();
-	}
+        CMSToolBox::enableFileTree();
+        CMSToolBox::addLink(CMSMessageManager::get("SOYCMS_TEMPLATE_HISTORY"), SOY2PageController::createLink("Blog.TemplateHistory.".$this->id.".".$this->mode), true);
+//      CMSToolBox::addLink(CMSMessageManager::get("SOYCMS_DYNAMIC_EDIT"),SOY2PageController::createLink("Page.Preview.".$this->id),false,"this.target = '_blank'");
+        CMSToolBox::addLink(CMSMessageManager::get("SOYCMS_DOWNLOAD_TEMPLATE"), SOY2PageController::createLink("Blog.ExportTemplate.".$this->id.".".$this->mode), false);
+        if (CMSUtil::isPageTemplateEnabled()) {
+            CMSToolBox::addLink(CMSMessageManager::get("SOYCMS_APPLY_WEBPAGE_TEMPLATEPACK"), SOY2PageController::createLink("Blog.ApplyTemplate.".$page->getId().".".$this->mode), true);
+        }
+        CMSToolBox::addPageJumpBox();
+    }
 }

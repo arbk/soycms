@@ -1,88 +1,94 @@
 <?php
-class InitializeLogic implements SOY2LogicInterface{
+class InitializeLogic implements SOY2LogicInterface
+{
+    public static function getInstance($a, $b)
+    {
+        return SOY2LogicBase::getInstance($a, $b);
+    }
 
-	public static function getInstance($a,$b){
-		return SOY2LogicBase::getInstance($a,$b);
-	}
+    /**
+     * 初期化を行います。
+     */
+    public function initialize($userId, $password)
+    {
 
-	/**
-	 * 初期化を行います。
-	 */
-	function initialize($userId,$password){
+        //すでにDBファイルが存在するなら何もしない
+        if (ADMIN_DB_EXISTS) {
+            return false;
+        }
 
-		//すでにDBファイルが存在するなら何もしない
-		if(ADMIN_DB_EXISTS == true){
-			return false;
-		}
+        try {
+            $this->initDB();
 
-		try{
-			$this->initDB();
+            $logic = SOY2Logic::createInstance("logic.admin.Administrator.AdministratorLogic");
+            $logic->createAdministrator($userId, $password, true);
 
-			$logic = SOY2Logic::createInstance("logic.admin.Administrator.AdministratorLogic");
-			$logic->createAdministrator($userId,$password,true);
+            return true;
+        } catch (Exception $e) {
+            //return false;
+            //例外を投げてしまう
+            throw($e);
+        }
+    }
 
-			return true;
+    public function initDB()
+    {
+        try {
+            $pdo = new SOY2DAO();
+            $sql = file_get_contents(CMS_SQL_DIRECTORY . "init_cms_".SOYCMS_DB_TYPE.".sql");
+            $sqls = explode(";", $sql);
 
-		}catch(Exception $e){
-			//return false;
-			//例外を投げてしまう
-			throw($e);
-		}
-	}
+            $exception = null;
+            foreach ($sqls as $sql) {
+                $sql = trim($sql);
+                try {
+                    if (empty($sql)) {
+                        continue;
+                    }
+                    $pdo->executeUpdateQuery($sql, array());
+                } catch (Exception $e) {
+                    $exception = $e;
+                }
+            }
 
-	function initDB(){
+            if ($exception) {
+                throw $e;
+            }
 
-		try{
-			$pdo = new SOY2DAO();
-			$sql = file_get_contents(CMS_SQL_DIRECTORY . "init_cms_".SOYCMS_DB_TYPE.".sql");
-			$sqls = explode(";",$sql);
+            //DBのバージョンを入れておく
+            $this->registerDbVersion();
+            $this->registerAdminVersion();
+        } catch (Exception $e) {
+            //return false;
+            //例外を投げてしまう
+            throw $e;
+        }
 
-			$exception = null;
-			foreach($sqls as $sql){
-				$sql = trim($sql);
-				try{
-					if(empty($sql))continue;
-					$pdo->executeUpdateQuery($sql,array());
-				}catch(Exception $e){
-					$exception = $e;
-				}
-			}
+        $pdo = null;
+        //MySQL版でも動作するようにファイルを作成します。
+        if (SOYCMS_DB_TYPE == "mysql" && !file_exists(SOY2::RootDir() . "/db/cms.db")) {
+            file_put_contents(SOY2::RootDir()."/db/cms.db", "generated");
+            @chmod(SOY2::RootDir()."/db/cms.db", F_MODE_FILE);
+        }
+    }
 
-			if($exception)throw $e;
+    /**
+     * データベース（admin）のバージョンを保存する
+     */
+    public function registerDbVersion()
+    {
+        $logic = SOY2LogicContainer::get("logic.db.DBVersionLogic", array(
+        "target" => "admin"
+        ));
+        $logic->registerCurrentSQLVersion();
+    }
 
-			//DBのバージョンを入れておく
-			$this->registerDbVersion();
-			$this->registerAdminVersion();
-
-		}catch(Exception $e){
-			//return false;
-			//例外を投げてしまう
-			throw $e;
-		}
-
-		$pdo = null;
-		//MySQL版でも動作するようにファイルを作成します。
-		if(SOYCMS_DB_TYPE == "mysql" && !file_exists(SOY2::RootDir() . "/db/cms.db")){
-			file_put_contents(SOY2::RootDir() . "/db/cms.db","generated");
-		}
-	}
-
-	/**
-	 * データベース（admin）のバージョンを保存する
-	 */
-	function registerDbVersion(){
-		$logic = SOY2LogicContainer::get("logic.db.DBVersionLogic", array(
-			"target" => "admin"
-		));
-		$logic->registerCurrentSQLVersion();
-	}
-
-	/**
-	 * データベース（admin）のバージョンを保存する
-	 */
-	function registerAdminVersion(){
-		$logic = SOY2LogicContainer::get("logic.admin.Upgrade.AdminVersionLogic");
-		$logic->registerCurrentScriptVersion();
-	}
-
+    /**
+     * データベース（admin）のバージョンを保存する
+     */
+    public function registerAdminVersion()
+    {
+        $logic = SOY2LogicContainer::get("logic.admin.Upgrade.AdminVersionLogic");
+        $logic->registerCurrentScriptVersion();
+    }
 }

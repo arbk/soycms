@@ -1,35 +1,35 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="<?php echo SOYCMS_ADMIN_HTML_LANG; ?>">
 
 <head soy:page="_common.HeaderPage" isOverWrite="true">
 </head soy:page="_common.HeaderPage">
 
 <body>
 
-	<div id="wrapper">
-		<!-- Navigation -->
-		<nav  class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0" soy:page="_common.UpperMenuPage"><!-- --></nav>
-		<div id="page-wrapper">
-			<div class="row">
-				<div class="col-lg-12">
-					<h1 class="page-header">ファイルマネージャー</h1>
-				</div>
-				<!-- /.col-lg-12 -->
-			</div>
-			<div soy:page="_common.MessagePanel" isOverWrite="true"></div>
-			<div class="row">
-				<div class="col-lg-12">
-					<iframe id="filemanager_filepage" soy:src="FileManager.FilePage" style="width:100%;height:564px;border:none;" frameborder="no"></iframe>
-				</div>
-				<!-- /.col-lg-12 -->
-			</div>
-			<!-- /.row -->
+    <div id="wrapper">
+        <!-- Navigation -->
+        <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0" soy:page="_common.UpperMenuPage"></nav>
+        <div id="page-wrapper">
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header">ファイルマネージャー</h1>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+            <div soy:page="_common.MessagePanel" isOverWrite="true"></div>
+            <div class="row">
+                <div class="col-lg-12">
+                    <iframe id="filemanager_filepage" soy:src="FileManager.FilePage" style="width:100%;height:564px;border:none;" frameborder="no"></iframe>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+            <!-- /.row -->
 
-		</div>
-		<!-- /#page-wrapper -->
-		<!-- soy:page="_common.FooterPage" /-->
-	</div>
-	<!-- /#wrapper -->
+        </div>
+        <!-- /#page-wrapper -->
+        <!-- soy:page="_common.FooterPage" /-->
+    </div>
+    <!-- /#wrapper -->
 
 </body>
 

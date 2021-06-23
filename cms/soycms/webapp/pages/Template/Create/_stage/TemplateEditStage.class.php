@@ -1,101 +1,110 @@
 <?php
 
-class TemplateEditStage extends StageBase{
+class TemplateEditStage extends StageBase
+{
+    protected $id;
 
-	protected $id;
+    public function getStageTitle()
+    {
+        return "ページ雛形の新規作成 (2/5) - テンプレートの編集";
+    }
 
-	public function getStageTitle(){
-		return "ページ雛形の新規作成 (2/5) - テンプレートの編集";
-	}
+    public function setWizardObj($obj)
+    {
+        parent::setWizardObj($obj);
 
-	public function setWizardObj($obj){
-		parent::setWizardObj($obj);
+        $this->id = @$_GET["id"];
+        if ($this->id) {
+            $this->wizardObj->currentEditTemplateId = $this->id;
+            $this->saveWizardObject();
+        } else {
+            $this->id = $this->wizardObj->currentEditTemplateId;
+        }
+    }
 
-		$this->id = @$_GET["id"];
-		if($this->id){
-			$this->wizardObj->currentEditTemplateId = $this->id;
-			$this->saveWizardObject();
-		}else{
-			$this->id = $this->wizardObj->currentEditTemplateId;
-		}
-	}
+    public function execute()
+    {
 
-	public function execute(){
+        $array = $this->wizardObj->template->getTemplateById($this->id);
 
-		$array = $this->wizardObj->template->getTemplateById($this->id);
+        $this->createAdd("name", "HTMLInput", array(
+            "value" => $array["name"],
+            "disabled" => true,
+        ));
 
-		$this->createAdd("name","HTMLInput",array(
-			"value" => $array["name"],
-			"disabled" => true,
-		));
+        $this->createAdd("description", "HTMLTextArea", array(
+        "name" => "description",
+        "value" => @$array["description"]
+        ));
 
-		$this->createAdd("description","HTMLTextArea",array(
-			"name" => "description",
-			"value" => @$array["description"]
-		));
+        $this->createAdd("template", "HTMLTextArea", array(
+        "name" => "template",
+        "value" => file_get_contents($this->getTempDir() ."/" . $this->id)
+        ));
 
-		$this->createAdd("template","HTMLTextArea",array(
-			"name" => "template",
-			"value" => file_get_contents($this->getTempDir() ."/" . $this->id)
-		));
+//  $this->createAdd("template_editor","HTMLModel",array(
+//      "_src"=>SOY2PageController::createRelativeLink("./js/editor/template_editor.html"),
+//      "onload" => "init_template_editor();"
+//  ));
 
-		$this->createAdd("template_editor","HTMLModel",array(
-			"_src"=>SOY2PageController::createRelativeLink("./js/editor/template_editor.html"),
-			"onload" => "init_template_editor();"
-		));
+        HTMLHead::addLink("editor", array(
+        "rel" => "stylesheet",
+        "type" => "text/css",
+        "href" => SOY2PageController::createRelativeLink("./css/editor/editor.css")
+        ));
 
-		HTMLHead::addLink("editor",array(
-			"rel" => "stylesheet",
-			"type" => "text/css",
-			"href" => SOY2PageController::createRelativeLink("./css/editor/editor.css")
-		));
+        HTMLHead::addLink("section", array(
+        "rel" => "stylesheet",
+        "type" => "text/css",
+        "href" => SOY2PageController::createRelativeLink("./css/form.css")
+        ));
 
-		HTMLHead::addLink("section",array(
-			"rel" => "stylesheet",
-			"type" => "text/css",
-			"href" => SOY2PageController::createRelativeLink("./css/form.css")
-		));
+        HTMLHead::addLink("form", array(
+        "rel" => "stylesheet",
+        "type" => "text/css",
+        "href" => SOY2PageController::createRelativeLink("./js/cms/PanelManager.css")
+        ));
+    }
 
-		HTMLHead::addLink("form",array(
-			"rel" => "stylesheet",
-			"type" => "text/css",
-			"href" => SOY2PageController::createRelativeLink("./js/cms/PanelManager.css")
-		));
+  //次へが押された際の動作
+    public function checkNext()
+    {
+        $array = $this->wizardObj->template->getTemplate();
 
-	}
+        $array[$this->id]["description"] = $_POST["description"];
+        file_put_contents($this->getTempDir()."/".$this->id, $_POST["template"]);
+        @chmod($this->getTempDir()."/".$this->id, F_MODE_FILE);
 
-	//次へが押された際の動作
-	public function checkNext(){
-		$array = $this->wizardObj->template->getTemplate();
+        $this->wizardObj->template->setTemplate($array);
 
-		$array[$this->id]["description"] = $_POST["description"];
-		file_put_contents($this->getTempDir() ."/" . $this->id,$_POST["template"]);
+        return true;
+    }
 
-		$this->wizardObj->template->setTemplate($array);
+  //前へが押された際の動作
+    public function checkBack()
+    {
+        return true;
+    }
 
-		return true;
-	}
+  //次のオブジェクト名、終了の際はEndStageを呼び出す
+    public function getNextObject()
+    {
+        return "TemplateSettingStage";
+    }
 
-	//前へが押された際の動作
-	public function checkBack(){
-		return true;
-	}
+  //前のオブジェクト名、nullの場合は表示しない
+    public function getBackObject()
+    {
+        return "TemplateSettingStage";
+    }
 
-	//次のオブジェクト名、終了の際はEndStageを呼び出す
-	public function getNextObject(){
-		return "TemplateSettingStage";
-	}
+    public function getNextString()
+    {
+        return CMSMessageManager::get("SOYCMS_WIZARD_NEXT");
+    }
 
-	//前のオブジェクト名、nullの場合は表示しない
-	public function getBackObject(){
-		return "TemplateSettingStage";
-	}
-
-	public function getNextString(){
-		return CMSMessageManager::get("SOYCMS_WIZARD_NEXT");
-	}
-
-	public function getBackString(){
-		return CMSMessageManager::get("SOYCMS_WIZARD_PREV");
-	}
+    public function getBackString()
+    {
+        return CMSMessageManager::get("SOYCMS_WIZARD_PREV");
+    }
 }

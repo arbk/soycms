@@ -1,6 +1,7 @@
 <?php
-include_once(dirname(dirname(__FILE__))."/Page/RemovePage.class.php");
+require_once(dirname(__DIR__)."/Page/RemovePage.class.php");
 
-class RemoveBlogPage extends RemovePage{
-	protected $pageToGoBack = "Blog.List";
+class RemoveBlogPage extends RemovePage
+{
+    protected $pageToGoBack = "Blog.List";
 }

@@ -1,8 +1,8 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
+<!DOCTYPE html>
+<html lang="<?php echo SOYCMS_ADMIN_HTML_LANG; ?>">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+<?php soycms_admin_html_head_output(); ?>
 
 <!-- Framework CSS -->
 <link rel="stylesheet" href="<?php echo CMSApplication::getRoot(); ?>css/blueprint/print.css" type="text/css" media="print">
@@ -22,6 +22,7 @@
 <?php CMSApplication::printLink(); ?>
 
 <title><?php echo CMSApplication::getTitle(); ?></title>
+
 </head>
 <body>
 
@@ -31,41 +32,38 @@
 <h1><a href="<?php echo CMSApplication::getApplicationRoot(); ?>"><?php echo CMSApplication::getApplicationName(); ?></a></h1>
 </div>
 
-<?php if(CMSApplication::hasUpperMenu()){ ?>
+<?php if (CMSApplication::hasUpperMenu()) { ?>
 <div id="upperMenu" class="span-8 last" style="text-align:right;">
-	<?php CMSApplication::printUpperMenu(); ?>
+    <?php CMSApplication::printUpperMenu(); ?>
 </div>
 <?php } ?>
 
 <div id="tabs" class="span-20">
-	<?php CMSApplication::printTabs(); ?>
+  <?php CMSApplication::printTabs(); ?>
 </div>
 
 <div id="content" class="span-20 last"><?php CMSApplication::printApplication(); ?></div>
 
 <div class="span-20" style="text-align:center;margin-top:10px;">
-<?php if(CMSApplication::isDirectLogin()){ ?>
-	<a href="<?php echo SOY2PageController::createRelativeLink("../admin/index.php/Login/Logout"); ?>">ログアウト</a>
-<?php }else{ ?>
-	<a href="<?php echo SOY2PageController::createRelativeLink("../admin/"); ?>">CMS管理</a>
-	&nbsp;
-<?php if(CMSApplication::checkUseSiteDb()){ ?>
-	<a href="<?php echo SOY2PageController::createRelativeLink("../admin/index.php/Site/Login/") . CMSApplication::getLoginedSiteId(); ?>">ログイン中のサイトへ</a>
-<?php }else{ ?>
-	<a href="<?php echo SOY2PageController::createRelativeLink("../admin/index.php/Site"); ?>">サイト一覧</a>
-<?php }?>
-	&nbsp;
-	<a href="<?php echo SOY2PageController::createRelativeLink("../admin/index.php/Application"); ?>">アプリケーション一覧</a>
+<?php if (CMSApplication::isDirectLogin()) { ?>
+  <a href="<?php echo SOY2PageController::createRelativeLink("../admin/" . F_FRCTRLER . "/Login/Logout"); ?>">ログアウト</a>
+<?php } else { ?>
+  <a href="<?php echo SOY2PageController::createRelativeLink("../admin/"); ?>">CMS管理</a>
+  &nbsp;
+    <?php if (CMSApplication::checkUseSiteDb()) { ?>
+  <a href="<?php echo SOY2PageController::createRelativeLink("../admin/" . F_FRCTRLER . "/Site/Login/") . CMSApplication::getLoginedSiteId(); ?>">ログイン中のサイトへ</a>
+    <?php } else { ?>
+  <a href="<?php echo SOY2PageController::createRelativeLink("../admin/" . F_FRCTRLER . "/Site"); ?>">サイト一覧</a>
+    <?php }?>
+  &nbsp;
+  <a href="<?php echo SOY2PageController::createRelativeLink("../admin/" . F_FRCTRLER . "/Application"); ?>">アプリケーション一覧</a>
 <?php } ?>
 </div>
 
 <div id="footer" class="span-20">
-	<div id="footer_left"></div>
-	<div id="footer_right"></div>
-	<div id="copyright">
-		Copyright &copy; 2008<?php echo file_exists(dirname(dirname(__FILE__)) . "/" . $self->applicationId . "/application.ini") ? date("-Y", filemtime(dirname(dirname(__FILE__)) . "/" . $self->applicationId . "/application.ini")) : "" ; ?>,
-		Nippon Institute of Agroinformatics Ltd.
-	</div>
+  <div id="footer_left"></div>
+  <div id="footer_right"></div>
+  <div id="copyright"><?php echo CMSUtil::getCMSName(); ?>. © <?php echo CMSUtil::getDeveloperName(); ?></div>
 </div>
 
 </div>

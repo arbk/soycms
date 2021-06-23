@@ -1,292 +1,259 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="<?php echo SOYCMS_ADMIN_HTML_LANG; ?>">
 
 <head soy:page="_common.HeaderPage" isOverWrite="true">
 </head soy:page="_common.HeaderPage">
 
 <body>
 
-	<div id="wrapper">
-		<!-- Navigation -->
-		<nav  class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0" soy:page="_common.UpperMenuPage"><!-- --></nav>
-		<div id="page-wrapper">
-			<div class="row">
-				<div class="col-lg-12">
-					<h1 class="page-header">記事の管理</h1>
-				</div>
-				<!-- /.col-lg-12 -->
-			</div>
-			<div soy:page="_common.MessagePanel" isOverWrite="true"></div>
-			<div class="row">
-				<div class="col-lg-5">
-					<div class="panel panel-default">
-						<div class="panel-heading">機能</div>
-						<div class="panel-body">
-							<ul class="nav nav-pills">
-								<li class="icon_v"><a soy:link="Entry.Create" id="create_entry"><img soy:src="./image/simplemode/new.gif" /><span>記事の新規作成</span></a></li>
-								<li class="icon_v"><a soy:link="Entry.Search" id="search_entry"><img soy:src="./image/simplemode/search.gif" /><span>記事の検索</span></a></li>
-								<li class="icon_v"><a soy:link="Entry.Export" id="export_entry"><img soy:src="./image/simplemode/export.jpg" /><span>CSVエクスポート</span></a></li>
-								<li class="icon_v"><a soy:link="Entry.Import" id="import_entry"><img soy:src="./image/simplemode/import.jpg" /><span>CSVインポート</span></a></li>
-							</ul>
-						</div>
-					 </div>
-				</div>
-				<!-- /.col-lg-3 -->
-				<div class="col-lg-7">
-					<div class="panel panel-default">
-						<div class="panel-heading">最近使用したラベル</div>
-						<div class="panel-body">
-							<ul class="nav nav-pills">
-								<!-- soy:id="recent_labels" -->
-								<li class="icon_v">
-									<a soy:id="label_link">
-										<img soy:src="./image/simplemode/new.gif" soy:id="label_icon"/>
-										<span soy:id="label_entries_count" class="badge">42</span>
-										<span soy:id="label_name" class="">ラベル名</span>
-									</a>
-								</li>
-								<!-- /soy:id="recent_labels" -->
-							</ul>
-						</div>
-					</div>
-				</div>
-				<!-- /.col-lg-9 -->
-			</div>
-			<!-- /.row -->
-			<div class="row">
-				<div class="col-lg-12">
-					<div class="panel panel-green">
-						<div class="panel-heading">
-							<a href="#entries-by-label" data-toggle="collapse" style="color:white;width:100%;height:100%;display:block;text-decoration:none;">ラベルで絞り込み
-								<div class="btn-group pull-right"><button type="button" class="btn btn-default btn-xs"><i class="fa fa-chevron-down"></i></button></div>
-							</a>
-						</div>
-						<div id="entries-by-label" soy:id="entries-by-label" class="panel-collapse collapse in">
-							<div class="panel-body">
-								<div class="panel panel-default" soy:id="label_categories">
-									<div class="panel-heading" soy:id="toggle_opened"><!-- soy:id="label_category_name" /--></div>
-									<div class="panel-body">
-										<div soy:id="toggle_target">
-											<!-- soy:id="label_list" -->
-											<div class="icon_box">
-												<div class="icon_v">
-													<a soy:id="detail_link_01">
-														<img soy:id="label_icon" soy:src="./image/labelicon/default.gif" height="64" width="64" />
-														<span soy:id="label_entries_count" class="badge">42</span>
-														<span soy:id="label_name" class="">ラベルA</span>
-													</a>
-												</div>
-												<div class="icon_link">
-													<a soy:id="create_link" href="#" class="btn btn-default btn-sm" style="margin-bottom:0">新規作成</a>
-													<span class="help-block" soy:id="label_description">ラベルのメモが入ります。</span>
-												</div>
-											</div>
-											<!-- /soy:id="label_list" -->
-										</div soy:id="toggle_target">
-									</div>
-								</div soy:id="label_categories">
-							</div>
-						</div soy:id="entries-by-label">
-					</div>
-				</div>
-				<!-- /.col-lg-12 -->
+    <div id="wrapper">
+        <!-- Navigation -->
+        <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0" soy:page="_common.UpperMenuPage"></nav>
+        <div id="page-wrapper">
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header">記事の管理</h1>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+            <div soy:page="_common.MessagePanel" isOverWrite="true"></div>
+            <div class="row">
+                <div class="col-lg-3">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">機能</div>
+                        <div class="panel-body">
+                            <ul class="nav nav-pills">
+                                <li class="icon_v"><a soy:link="Entry.Create" id="create_entry"><img soy:src="./image/simplemode/new.gif" /><span>記事の新規作成</span></a></li>
+                                <li class="icon_v"><a soy:link="Entry.Search" id="search_entry"><img soy:src="./image/simplemode/search.gif" /><span>記事の検索</span></a></li>
+                                <li class="icon_v"><a soy:link="Entry.Export" id="export_entry"><img soy:src="./image/simplemode/export.jpg" /><span>CSVエクスポート</span></a></li>
+                                <li class="icon_v"><a soy:link="Entry.Import" id="import_entry"><img soy:src="./image/simplemode/import.jpg" /><span>CSVインポート</span></a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <!-- /.col-lg-3 -->
+                <div class="col-lg-9">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">最近使用したラベル</div>
+                        <div class="panel-body">
+                            <ul class="nav nav-pills">
+                                <!-- soy:id="recent_labels" -->
+                                <li class="icon_v">
+                                    <a soy:id="label_link">
+                                        <img soy:src="./image/simplemode/new.gif" soy:id="label_icon" />
+                                        <span soy:id="label_entries_count" class="badge">42</span>
+                                        <span soy:id="label_name" class="">ラベル名</span>
+                                    </a>
+                                </li>
+                                <!-- /soy:id="recent_labels" -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <!-- /.col-lg-9 -->
+            </div>
+            <!-- /.row -->
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="panel panel-green">
+                        <div class="panel-heading">
+                            <a href="#entries-by-label" data-toggle="collapse" style="color:white;width:100%;height:100%;display:block;text-decoration:none;">ラベルで絞り込み
+                                <div class="btn-group pull-right"><button type="button" class="btn btn-default btn-xs"><i class="fa fa-chevron-down"></i></button></div>
+                            </a>
+                        </div>
+                        <div id="entries-by-label" soy:id="entries-by-label" class="panel-collapse collapse in">
+                            <div class="panel-body">
+                                <div class="panel panel-default" soy:id="label_categories">
+                                    <div class="panel-heading" soy:id="toggle_opened">
+                                        <!-- soy:id="label_category_name" /-->
+                                    </div>
+                                    <div class="panel-body">
+                                        <div soy:id="toggle_target">
+                                            <!-- soy:id="label_list" -->
+                                            <div class="icon_box">
+                                                <div class="icon_v">
+                                                    <a soy:id="detail_link_01"><img soy:id="label_icon" soy:src="./image/labelicon/default.gif" height="64" width="64" /> <span soy:id="label_entries_count" class="badge">42</span> <span soy:id="label_name" class="">ラベルA</span></a>
+                                                </div>
+                                                <div class="icon_link">
+                                                    <a soy:id="create_link" href="#" class="btn btn-default btn-sm" style="margin-bottom:0">新規作成</a> <span class="help-block" soy:id="label_description">ラベルのメモが入ります。</span>
+                                                </div>
+                                            </div>
+                                            <!-- /soy:id="label_list" -->
+                                        </div soy:id="toggle_target">
+                                    </div>
+                                </div soy:id="label_categories">
+                            </div>
+                        </div soy:id="entries-by-label">
+                    </div>
+                </div>
+                <!-- /.col-lg-12 -->
 
-				<div class="col-lg-12">
-					<div class="panel panel-green">
-						<div class="panel-heading">
-							<a href="#entries-by-status" data-toggle="collapse" style="color:white;width:100%;height:100%;display:block;text-decoration:none;">公開状態等で絞り込み
-								<div class="btn-group pull-right"><button type="button" class="btn btn-default btn-xs"><i class="fa fa-chevron-down"></i></button></div>
-							</a>
-						</div>
-						<div id="entries-by-status" soy:id="entries-by-status" class="panel-collapse collapse in">
-							<div class="panel-body">
-								<div class="row">
-									<div class="col-lg-3" style="text-align:left;height:64px;">
-										<a href="#" soy:link="Entry.List.Closed">
-											<img soy:src="./image/labelicon/default.gif" height="64" width="64" style="vertical-align:text-top;float:left;padding-right: 4px;"/>
-											<span class="label label-warning label-soy">非公開</span>
-											<span soy:id="entries_count_unpublished" class="badge">42</span>
-										</a>
-										<span class="help-block">非公開に設定してある記事の一覧です。</span>
-									</div>
-									<div class="col-lg-3" style="text-align:left;height:64px;">
-										<a href="#" soy:link="Entry.List.OutOfDate">
-											<img soy:src="./image/labelicon/default.gif" height="64" width="64" style="vertical-align:text-top;float:left;padding-right: 4px;"/>
-											<span class="label label-warning label-soy">公開期間外</span>
-											<span soy:id="entries_count_outofdate" class="badge">42</span>
-										</a>
-										<span class="help-block">公開期間外になっている記事の一覧です。</span>
-									</div>
-									<div class="col-lg-3" style="text-align:left;height:64px;position:relative;">
-										<a href="#" soy:link="Entry.List.NoLabel">
-											<img soy:src="./image/labelicon/default.gif" height="64" width="64" style="vertical-align:text-top;float:left;padding-right: 4px;"/>
-											<span class="label label-info label-soy">ラベル無し</span>
-											<span soy:id="entries_count_without_label" class="badge">42</span>
-										</a>
-										<span class="help-block">ラベル指定のない記事の一覧です。</span>
-									</div>
-								</div>
-							</div soy:id="entries-by-status">
-						</div>
-					</div>
-				</div>
-				<!-- /.col-lg-12 -->
-			</div>
+                <div class="col-lg-12">
+                    <div class="panel panel-green">
+                        <div class="panel-heading">
+                            <a href="#entries-by-status" data-toggle="collapse" style="color:white;width:100%;height:100%;display:block;text-decoration:none;">公開状態等で絞り込み
+                                <div class="btn-group pull-right"><button type="button" class="btn btn-default btn-xs"><i class="fa fa-chevron-down"></i></button></div>
+                            </a>
+                        </div>
+                        <div id="entries-by-status" soy:id="entries-by-status" class="panel-collapse collapse in">
+                            <div class="panel-body">
+                                <div class="row">
+                                    <div class="col-lg-3" style="text-align:left;height:64px;">
+                                        <a href="#" soy:link="Entry.List.Closed"><img soy:src="./image/labelicon/default.gif" height="64" width="64" style="vertical-align:text-top;float:left;padding-right: 4px;" /> <span class="label label-warning label-soy">非公開</span> <span soy:id="entries_count_unpublished" class="badge">42</span></a>
+                                        <span class="help-block">非公開に設定してある記事の一覧です。</span>
+                                    </div>
+                                    <div class="col-lg-3" style="text-align:left;height:64px;">
+                                        <a href="#" soy:link="Entry.List.OutOfDate"><img soy:src="./image/labelicon/default.gif" height="64" width="64" style="vertical-align:text-top;float:left;padding-right: 4px;" /> <span class="label label-warning label-soy">公開期間外</span> <span soy:id="entries_count_outofdate" class="badge">42</span></a>
+                                        <span class="help-block">公開期間外になっている記事の一覧です。</span>
+                                    </div>
+                                    <div class="col-lg-3" style="text-align:left;height:64px;position:relative;">
+                                        <a href="#" soy:link="Entry.List.NoLabel"><img soy:src="./image/labelicon/default.gif" height="64" width="64" style="vertical-align:text-top;float:left;padding-right: 4px;" /> <span class="label label-info label-soy">ラベル無し</span> <span soy:id="entries_count_without_label" class="badge">42</span></a>
+                                        <span class="help-block">ラベル指定のない記事の一覧です。</span>
+                                    </div>
+                                </div>
+                            </div soy:id="entries-by-status">
+                        </div>
+                    </div>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
 
-			<form soy:id="index_form" id="index_form">
-				<input type="hidden" name="op_code" id="op_code">
-				<input type="hidden" name="label_select" id="label_select">
-	 			<div class="row">
-					<div class="col-lg-12">
-						<div class="panel panel-green">
-							<div class="panel-heading">
-								全ての記事
-							</div>
+            <form soy:id="index_form" id="index_form">
+                <input type="hidden" name="op_code" id="op_code">
+                <input type="hidden" name="label_select" id="label_select">
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="panel panel-green">
+                            <div class="panel-heading">
+                                全ての記事
+                            </div>
 
-							<div class="panel-body">
-								<div soy:panel="checkbox_functions" class="checkbox_functions">
-									<div class="checkbox_functions_left"><!----></div>
-									<div soy:display="publish" class="checkbox_functions_content">
-										<p>チェックのついた記事を..</p>
-										<p><a href="javascript:void(0);" onclick="javascript:onTogglePublic(false);return false;">非公開にする</a></p>
-										<p><a href="javascript:void(0);" onclick="javascript:onTogglePublic(true);return false;">公開にする</a></p>
-										<p><a href="javascript:void(0);" onclick="javascript:onOpenListPanel();">ラベル操作</a></p>
-										<p><a href="javascript:void(0);" onclick="javascript:copyEntry();return false;">複製する</a></p>
-										<p><a href="javascript:void(0);" onclick="javascript:deleteEntry();return false;">削除する</a></p>
-									</div soy:display="publish">
-									<div class="checkbox_functions_right"><!----></div>
-								</div soy:panel="checkbox_functions">
+                            <div class="panel-body">
+                                <div soy:panel="checkbox_functions" class="checkbox_functions">
+                                    <div class="checkbox_functions_left"></div>
+                                    <div soy:display="publish" class="checkbox_functions_content">
+                                        <p>チェックのついた記事を..</p>
+                                        <p><a href="javascript:void(0);" onclick="javascript:onTogglePublic(false);return false;">非公開にする</a></p>
+                                        <p><a href="javascript:void(0);" onclick="javascript:onTogglePublic(true); return false;">公開にする</a></p>
+                                        <p><a href="javascript:void(0);" onclick="javascript:onOpenListPanel();    return false;">ラベル操作</a></p>
+                                        <p><a href="javascript:void(0);" onclick="javascript:copyEntry();          return false;">複製する</a></p>
+                                        <p><a href="javascript:void(0);" onclick="javascript:deleteEntry();        return false;">削除する</a></p>
+                                    </div soy:display="publish">
+                                    <div class="checkbox_functions_right"></div>
+                                </div soy:panel="checkbox_functions">
 
-								<div soy:panel="pager" class="pager">
-									<div class="top-pager" soy:id="topPager">
-										<a soy:id="prevAnchor" href="#">&nbsp;&laquo;前&nbsp;</a>
-										<span soy:id="contentPage">5件中 1-5件目</span>
-										<a soy:id="nextAnchor" href="#">&nbsp;次&raquo;&nbsp;</a>
-									</div soy:id="topPager">
-									<div class="displays">
-										<p>表示件数</p>
-										<p><a href="#" soy:id="showCount10" >10件</a></p>
-										<p><a href="#" soy:id="showCount50" >50件</a></p>
-										<p><a href="#" soy:id="showCount100">100件</a></p>
-										<p><a href="#" soy:id="showCount500">500件</a></p>
-									</div>
-								</div soy:panel="pager">
+                                <div soy:panel="pager" class="pager">
+                                    <div class="top-pager" soy:id="topPager">
+                                        <a soy:id="prevAnchor" href="#">&nbsp;&laquo;前&nbsp;</a>
+                                        <span soy:id="contentPage">5件中 1-5件目</span>
+                                        <a soy:id="nextAnchor" href="#">&nbsp;次&raquo;&nbsp;</a>
+                                    </div soy:id="topPager">
+                                    <div class="displays">
+                                        <p>表示件数</p>
+                                        <p><a href="#" soy:id="showCountINI">[00]</a></p>
+                                        <p><a href="#" soy:id="showCountM">[00]</a></p>
+                                        <p><a href="#" soy:id="showCountL">[000]</a></p>
+                                        <p><a href="#" soy:id="showCountXL">[000]</a></p>
+                                    </div>
+                                </div soy:panel="pager">
+                                <div style="clear:both"></div>
+                                <div soy:id="no_entry_message"></div soy:id="no_entry_message">
+                            </div>
 
-								<div style="clear:both"><!----></div>
+                            <div class="table-responsive" soy:display="must_exist_entry">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <td soy:display="publish">
+                                                <script type="text/javascript">
+                                                    function toggle_all_entry_check(value) {
+                                                        $(".entry_check").each(function () {
+                                                            $(this).prop("checked", value);
+                                                        });
+                                                    }
+                                                </script>
+                                                <input type="checkbox" id="check_all_entries" onclick="toggle_all_entry_check(this.checked);">
+                                            </td>
+                                            <td class="title">タイトル</td>
+                                            <td class="status">状態</td>
+                                            <td>本文</td>
+                                            <td>ラベル</td>
+                                            <td nowrap>作成日</td>
+                                            <td soy:display="no_label">
+                                                <input type="button" soy:id="display_order_submit" value="表示順更新" onclick="document.getElementById('op_code').value='update_display';return confirm('表示順の更新を行います');">
+                                            </td>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="entry_list">
+                                        <tr soy:id="list">
+                                            <td soy:display="publish"><input soy:id="entry_check" class="entry_check"></td>
+                                            <td class="title"><a soy:id="title" href="#">タイトル...</a></td>
+                                            <td class="status"><p soy:id="status"></p></td>
+                                            <td class="content"><div soy:id="content"></div></td>
+                                            <td class="labels"><span soy:id="label"><a soy:id="entry_list_link" class="label label-default label-soy">ラベル１...</a></span soy:id="label"></td>
+                                            <td class="create_date" style="text-align:center;"><span soy:id="create_date" /></td>
+                                            <td class="order" soy:display="no_label" style="text-align:center;"><input soy:id="order" size="5"></td>
+                                        </tr soy:id="list">
+                                    </tbody>
+                                </table>
+                            </div soy:display="must_exist_entry">
 
-								<div soy:id="no_entry_message"></div soy:id="no_entry_message">
+                            <div class="panel-body">
+                                <div soy:panel="checkbox_functions" class="checkbox_functions"></div soy:panel="checkbox_functions">
+                                <div soy:panel="pager" class="pager"></div soy:panel="pager">
+                            </div>
 
-							</div>
+                        </div>
+                    </div>
+                    <!-- /.col-lg-12 -->
+                </div>
+            </form soy:id="index_form">
 
-							<div class="table-responsive" soy:display="must_exist_entry">
-								<table class="table table-striped">
-									<thead>
-										<tr>
-											<td soy:display="publish">
-												<script type="text/javascript">
-													function toggle_all_entry_check(value){
-														$(".entry_check").each(function(){
-															$(this).prop("checked",value);
-														});
-													}
-												</script>
-												<input type="checkbox" id="check_all_entries" onclick="toggle_all_entry_check(this.checked);">
-											</td>
-											<td class="title">タイトル</td>
-											<td class="status">状態</td>
-											<td>本文</td>
-											<td>ラベル</td>
-											<td nowrap>作成日</td>
-											<td soy:display="no_label">
-												<input type="button" soy:id="display_order_submit" value="表示順更新" onclick="document.getElementById('op_code').value='update_display';return confirm('表示順の更新を行います');">
-											</td>
-										</tr>
-									</thead>
-									<tbody class="entry_list">
-										<tr soy:id="list">
-											<td soy:display="publish">
-												<input soy:id="entry_check" class="entry_check">
-											</td>
-											<td class="title">
-												<a soy:id="title" href="#" >タイトル...</a>
-											</td>
-											<td class="status">
-												<nobr soy:id="status"></nobr>
-											</td>
-											<td class="content">
-												<div soy:id="content"></div>
-											</td>
-											<td class="labels">
-												<span soy:id="label">
-													<a soy:id="entry_list_link" class="label label-default label-soy">ラベル１...</a>
-												</span soy:id="label">
-											</td>
-											<td class="create_date" style="text-align:center;">
-												<span soy:id="create_date" />
-											</td>
-											<td class="order" soy:display="no_label" style="text-align:center;">
-												<input soy:id="order" size="5">
-											</td>
-										</tr soy:id="list">
-									</tbody>
-								</table>
-							</div soy:display="must_exist_entry">
+        </div>
+        <!-- /#page-wrapper -->
+        <!-- soy:page="_common.FooterPage" /-->
+    </div>
+    <!-- /#wrapper -->
 
-							<div class="panel-body">
-								<div soy:panel="checkbox_functions" class="checkbox_functions"></div soy:panel="checkbox_functions">
-								<div soy:panel="pager" class="pager"></div soy:panel="pager">
-							</div>
+    <script soy:id="parameters"></script>
+    <script soy:id="entry_list"></script>
 
-						</div>
-					</div>
-					<!-- /.col-lg-12 -->
-				</div>
-			</form soy:id="index_form">
+    <?php // collapseのshow/hideをCookieで永続化する ?>
+    <script type="text/javascript">
+        $(function () {
+            if ($.cookie('entry-index-label-panel-status') == 'closed') {
+                //$("#entries-by-label").removeClass('in');
+            }
+            if ($.cookie('entry-index-status-panel-status') == 'closed') {
+                //$("#entries-by-status").removeClass('in');
+            }
+        });
 
-		</div>
-		<!-- /#page-wrapper -->
-		<!-- soy:page="_common.FooterPage" /-->
-	</div>
-	<!-- /#wrapper -->
+        $("#entries-by-label")
+            .bind('show.bs.collapse', function () {
+                $.cookie('entry-index-label-panel-status', 'open');
+                $(this).parent().find(".panel-heading i").removeClass('fa-chevron-down').addClass('fa-chevron-up');
+                //$(this).parent().parent().removeClass('col-lg-3').addClass('col-lg-12');
+            })
+            .bind('hidden.bs.collapse', function () {
+                $.cookie('entry-index-label-panel-status', 'closed')
+                $(this).parent().find(".panel-heading i").removeClass('fa-chevron-up').addClass('fa-chevron-down');
+                //$(this).parent().parent().removeClass('col-lg-12').addClass('col-lg-3');
+            });
 
-<script soy:id="parameters"></script>
-<script soy:id="entry_list"></script>
-
-<?php // collapseのshow/hideをCookieで永続化する ?>
-<script type="text/javascript">
-	$(function(){
-		if($.cookie('entry-index-label-panel-status') == 'closed') {
-		//	$("#entries-by-label").removeClass('in');
-		}
-		if($.cookie('entry-index-status-panel-status') == 'closed') {
-		//	$("#entries-by-status").removeClass('in');
-		}
-	});
-
-	$("#entries-by-label")
-	.bind('show.bs.collapse', function(){
-		$.cookie('entry-index-label-panel-status', 'open');
-		$(this).parent().find(".panel-heading i").removeClass('fa-chevron-down').addClass('fa-chevron-up');
-		//$(this).parent().parent().removeClass('col-lg-3').addClass('col-lg-12');
-	})
-	.bind('hidden.bs.collapse', function(){
-		$.cookie('entry-index-label-panel-status', 'closed')
-		$(this).parent().find(".panel-heading i").removeClass('fa-chevron-up').addClass('fa-chevron-down');
-		//$(this).parent().parent().removeClass('col-lg-12').addClass('col-lg-3');
-	});
-
-	$("#entries-by-status")
-	.bind('shown.bs.collapse', function() {
-		$.cookie('entry-index-status-panel-status', 'open')
-		$(this).parent().find(".panel-heading i").removeClass('fa-chevron-down').addClass('fa-chevron-up');
-		//$(this).parent().parent().removeClass('col-lg-3').addClass('col-lg-12');
-	})
-	.bind('hidden.bs.collapse', function(){
-		$.cookie('entry-index-status-panel-status', 'closed')
-		$(this).parent().find(".panel-heading i").removeClass('fa-chevron-up').addClass('fa-chevron-down');
-		//$(this).parent().parent().removeClass('col-lg-12').addClass('col-lg-3');
-	});
-</script>
+        $("#entries-by-status")
+            .bind('shown.bs.collapse', function () {
+                $.cookie('entry-index-status-panel-status', 'open')
+                $(this).parent().find(".panel-heading i").removeClass('fa-chevron-down').addClass('fa-chevron-up');
+                //$(this).parent().parent().removeClass('col-lg-3').addClass('col-lg-12');
+            })
+            .bind('hidden.bs.collapse', function () {
+                $.cookie('entry-index-status-panel-status', 'closed')
+                $(this).parent().find(".panel-heading i").removeClass('fa-chevron-up').addClass('fa-chevron-down');
+                //$(this).parent().parent().removeClass('col-lg-12').addClass('col-lg-3');
+            });
+    </script>
 
 </body>
+
 </html>

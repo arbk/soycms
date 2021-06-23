@@ -1,17 +1,17 @@
 <?php
 
-class FilePage extends CMSWebPageBase{
+class FilePage extends CMSWebPageBase
+{
+    public function __construct()
+    {
+        parent::__construct();
 
-	function __construct(){
+        $this->addLabel("base_dir_path", array(
+            "text" => SOY2PageController::createRelativeLink("./js/elfinder/")
+        ));
 
-		parent::__construct();
-
-		$this->addLabel("base_dir_path", array(
-			"text" => SOY2PageController::createRelativeLink("./js/elfinder/")
-		));
-
-		$this->addLabel("connector_path", array(
-			"text" => SOY2PageController::createRelativeLink("./js/elfinder/php/connector.php") . "?site_id=" . UserInfoUtil::getSite()->getSiteId()
-		));
-	}
+        $this->addLabel("connector_path", array(
+            "text" => SOY2PageController::createRelativeLink("./js/elfinder/php/connector.php") . "?site_id=" . UserInfoUtil::getSite()->getSiteId()
+        ));
+    }
 }
