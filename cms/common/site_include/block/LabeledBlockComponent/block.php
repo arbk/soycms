@@ -34,6 +34,7 @@ class LabeledBlockComponent implements BlockComponent{
 	 */
 	public function getViewPage($page){
 		$logic = SOY2Logic::createInstance("logic.site.Entry.EntryLogic");
+		$logic->setBlockClass(get_class($this));
 
 		$this->displayCountFrom = max($this->displayCountFrom,1);//0件目は認めない→１件目に変更
 
@@ -106,6 +107,7 @@ class LabeledBlockComponent implements BlockComponent{
 		}
 
 		$articlePageUrl = "";
+		$categoryPageUrl = "";
 		if($this->isStickUrl){
 			try{
 				$pageDao = SOY2DAOFactory::create("cms.BlogPageDAO");
@@ -115,6 +117,7 @@ class LabeledBlockComponent implements BlockComponent{
 					$articlePageUrl = SOY2PageController::createLink("Page.Preview") ."/". $blogPage->getId() . "?uri=". $blogPage->getEntryPageURL();
 				}else{
 					$articlePageUrl = $page->siteRoot . $blogPage->getEntryPageURL();
+					$categoryPageUrl = $page->siteRoot . $blogPage->getCategoryPageURL();
 				}
 			}catch(Exception $e){
 				$this->isStickUrl = false;
@@ -131,11 +134,20 @@ class LabeledBlockComponent implements BlockComponent{
 			}
 		}
 
-		SOY2::import("site_include.block._common.EntryListComponent");
-		return SOY2HTMLFactory::createInstance("EntryListComponent",array(
+		//
+		if(!strlen($this->pagingParameter) && ($this->displayCountFrom > 1 && is_null($this->displayCountTo))){
+			for($i = 0; $i < ($this->displayCountFrom - 1); $i++){
+				array_shift($array);
+			}
+		}
+
+		SOY2::import("site_include.block._common.BlockEntryListComponent");
+		SOY2::import("site_include.blog.component.CategoryListComponent");
+		return SOY2HTMLFactory::createInstance("BlockEntryListComponent",array(
 			"list" => $array,
 			"isStickUrl" => $this->isStickUrl,
 			"articlePageUrl" => $articlePageUrl,
+			"categoryPageUrl" => $categoryPageUrl,
 			"blogPageId"=>$this->blogPageId,
 			"soy2prefix"=>"block",
 			"editable" => $editable,
@@ -368,12 +380,13 @@ class LabeledBlock_LabelList extends HTMLList{
 	private $currentLabel;
 
 	protected function populateItem($entity){
+		$id = (is_numeric($entity->getId())) ? (int)$entity->getId() : 0;
 
-		$elementID = "label_".$entity->getId();
+		$elementID = "label_".$id;
 
 		$this->addCheckBox("radio", array(
-			"value"	 => $entity->getId(),
-			"selected"  => ((string)$this->currentLabel == (string)$entity->getId()),
+			"value"	 => $id,
+			"selected"  => ((int)$this->currentLabel === $id),
 			"elementId" => $elementID
 		));
 		$this->addModel("label", array(

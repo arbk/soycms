@@ -5,17 +5,12 @@
 class SOYShop_UserToken extends SOY2DAO_EntityBase{
 
 	/**
-	 * @id
-	 */
-	private $id;
-	
-	/**
 	 * @column user_id
 	 */
 	private $userId;
-	
+
 	private $token;
-	
+
 	/**
 	 * @column time_limit
 	 */
@@ -24,14 +19,6 @@ class SOYShop_UserToken extends SOY2DAO_EntityBase{
 
 	function check(){
 		return true;
-	}
-
-
-	function getId() {
-		return $this->id;
-	}
-	function setId($id) {
-		$this->id = $id;
 	}
 
 	function getUserId() {
@@ -55,4 +42,3 @@ class SOYShop_UserToken extends SOY2DAO_EntityBase{
 		$this->limit = $limit;
 	}
 }
-?>

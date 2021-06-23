@@ -6,11 +6,11 @@ class ItemOrderFormListComponent extends HTMLList {
 
 	protected function populateItem($itemOrder) {
 
-		$id = $itemOrder->getId();
+		$id = (is_numeric($itemOrder->getId())) ? (int)$itemOrder->getId() : 0;
 		$item = soyshop_get_item_object($itemOrder->getItemId());
 
 		$this->addInput("item_delete", array(
-			"name" => "Item[$id][itemDelete]",
+			"name" => "Item[" . $id . "][itemDelete]",
 			"value" => 1
 		));
 
@@ -21,22 +21,31 @@ class ItemOrderFormListComponent extends HTMLList {
 		));
 
 		$this->addInput("item_name", array(
-			"name" => "Item[$id][itemName]",
+			"name" => "Item[" . $id . "][itemName]",
 			"value" => $itemOrder->getItemName()
 		));
 
 		$this->addInput("item_price", array(
-			"name" => "Item[$id][itemPrice]",
+			"name" => "Item[" . $id . "][itemPrice]",
 			"value" => $itemOrder->getItemPrice()
 		));
 
+		//仕入値
+		$this->addModel("is_purchase_price", array(
+			"visible" => (self::_isPurchasePrice())
+		));
+
+		$this->addLabel("purchase_price", array(
+			"text" => soy2_number_format($item->getPurchasePrice())
+		));
+
 		$this->addInput("item_count", array(
-			"name" => "Item[$id][itemCount]",
+			"name" => "Item[" . $id . "][itemCount]",
 			"value" => $itemOrder->getItemCount()
 		));
 
 		$this->addLabel("item_total_price", array(
-			"text" => number_format($itemOrder->getTotalPrice())
+			"text" => soy2_number_format($itemOrder->getTotalPrice())
 		));
 
 
@@ -69,6 +78,12 @@ class ItemOrderFormListComponent extends HTMLList {
 		}
 
 		return $array;
+	}
+
+	private function _isPurchasePrice(){
+		static $cnf;
+		if(is_null($cnf)) $cnf = SOYShop_ShopConfig::load()->getDisplayPurchasePriceOnAdmin();
+		return $cnf;
 	}
 
 	private function attrDao(){

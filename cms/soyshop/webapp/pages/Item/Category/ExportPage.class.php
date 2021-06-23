@@ -6,7 +6,6 @@ class ExportPage extends WebPage{
     function __construct() {
         parent::__construct();
 
-        DisplayPlugin::toggle("custom_plugin", SOYShopPluginUtil::checkIsActive("common_category_customfield"));
         DisplayPlugin::toggle("retry", isset($_GET["retry"]));
 
         self::buildForm();
@@ -137,4 +136,17 @@ class ExportPage extends WebPage{
             echo "\r\n";
         }
     }
+
+	function getBreadcrumb(){
+		return BreadcrumbComponent::build("カテゴリCSVエクスポート", array("Item" => "商品管理", "Item.Category" => "カテゴリ管理"));
+	}
+
+	function getFooterMenu(){
+		try{
+			return SOY2HTMLFactory::createInstance("Item.FooterMenu.CategoryFooterMenuPage")->getObject();
+		}catch(Exception $e){
+			//
+			return null;
+		}
+	}
 }

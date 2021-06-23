@@ -31,6 +31,9 @@ class CustomFieldPluginAdvanced{
 	var $displayTitle = 0;//「カスタムフィールド」を表示する
 	var $displayID = 0;//IDを表示する
 
+	//フィールド種別事に設定されている属性
+	private $properties = array();
+
 	function init(){
 		CMSPlugin::addPluginMenu(CustomFieldPluginAdvanced::PLUGIN_ID,array(
 			"name" => "カスタムフィールド アドバンスド",
@@ -38,7 +41,7 @@ class CustomFieldPluginAdvanced{
 			"author" => "日本情報化農業研究所",
 			"url" => "http://www.n-i-agroinformatics.com/",
 			"mail" => "soycms@soycms.net",
-			"version"=>"1.9.1"
+			"version"=>"1.9.8"
 		));
 
 		//プラグイン アクティブ
@@ -90,179 +93,257 @@ class CustomFieldPluginAdvanced{
 			$customFields = $this->customFields;
 		}
 
-		foreach($fields as $field){
+		if(count($fields)){
+			//設定内に記事フィールドはあるか？
+			$isEntryField = CustomfieldAdvancedUtil::checkIsEntryField($customFields);
+			$isLabelField = CustomfieldAdvancedUtil::checkIsLabelField($customFields);	// @ToDo メモリをたくさん食うからブログ一覧やラベルブロックでは禁止にしたい
 
-			//設定を取得
-			$master = (isset($customFields[$field->getId()])) ? $customFields[$field->getId()] : null;
+			foreach($fields as $field){
+				//設定を取得
+				$master = (isset($customFields[$field->getId()])) ? $customFields[$field->getId()] : null;
 
-			$class = "CMSLabel";
-			$attr = array(
-				"html"	   => $field->getValue(),
-				"soy2prefix" => "cms",
-			);
+				$class = "CMSLabel";
+				$attr = array(
+					"html"	   => $field->getValue(),
+					"soy2prefix" => "cms",
+				);
 
-			//カスタムフィールドの設定が取れるときの動作（たとえば同じサイト内の場合）
-			if($master){
+				//カスタムフィールドの設定が取れるときの動作（たとえば同じサイト内の場合）
+				if($master){
 
-				//$attr["html"]に改めて値を入れ直す時に使用するフラグ
-				$resetFlag = true;
+					//$attr["html"]に改めて値を入れ直す時に使用するフラグ
+					$resetFlag = true;
 
-				//値が設定されていないなら初期値を使う
-				if(is_null($field->getValue())){
-					$field->setValue($master->getDefaultValue());
-				}
-
-				//空の時の動作
-				if(strlen($field->getValue()) == 0 ){
-					if($master->getHideIfEmpty()){
-						//空の時は表示しない
-						$attr["visible"] = false;
-					}else{
-						//空の時の値
-						$field->setValue($master->getEmptyValue());
+					//値が設定されていないなら初期値を使う
+					if(is_null($field->getValue())){
+						$field->setValue($master->getDefaultValue());
 					}
-				}
 
-				//タイプがリンクの場合はここで上書き
-				if($master->getType() == "link"){
-					$class = "HTMLLink";
-					$attr["link"] = (strlen($field->getValue()) > 0) ? $field->getValue() : null;
-					unset($attr["html"]);
-					$resetFlag = false;
-
-				//画像の場合
-				}else if($master->getType() == "image"){
-					$class = "HTMLImage";
-					$attr["src"] = (strlen($field->getValue()) > 0) ? $field->getValue() : null;
-					unset($attr["html"]);
-					$resetFlag = false;
-				}
-
-				//リンク、もしくは画像の場合、パスを表示するためのcms:id
-				if($master->getType() == "link" || $master->getType() == "image"){
-					$htmlObj->addLabel($field->getId() . "_text", array(
-						"soy2prefix" => "cms",
-						"text" => $field->getValue()
-					));
-				}
-
-				//複数行テキストの場合は\n\rを<br>に変換するタグを追加
-				if($master->getType() == "textarea"){
-					$htmlObj->addLabel($field->getId() . "_br_mode", array(
-						"soy2prefix" => "cms",
-						"html" => nl2br($field->getValue())
-					));
-				}
-
-				//上で空の時の値が入るかも知れず、下でunsetされる可能性があるのでここで設定し直す。
-				if($resetFlag){
-					$attr["html"] = $field->getValue();
-				}
-
-				//記事フィールド
-				if($master->getType() == "entry" && strlen($field->getValue()) && strpos($field->getValue(), "-")){
-					$v = explode("-", $field->getValue());
-					$selectedEntryId = (isset($v[1]) && is_numeric($v[1])) ? (int)$v[1] : null;
-					if($selectedEntryId){
-						$entry = SOY2Logic::createInstance("site_include.plugin.CustomField.logic.EntryFieldLogic")->getTitleAndContentByEntryId($selectedEntryId);
-						$attr["html"] = $entry->getContent();
+					//空の時の動作
+					if(strlen($field->getValue()) == 0 ){
+						if($master->getHideIfEmpty()){
+							//空の時は表示しない
+							$attr["visible"] = false;
+						}else{
+							//空の時の値
+							$field->setValue($master->getEmptyValue());
+						}
 					}
-				}
 
-				//属性に出力
-				if(strlen($master->getOutput()) > 0){
-
-					//リンクタイプ以外でhrefを使う場合
-					if($master->getOutput() == "href" && $master->getType() != "link"){
+					//タイプがリンクの場合はここで上書き
+					if($master->getType() == "link"){
 						$class = "HTMLLink";
 						$attr["link"] = (strlen($field->getValue()) > 0) ? $field->getValue() : null;
+						unset($attr["html"]);
+						$resetFlag = false;
 
-					//下方互換
-					}else if($master->getType() == "image" && $master->getOutput() == "src"){
-						//上で処理をしているため何もしない
+					//画像の場合
+					}else if($master->getType() == "image"){
+						$class = "HTMLImage";
+						$attr["src"] = (strlen($field->getValue()) > 0) ? $field->getValue() : null;
+						unset($attr["html"]);
+						$resetFlag = false;
 
-					//その他
-					}else{
-						$class = "HTMLModel";
-						$attr[$master->getOutput()] = $field->getValue();
-					}
-
-					/*
-					if(strlen($master->getExtraOutputs()) > 0 && is_array($field->getExtraValues())){
-						foreach($field->getExtraValues() as $key => $value){
-							$attr["attr:" . $key] = $value;
+						$imgProps = self::_getImgProps("image");
+						if(count($imgProps)){
+							foreach($imgProps as $imgProp){
+								$attr[$imgProp] = "";
+							}
 						}
 					}
-					*/
-					unset($attr["html"]);//HTMLModelなのでunsetしなくても出力されないはず
-				}
 
-				//追加属性を出力
-				if(strlen($master->getExtraOutputs()) > 0){
-					$extraOutputs = explode("\n", str_replace(array("\r\n", "\r"), "\n", $master->getExtraOutputs()));
-					$extraValues = $field->getExtraValues();
-					foreach($extraOutputs as $key => $extraOutput){
-						$extraOutput = trim($extraOutput);
-						$attr[$extraOutput] = is_array($extraValues) && isset($extraValues[$extraOutput]) ? $extraValues[$extraOutput] : "";
+					//リンク、もしくは画像の場合、パスを表示するためのcms:id
+					if($master->getType() == "link" || $master->getType() == "image"){
+						$htmlObj->addLabel($field->getId() . "_text", array(
+							"soy2prefix" => "cms",
+							"text" => $field->getValue()
+						));
 					}
 
-					unset($attr["html"]);//HTMLModelなのでunsetしなくても出力されないはず
-				}
+					//複数行テキストの場合は\n\rを<br>に変換するタグを追加
+					if($master->getType() == "textarea"){
+						$htmlObj->addLabel($field->getId() . "_br_mode", array(
+							"soy2prefix" => "cms",
+							"html" => nl2br($field->getValue())
+						));
+					}
 
-				//ペアフィールド
-				if($master->getType() == "pair" && strlen($master->getExtraValues())){
-					$extraValues = soy2_unserialize($master->getExtraValues());
+					//上で空の時の値が入るかも知れず、下でunsetされる可能性があるのでここで設定し直す。
+					if($resetFlag){
+						$attr["html"] = $field->getValue();
+					}
 
-					//後方互換
-					if(isset($extraValues["pair"]) && is_array($extraValues["pair"])) $extraValues = $extraValues["pair"];
+					//記事フィールド
+					if($isEntryField){
+						$entry = new Entry();
+						if($master->getType() == "entry" && strlen($field->getValue()) && strpos($field->getValue(), "-")){
+							$v = explode("-", $field->getValue());
+							$selectedEntryId = (isset($v[1]) && is_numeric($v[1])) ? (int)$v[1] : null;
+							if($selectedEntryId){
+								$entry = SOY2Logic::createInstance("site_include.plugin.CustomField.logic.EntryFieldLogic")->getTitleAndContentByEntryId($selectedEntryId);
+								$attr["html"] = $entry->getContent();
+							}
+						}
 
-					if(count($extraValues)){
-						foreach($extraValues as $idx => $pairValues){
-							$_hash = (strlen($field->getValue())) ? CustomfieldAdvancedUtil::createHash($field->getValue()) : null;
-							$pairValue = (isset($_hash) && isset($pairValues[$_hash])) ? $pairValues[$_hash] : "";
+						/**
+						 * @記事フィールドの隠しモード
+						 * cms:id="***_title"で記事名を出力
+						 * cms:id="***_create_date"で記事の作成時刻を出力
+						 **/
+						$htmlObj->addLabel($field->getId() . "_id", array(
+	 						"text" => $entry->getId(),
+	 						"soy2prefix"=>"cms"
+	 					));
+	 					$htmlObj->addLabel($field->getId() . "_title", array(
+	 						"text" => $entry->getTitle(),
+	 						"soy2prefix"=>"cms"
+	 					));
+	 					$htmlObj->createAdd($field->getId() . "_content", "CMSLabel", array(
+	 						"html" => $entry->getContent(),
+	 						"soy2prefix"=>"cms"
+	 					));
+	 					$htmlObj->createAdd($field->getId() . "_more", "CMSLabel", array(
+	 						"html" => $entry->getMore(),
+	 						"soy2prefix"=>"cms"
+	 					));
+	 					$htmlObj->createAdd($field->getId() . "_create_date", "DateLabel", array(
+	 						"text" => $entry->getCdate(),
+	 						"soy2prefix"=>"cms"
+	 					));
+						/** 記事フィールドの隠しモードここまで **/
+					}
 
-							$htmlObj->addLabel($field->getId() . "_pair_" . ($idx + 1) . "_visible", array(
-								"soy2prefix" => "cms",
-								"visible" => (strlen($pairValue) > 0)
-							));
+					//ラベルフィールド
+					if($isLabelField){	//メモリをたくさん食うので別の方法で実装するが、一応コードは残しておく
+						// $entries = array();
+						// $selectedLabelId = ($master->getType() == "label" && is_numeric($field->getValue())) ? (int)$field->getValue() : null;
+						// if(isset($selectedLabelId)){
+						// 	// @ToDo 一覧の取得条件
+						//
+						// }
 
-							$htmlObj->addLabel($field->getId() . "_pair_" . ($idx + 1) . "_is_not_empty", array(
-								"soy2prefix" => "cms",
-								"visible" => (strlen($pairValue) > 0)
-							));
+						//if(!class_exists("EntryListComponent")) SOY2::import("site_include.blog.component.EntryListComponent");
+						// $htmlObj->createAdd($field->getId() . "_entry_list", "EntryListComponent", array(
+						// 	"soy2prefix" => "cms",
+						// 	"list" => $entries
+						// ));
+					}
 
-							$htmlObj->addLabel($field->getId() . "_pair_" . ($idx + 1) . "_is_empty", array(
-								"soy2prefix" => "cms",
-								"visible" => (strlen($pairValue) === 0)
-							));
+					//属性に出力
+					if(strlen($master->getOutput()) > 0){
 
-							$htmlObj->addLabel($field->getId() . "_pair_" . ($idx + 1), array(
-								"soy2prefix" => "cms",
-								"html" => $pairValue
-							));
+						//リンクタイプ以外でhrefを使う場合
+						if($master->getOutput() == "href" && $master->getType() != "link"){
+							$class = "HTMLLink";
+							$attr["link"] = (strlen($field->getValue()) > 0) ? $field->getValue() : null;
+
+						//下方互換
+						}else if($master->getType() == "image" && $master->getOutput() == "src"){
+							//上で処理をしているため何もしない
+
+						//その他
+						}else{
+							$class = "HTMLModel";
+							$attr[$master->getOutput()] = $field->getValue();
+						}
+
+						/*
+						if(strlen($master->getExtraOutputs()) > 0 && is_array($field->getExtraValues())){
+							foreach($field->getExtraValues() as $key => $value){
+								$attr["attr:" . $key] = $value;
+							}
+						}
+						*/
+						unset($attr["html"]);//HTMLModelなのでunsetしなくても出力されないはず
+					}
+
+					//追加属性を出力
+					if(strlen($master->getExtraOutputs()) > 0){
+						$extraOutputs = explode("\n", str_replace(array("\r\n", "\r"), "\n", $master->getExtraOutputs()));
+						$extraValues = $field->getExtraValues();
+						foreach($extraOutputs as $key => $extraOutput){
+							$extraOutput = trim($extraOutput);
+							$attr[$extraOutput] = is_array($extraValues) && isset($extraValues[$extraOutput]) ? $extraValues[$extraOutput] : "";
+						}
+
+						unset($attr["html"]);//HTMLModelなのでunsetしなくても出力されないはず
+					}
+
+					//ペアフィールド
+					if($master->getType() == "pair" && strlen($master->getExtraValues())){
+						$extraValues = soy2_unserialize($master->getExtraValues());
+
+						//後方互換
+						if(isset($extraValues["pair"]) && is_array($extraValues["pair"])) $extraValues = $extraValues["pair"];
+
+						if(count($extraValues)){
+							foreach($extraValues as $idx => $pairValues){
+								$_hash = (strlen($field->getValue())) ? CustomfieldAdvancedUtil::createHash($field->getValue()) : null;
+								$pairValue = (isset($_hash) && isset($pairValues[$_hash])) ? $pairValues[$_hash] : "";
+
+								$htmlObj->addLabel($field->getId() . "_pair_" . ($idx + 1) . "_visible", array(
+									"soy2prefix" => "cms",
+									"visible" => (strlen($pairValue) > 0)
+								));
+
+								$htmlObj->addLabel($field->getId() . "_pair_" . ($idx + 1) . "_is_not_empty", array(
+									"soy2prefix" => "cms",
+									"visible" => (strlen($pairValue) > 0)
+								));
+
+								$htmlObj->addLabel($field->getId() . "_pair_" . ($idx + 1) . "_is_empty", array(
+									"soy2prefix" => "cms",
+									"visible" => (strlen($pairValue) === 0)
+								));
+
+								$htmlObj->addLabel($field->getId() . "_pair_" . ($idx + 1), array(
+									"soy2prefix" => "cms",
+									"html" => $pairValue
+								));
+							}
 						}
 					}
+				}
+
+				$htmlObj->addModel($field->getId() . "_visible", array(
+					"soy2prefix" => "cms",
+					"visible" => (strlen($field->getValue()) > 0)
+				));
+
+				$htmlObj->addModel($field->getId() . "_is_not_empty", array(
+					"soy2prefix" => "cms",
+					"visible" => (strlen($field->getValue()) > 0)
+				));
+
+				$htmlObj->addModel($field->getId()."_is_empty", array(
+					"soy2prefix" => "cms",
+					"visible" => (strlen($field->getValue()) === 0)
+				));
+
+				//SOY2HTMLのデフォルトの _visibleがあるので、$field->getId()."_visible"より後にこれをやらないと表示されなくなる
+				$htmlObj->createAdd($field->getId(), $class, $attr);
+			}
+		}
+	}
+
+	//画像フィールドの属性の設定を取得
+	private function _getImgProps($type="image"){
+		if(!is_array($this->customFields) || !count($this->customFields)) return array();
+		if(isset($this->properties[$type])) return $this->properties[$type];
+		$this->properties[$type] = array();
+
+		foreach($this->customFields as $fieldId => $field){
+			if($field->getType() == $type){
+				$extraOutputs = explode("\n", $field->getExtraOutputs());
+				if(!count($extraOutputs)) continue;
+				foreach($extraOutputs as $output){
+					$output = trim($output);
+					if(!strlen($output) || is_numeric(array_search($output, $this->properties[$type]))) continue;
+					$this->properties[$type][] = $output;
 				}
 			}
-
-			$htmlObj->addModel($field->getId() . "_visible", array(
-				"soy2prefix" => "cms",
-				"visible" => (strlen($field->getValue()) > 0)
-			));
-
-			$htmlObj->addModel($field->getId() . "_is_not_empty", array(
-				"soy2prefix" => "cms",
-				"visible" => (strlen($field->getValue()) > 0)
-			));
-
-			$htmlObj->addModel($field->getId()."_is_empty", array(
-				"soy2prefix" => "cms",
-				"visible" => (strlen($field->getValue()) === 0)
-			));
-
-			//SOY2HTMLのデフォルトの _visibleがあるので、$field->getId()."_visible"より後にこれをやらないと表示されなくなる
-			$htmlObj->createAdd($field->getId(), $class, $attr);
 		}
+		return $this->properties[$type];
 	}
 
 	/**
@@ -286,9 +367,9 @@ class CustomFieldPluginAdvanced{
 		$entry = $arg["entry"];
 
 		$arg = SOY2PageController::getArguments();
-		$entryId = @$arg[0];
-		$postFields = @$_POST["custom_field"];
-		$extraFields = @$_POST["custom_field_extra"];
+		$entryId = (isset($arg[0]) && is_numeric($arg[0])) ? (int)$arg[0] : null;
+		$postFields = (isset($_POST["custom_field"]) && is_array($_POST["custom_field"])) ? $_POST["custom_field"] : array();
+		$extraFields = (isset($_POST["custom_field_extra"]) && is_array($_POST["custom_field_extra"])) ? $_POST["custom_field_extra"] : array();
 
 		foreach($this->customFields as $key => $field){
 
@@ -303,19 +384,18 @@ class CustomFieldPluginAdvanced{
 				$dao->update($obj);
 				continue;
 			}catch(Exception $e){
+				//新規作成の場合
+				try{
+					$obj = new EntryAttribute();
+					$obj->setEntryId($entry->getId());
+					$obj->setFieldId($key);
+					$obj->setValue($value);
+					$obj->setExtraValuesArray($extra);
+					$dao->insert($obj);
+				}catch(Exception $e){
+					//
+				}
 
-			}
-
-			//新規作成の場合
-			try{
-				$obj = new EntryAttribute();
-				$obj->setEntryId($entry->getId());
-				$obj->setFieldId($key);
-				$obj->setValue($value);
-				$obj->setExtraValuesArray($extra);
-				$dao->insert($obj);
-			}catch(Exception $e){
-				//
 			}
 		}
 
@@ -455,7 +535,6 @@ class CustomFieldPluginAdvanced{
 	 * @return string HTMLコード
 	 */
 	function onCallCustomField(){
-
 		$arg = SOY2PageController::getArguments();
 		$entryId = (isset($arg[0])) ? (int)$arg[0] : null;
 		return self::buildFormOnEntryPage($entryId);
@@ -489,7 +568,9 @@ class CustomFieldPluginAdvanced{
 
 		foreach($this->customFields as $fieldId => $fieldObj){
 			if($fieldObj->getType() == "entry") $isEntryField = true;
-			$html .= $fieldObj->getForm($this, @$db_values[$fieldId], @$db_extra_values[$fieldId]);
+			$v = (isset($db_values[$fieldId])) ? $db_values[$fieldId] : null;
+			$extra = (isset($db_extra_values[$fieldId])) ? $db_extra_values[$fieldId] : null;
+			$html .= $fieldObj->getForm($this, $v, $extra);
 		}
 
 		$html .= '</div>';
@@ -528,11 +609,18 @@ class CustomFieldPluginAdvanced{
 
 		if(is_null($labelIdWithBlock)){
 			$customFields = $this->customFields;
-			try{
-				$entryAttributes = $dao->getByEntryId($entryId);
-			}catch(Exception $e){
-				return array();
+			if(!count($customFields)) return array();
+			$fieldIds = array();
+			foreach($customFields as $fieldId => $field){
+				$fieldIds[] = $fieldId;
 			}
+
+			try{
+				$attrs = $dao->getByEntryIdCustom($entryId, $fieldIds);
+			}catch(Exception $e){
+				$attrs = array();
+			}
+
 		}else{
 			$fieldIds = $this->prevFieldIds;
 
@@ -561,8 +649,17 @@ class CustomFieldPluginAdvanced{
 				$customFields = $this->advancedCustomFields;
 			}
 
-			$entryAttributes = $dao->getByEntryIdCustom($entryId, $fieldIds);
+			$attrs = $dao->getByEntryIdCustom($entryId, $fieldIds);
 			$this->prevLabelId = $labelIdWithBlock;
+		}
+
+		//値がない場合は満たす
+		foreach($fieldIds as $fieldId){
+			if(!isset($attrs[$fieldId])) {
+				$attr = new EntryAttribute();
+				$attr->setFieldId($fieldId);
+				$attrs[$fieldId] = $attr;
+			}
 		}
 
 		/*
@@ -580,10 +677,9 @@ class CustomFieldPluginAdvanced{
 			$added->setId($fieldId);
 
 			//カスタムフィールドのデータがある場合
-			if(isset($entryAttributes[$fieldId])
-			&& $entryAttributes[$fieldId] instanceof EntryAttribute){
+			if(isset($attrs[$fieldId]) && $attrs[$fieldId] instanceof EntryAttribute){
 				//do nothing
-				$attr = $entryAttributes[$fieldId];
+				$attr = $attrs[$fieldId];
 				$added->setValue($attr->getValue());
 				$added->setExtraValues($attr->getExtraValuesArray());
 				$list[] = $added;
@@ -685,10 +781,7 @@ class CustomFieldPluginAdvanced{
 		}
 
 		$obj = CMSPlugin::loadPluginConfig(CustomFieldPluginAdvanced::PLUGIN_ID);
-		if(is_null($obj)){
-			$obj = new CustomFieldPluginAdvanced();
-		}
-
+		if(is_null($obj)) $obj = new CustomFieldPluginAdvanced();
 		CMSPlugin::addPlugin(CustomFieldPluginAdvanced::PLUGIN_ID, array($obj, "init"));
 	}
 }

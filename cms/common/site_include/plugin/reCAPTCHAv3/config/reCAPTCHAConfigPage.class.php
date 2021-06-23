@@ -4,7 +4,10 @@ class reCAPTCHAConfigPage extends WebPage {
 
 	private $pluginObj;
 
-	function __construct(){}
+	function __construct(){
+		//サイトマップから持ってくる
+		SOY2::imports("site_include.plugin.sitemap.component.*");
+	}
 
 	function doPost(){
 		if(soy2_check_token()){

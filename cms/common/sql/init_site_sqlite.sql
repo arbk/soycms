@@ -55,12 +55,12 @@ create table EntryTrackback(
 	blog_name varchar(255),
 	excerpt varchar(4000),
 	submitdate date,
-	certification number default 0
+	certification integer default 0
 );
 
 create table EntryAttribute(
-	entry_id integer,
-	entry_field_id varchar,
+	entry_id integer NOT NULL,
+	entry_field_id varchar NOT NULL,
 	entry_value varchar,
 	entry_extra_values varchar,
 	unique(entry_id,entry_field_id)
@@ -131,6 +131,13 @@ create table SiteConfig(
 	description varchar(255),
 	siteConfig TEXT,
 	charset integer default 1
+);
+
+CREATE TABLE CmsMemo(
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	content TEXT,
+	create_date INTEGER NOT NULL,
+	update_date INTEGER NOT NULL
 );
 
 create index entry_udate on Entry(udate desc);

@@ -5,6 +5,9 @@ if(isset($_SERVER["HTTP_X_SAKURA_FORWARDED_FOR"])){
 	$_SERVER["SERVER_PORT"] = "443";
 }
 
+//session → If you do not load it here, set it in php.config.php.
+if(file_exists(dirname(__FILE__) . "/session.conf.php")) include_once("session.conf.php");
+
 /**
  * commonとあるが管理画面専用
  * 主にSOY2関連の設定

@@ -10,9 +10,12 @@ class GoogleAnalytics{
 	const PLUGIN_ID = "google_analytics";
 
 	//挿入箇所
-	const INSERT_INTO_THE_END_OF_HEAD = 2;
-	const INSERT_INTO_THE_BEGINNING_OF_BODY = 1;
-	const INSERT_INTO_THE_END_OF_BODY = 0;
+	const INSERT_INTO_THE_BEGINNING_OF_HEAD = 5;	//<head>直後に挿入
+	const INSERT_INTO_THE_END_OF_HEAD = 2;	//</head>直前に挿入
+	const INSERT_INTO_THE_BEGINNING_OF_BODY = 1;	//<body>直後に挿入
+	const INSERT_INTO_THE_END_OF_BODY = 0;	//</body>直前に挿入
+	const INSERT_AFTER_THE_END_OF_BODY = 4;	//</body>直後に挿入
+	const INSERT_INTO_THE_END_OF_HTML = 3;	//HTMLの末尾に挿入
 
 	//コード
 	var $google_analytics_track_code;
@@ -28,14 +31,6 @@ class GoogleAnalytics{
 	//Array<ページID => Array<ページタイプ => 0 | 1>> 挿入しないページが1
 	var $config_per_blog = array();
 
-	public static function register(){
-		$obj = CMSPlugin::loadPluginConfig(self::PLUGIN_ID);
-		if(is_null($obj)){
-			$obj = new GoogleAnalytics();
-		}
-		CMSPlugin::addPlugin(self::PLUGIN_ID,array($obj,"init"));
-	}
-
 	function init(){
 
 		CMSPlugin::addPluginMenu(self::PLUGIN_ID,array(
@@ -45,14 +40,14 @@ class GoogleAnalytics{
 			"modifier"=>"Jun Okada",
 			"url"=>"https://brassica.jp/",
 			"mail"=>"soycms@soycms.net",
-			"version"=>"1.9"
+			"version"=>"1.9.1"
 		));
 
 		if(CMSPlugin::activeCheck(self::PLUGIN_ID)){
-			
+
 			CMSPlugin::addPluginConfigPage(self::PLUGIN_ID,array(
 				$this,"config"));
-	
+
 			CMSPlugin::setEvent('onOutput',self::PLUGIN_ID,array($this,"onOutput"),array("filter"=>"all"));
 		}
 	}
@@ -123,22 +118,16 @@ class GoogleAnalytics{
 
 		//モバイルで見てる時
 		if(defined("SOYCMS_IS_MOBILE") && SOYCMS_IS_MOBILE == true){
-			$html = $this->insertCodeMobile($html);
-
+			return self::_insertCodeMobile($html);
 		//スマホで見てる時
-		}elseif(defined("SOYCMS_IS_SMARTPHONE") && SOYCMS_IS_SMARTPHONE == true){
-			$html = $this->insertCode($html,"smartphone");
-
-		//どちらでもない場合はPC
-		}else{
-			$html = $this->insertCode($html);
+		}else if(defined("SOYCMS_IS_SMARTPHONE") && SOYCMS_IS_SMARTPHONE == true){
+			return self::_insertCode($html,"smartphone");
 		}
 
-		return $html;
+		return self::_insertCode($html);
 	}
 
-	function insertCode($html,$carrier="pc"){
-
+	private function _insertCode($html,$carrier="pc"){
 		switch($carrier){
 			case "smartphone":
 				$code = $this->google_analytics_track_code_smartphone;
@@ -148,73 +137,82 @@ class GoogleAnalytics{
 				$code = $this->google_analytics_track_code;
 				break;
 		}
-
-		//</head>の直前
-		if($this->position == self::INSERT_INTO_THE_END_OF_HEAD){
-			if(stripos($html,'</head>') !== false){
-				$html = str_ireplace('</head>',$code."\n".'</head>',$html);
-			}elseif(stripos($html,'<body>') !== false){
-				$html = str_ireplace('<body>','<body>'."\n".$code,$html);
-			}elseif(preg_match('/<body\\s[^>]+>/',$html)){
-				$html = preg_replace('/(<body\\s[^>]+>)/',"\$0\n".$code,$html);
-			}elseif(stripos($html,'<head>') !== false){
-				$html = str_ireplace('<head>','<head>'."\n".$code,$html);
-			}elseif(stripos($html,'<html>') !== false){
-				$html = str_ireplace('<html>','<html>'."\n".$code,$html);
-			}elseif(preg_match('/<html\\s[^>]+>/',$html)){
-				$html = preg_replace('/(<html\\s[^>]+>)/',"\$0\n".$code,$html);
-			}else{
-				$html = $code.$html;
-			}
-
-		//<body>の直後
-		}elseif($this->position == self::INSERT_INTO_THE_BEGINNING_OF_BODY){
-			if(stripos($html,'<body>') !== false){
-				$html = str_ireplace('<body>','<body>'."\n".$code,$html);
-			}elseif(preg_match('/<body\\s[^>]+>/',$html)){
-				$html = preg_replace('/(<body\\s[^>]+>)/',"\$0\n".$code,$html);
-			}elseif(stripos($html,'</head>') !== false){
-				$html = str_ireplace('</head>',$code."\n".'</head>',$html);
-			}elseif(stripos($html,'<head>') !== false){
-				$html = str_ireplace('<head>','<head>'."\n".$code,$html);
-			}elseif(stripos($html,'<html>') !== false){
-				$html = str_ireplace('<html>','<html>'."\n".$code,$html);
-			}elseif(preg_match('/<html\\s[^>]+>/',$html)){
-				$html = preg_replace('/(<html\\s[^>]+>)/',"\$0\n".$code,$html);
-			}else{
-				$html = $code.$html;
-			}
-
-		//末尾
-		//}elseif($this->position == self::INSERT_INTO_THE_END_OF_BODY){
-		}else{
-			if(stripos($html,'</body>') !== false){
-				$html = str_ireplace('</body>',$code."\n".'</body>',$html);
-			}else if(stripos($html,'</html>') !== false){
-				$html = str_ireplace('</html>',$code."\n".'</html>',$html);
-			}else{
-				$html = $html.$code;
-			}
+		switch($this->position){
+			case self::INSERT_INTO_THE_BEGINNING_OF_HEAD:	//<head>の直後
+				if(is_numeric(stripos($html,'<head>'))){
+					return str_ireplace('<head>','<head>'."\n".$code,$html);
+				}else if(preg_match('/<body\\s[^>]+>/',$html)){
+					return preg_replace('/(<head\\s[^>]+>)/',"\$0\n".$code,$html);
+				}else if(is_numeric(stripos($html,'<html>'))){
+					return str_ireplace('<html>','<html>'."\n".$code,$html);
+				}else if(preg_match('/<html\\s[^>]+>/',$html)){
+					return preg_replace('/(<html\\s[^>]+>)/',"\$0\n".$code,$html);
+				}
+				break;
+			case self::INSERT_INTO_THE_END_OF_HEAD:	//</head>の直前
+				if(is_numeric(stripos($html,'</head>'))){
+					return  str_ireplace('</head>',$code."\n".'</head>',$html);
+				}else if(is_numeric(stripos($html,'<body>'))){
+					return  str_ireplace('<body>','<body>'."\n".$code,$html);
+				}else if(preg_match('/<body\\s[^>]+>/',$html)){
+					return  preg_replace('/(<body\\s[^>]+>)/',"\$0\n".$code,$html);
+				}else if(is_numeric(stripos($html,'<head>'))){
+					return  str_ireplace('<head>','<head>'."\n".$code,$html);
+				}else if(is_numeric(stripos($html,'<html>'))){
+					return str_ireplace('<html>','<html>'."\n".$code,$html);
+				}elseif(preg_match('/<html\\s[^>]+>/',$html)){
+					return preg_replace('/(<html\\s[^>]+>)/',"\$0\n".$code,$html);
+				}
+				break;
+			case self::INSERT_INTO_THE_BEGINNING_OF_BODY:	//<body>の直後
+				if(is_numeric(stripos($html,'<body>'))){
+					return str_ireplace('<body>','<body>'."\n".$code,$html);
+				}else if(preg_match('/<body\\s[^>]+>/',$html)){
+					return preg_replace('/(<body\\s[^>]+>)/',"\$0\n".$code,$html);
+				}else if(is_numeric(stripos($html,'</head>'))){
+					return str_ireplace('</head>',$code."\n".'</head>',$html);
+				}else if(is_numeric(stripos($html,'<head>'))){
+					return str_ireplace('<head>','<head>'."\n".$code,$html);
+				}else if(is_numeric(stripos($html,'<html>'))){
+					return str_ireplace('<html>','<html>'."\n".$code,$html);
+				}else if(preg_match('/<html\\s[^>]+>/',$html)){
+					return preg_replace('/(<html\\s[^>]+>)/',"\$0\n".$code,$html);
+				}
+				break;
+			case self::INSERT_AFTER_THE_END_OF_BODY:	//</body>の直後
+				if(is_numeric(stripos($html,'</body>'))){
+					return str_ireplace('</body>','</body>'."\n".$code,$html);
+				}else if(preg_match('/</body\\s[^>]+>/',$html)){
+					return preg_replace('/(</body\\s[^>]+>)/',"\$0\n".$code,$html);
+				}
+				break;
+			case self::INSERT_INTO_THE_END_OF_HTML:	//意図的に末尾
+				//何もしない
+				break;
+			default:
+			case self::INSERT_INTO_THE_END_OF_BODY:	//</body>直前に挿入
+				if(is_numeric(stripos($html,'</body>'))){
+					return str_ireplace('</body>',$code."\n".'</body>',$html);
+				}else if(is_numeric(stripos($html,'</html>'))){
+					return str_ireplace('</html>',$code."\n".'</html>',$html);
+				}
 		}
 
-    	return $html;
+    	return $html.$code;
 	}
 
-	function insertCodeMobile($html){
-		$imageTag = $this->googleAnalyticsGetImageUrl();
+	private function _insertCodeMobile($html){
+		$imageTag = self::_googleAnalyticsGetImageUrl();
 
 		if(stripos($html,'</body>') !== false){
-			$html = str_ireplace('</body>',$imageTag."\n".'</body>',$html);
+			return str_ireplace('</body>',$imageTag."\n".'</body>',$html);
 		}else if(stripos($html,'</html>') !== false){
-			$html = str_ireplace('</html>',$imageTag."\n".'</html>',$html);
-		}else{
-
-    	}
-
+			return str_ireplace('</html>',$imageTag."\n".'</html>',$html);
+		}
 		return $html;
 	}
 
-	function googleAnalyticsGetImageUrl() {
+	private function _googleAnalyticsGetImageUrl() {
 		$GA_ACCOUNT = $this->google_analytics_track_code_mobile;
 		$GA_PIXEL = "/ga.php";
 	    $url = "";
@@ -235,5 +233,10 @@ class GoogleAnalytics{
 	    $googleAnalyticsImageUrl = str_replace("&", "&amp;", $url);
 	    return "<img src=\"" . $googleAnalyticsImageUrl . "\" />";
 	}
+
+	public static function register(){
+		$obj = CMSPlugin::loadPluginConfig(self::PLUGIN_ID);
+		if(is_null($obj)) $obj = new GoogleAnalytics();
+		CMSPlugin::addPlugin(self::PLUGIN_ID,array($obj,"init"));
+	}
 }
-?>

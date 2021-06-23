@@ -10,6 +10,8 @@ class DateWithoutDayColumn extends SOYInquiry_ColumnBase{
 
 	private $attribute;
 
+	private $labels = array("y" =>"----", "m" => "--");
+
 	//HTML5のrequired属性を利用するか？
 	private $requiredProp = false;
 
@@ -25,9 +27,9 @@ class DateWithoutDayColumn extends SOYInquiry_ColumnBase{
 		$attributes = $this->getAttributes();
 		$required = $this->getRequiredProp();
 
-		$value = $this->getValue();
+		$values = $this->getValue();
 
-		if(!$value){
+		if(!is_array($values)){
 			$hasToday = $this->hasToday;
 
 			$value = array();
@@ -36,19 +38,19 @@ class DateWithoutDayColumn extends SOYInquiry_ColumnBase{
 			if(isset($hasToday)){
 				//設定した表示年数に今日があるかチェックする
 				if(date("Y") >= $startYear && date("Y") <= $endYear){
-					$value = array("year" => date("Y"), "month" => date("m"));
+					$values = array("year" => date("Y"), "month" => date("m"));
 				}
 			}else{
-				$value = array("year" => "", "month" => "");
+				$values = array("year" => "", "month" => "");
 			}
 		}
 
 		$html = array();
 		$html[] = "<select name=\"data[".$this->getColumnId()."][year]\" ".implode(" ",$attributes)."" . $required . ">";
-		$html[] ="<option value=\"\">----</option>";
+		$html[] ="<option value=\"\">" . $this->labels["y"] . "</option>";
 
 		for($i = $startYear; $i <= $endYear; $i++){
-			if($value["year"] == $i){
+			if(isset($values["year"]) && $values["year"] == $i){
 				$html[] ="<option selected=\"selected\">".$i."</option>";
 			}else{
 				$html[] ="<option>".$i."</option>";
@@ -57,14 +59,13 @@ class DateWithoutDayColumn extends SOYInquiry_ColumnBase{
 		$html[] = "</select>";
 
 		$html[] = "<select name=\"data[".$this->getColumnId()."][month]\" ".implode(" ",$attributes)."" . $required . ">";
-		$html[] ="<option value=\"\">--</option>";
+		$html[] ="<option value=\"\">" . $this->labels["m"] . "</option>";
 		for($i = 1; $i <= 12; $i++){
-			if($value["month"] == $i){
+			if(isset($values["month"]) && $values["month"] == $i){
 				$html[] = "<option selected=\"selected\">" . sprintf("%0d",$i) . "</option>";
 			}else{
 				$html[] = "<option>" . sprintf("%0d",$i) . "</option>";
 			}
-
 		}
 		$html[] = "</select>";
 
@@ -91,12 +92,11 @@ class DateWithoutDayColumn extends SOYInquiry_ColumnBase{
 	 * 確認画面で呼び出す
 	 */
 	function getView(){
-		$value = $this->getValue();
-		if(!$value["year"] || !$value["month"]){
+		$values = $this->getValue();
+		if(!isset($values["year"]) || !isset($values["month"])){
 			return "----/--";
 		}else{
-			$value = $value["year"] . "/" . $value["month"];
-			return htmlspecialchars($value, ENT_QUOTES, "UTF-8");
+			return htmlspecialchars($values["year"] . "/" . $values["month"], ENT_QUOTES, "UTF-8");
 		}
 	}
 
@@ -110,6 +110,10 @@ class DateWithoutDayColumn extends SOYInquiry_ColumnBase{
 		$html .= '<input type="text" name="Column[config][startYear]" value="'.$this->startYear.'" size="4" />';
 		$html .= "から";
 		$html .= '<input type="text" name="Column[config][endYear]" value="'.$this->endYear.'" size="4" />まで<br>';
+
+		$html .= "空の値の表示設定:";
+		$html .= '年:<input type="text" name="Column[config][labels][y]" value="'.$this->labels["y"].'" size="3"> ';
+		$html .= '月:<input type="text" name="Column[config][labels][m]" value="'.$this->labels["m"].'" size="3"><br>';
 
 		if(isset($hasToday)){
 			$html .= '<input type="checkbox" name="Column[config][hasToday]" value="1" checked="checked" />';
@@ -150,6 +154,7 @@ class DateWithoutDayColumn extends SOYInquiry_ColumnBase{
 		$this->endYear = (isset($config["endYear"]) && is_numeric($config["endYear"])) ? (int)$config["endYear"] : null;
 		$this->hasToday = isset($config["hasToday"]) ? 1 : null;
 		$this->attribute = (isset($config["attribute"])) ? str_replace("\"","&quot;",$config["attribute"]) : null;
+		$this->labels = (isset($config["labels"]) && is_array($config["labels"])) ? $config["labels"] : array("y" => "----", "m" => "--");
 		$this->requiredProp = (isset($config["requiredProp"])) ? $config["requiredProp"] : null;
 	}
 
@@ -159,18 +164,19 @@ class DateWithoutDayColumn extends SOYInquiry_ColumnBase{
 		$config["endYear"] = $this->endYear;
 		$config["hasToday"] = $this->hasToday;
 		$config["attribute"] = $this->attribute;
+		$config["labels"] = $this->labels;
 		$config["requiredProp"] = $this->requiredProp;
 		return $config;
 	}
 
 	function validate(){
-		$value = $this->getValue();
+		$values = $this->getValue();
 
 		if($this->getIsRequire()){
 			if(
-				empty($value)
-				|| !strlen(@$value["year"])
-				|| !strlen(@$value["month"])
+				empty($values)
+				|| !strlen(@$values["year"])
+				|| !strlen(@$values["month"])
 			){
 				$this->setErrorMessage($this->getLabel()."を入力してください。");
 				return false;

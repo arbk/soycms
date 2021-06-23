@@ -72,10 +72,12 @@ class SOYInquiry_Column{
 		"Question" => "[質問]",
 		"PlainText" => "[見出し表示]",
 		"SOYCMSBlogEntryPage" => "カスタムフィールド [SOY CMSブログ詳細ページ]",
+		"SOYCMSBlogEntry" => "記事名 [SOY CMSブログ連携]",
 		"SOYShop" => "商品名 [SOY Shop連携]",
 		"Enquete" => "アンケート項目",
 		"EnqueteFree" => "アンケート自由記述",
-		"SerialNumber" => "連番"
+		"SerialNumber" => "連番",
+		//"CustomfieldAdvanced" => "カスタムフィールドアドバンスド連携"
 	);
 
 	/**
@@ -355,6 +357,25 @@ class SOYInquiry_ColumnBase implements ISOYInquiry_Column{
 		}
 
 		return $converter->convert($value, $soyMailTo);
+	}
+
+	/**
+	 * SOYMail連携用のデータ(convert後のデータを取得)
+	 *
+	 * @return array
+	 */
+	function convertToSOYShop(){
+		$converter = $this->factoryConverter();	//ConverterはSOY Mailを流用
+
+		$value = $this->getValue();
+		$soyShopTo = $this->getSOYShopFrom();	//SOY Shopの場合はToとFromを一緒にする
+
+		//確認用メールアドレス対策、カラムファイルでgetValueを持ちたかったが、validateが動かなくなるのでこちらで対応
+		if($soyShopTo === "mail_address" && is_array($value) === true){
+			$value = $value[0];
+		}
+
+		return $converter->convert($value, $soyShopTo);
 	}
 
 	/**

@@ -197,31 +197,31 @@ class SOYShop_CategoryAttributeConfig{
     /* config method */
 
     function getOutput() {
-        return $this->config["output"];
+        return (isset($this->config["output"])) ? $this->config["output"] : null;
     }
     function setOutput($output) {
         $this->config["output"] = $output;
     }
     function getDescription(){
-        return $this->config["description"];
+        return (isset($this->config["description"])) ? $this->config["description"] : null;
     }
     function setDescription($description){
         $this->config["description"] = $description;
     }
     function getDefaultValue() {
-        return $this->config["defaultValue"];
+        return (isset($this->config["defaultValue"])) ? $this->config["defaultValue"] : null;
     }
     function setDefaultValue($defaultValue) {
         $this->config["defaultValue"] = $defaultValue;
     }
     function getEmptyValue() {
-        return $this->config["emptyValue"];
+        return (isset($this->config["emptyValue"])) ? $this->config["emptyValue"] : null;
     }
     function setEmptyValue($emptyValue) {
         $this->config["emptyValue"] = $emptyValue;
     }
     function getHideIfEmpty() {
-        return $this->config["hideIfEmpty"];
+        return (isset($this->config["hideIfEmpty"])) ? $this->config["hideIfEmpty"] : null;
     }
     function setHideIfEmpty($hideIfEmpty) {
         $this->config["hideIfEmpty"] = $hideIfEmpty;
@@ -243,7 +243,7 @@ class SOYShop_CategoryAttributeConfig{
         return 'custom_field_'.$this->getFieldId();
     }
     function isIndex(){
-        return (boolean)$this->config["isIndex"];
+        return (isset($this->config["isIndex"])) ? (boolean)$this->config["isIndex"] : false;
     }
 
     function getForm($value,$value2){
@@ -252,11 +252,11 @@ class SOYShop_CategoryAttributeConfig{
         $h_formNameOption = str_replace("]","_option]",$h_formName);
         $h_formID = htmlspecialchars($this->getFormId(), ENT_QUOTES, "UTF-8");
 
-        $title = '<h4>'
+        $title = '<label for="">'
                  .''
                  .htmlspecialchars($this->getLabel(), ENT_QUOTES, "UTF-8");
         $title .= (strlen($this->getDescription())) ? "<span class=\"option\">(" . $this->getDescription() . ")</span>" : "";
-        $title .= '</h4>';
+        $title .= '</label><br>';
 
         switch($this->getType()){
             case "checkbox":
@@ -364,10 +364,10 @@ class SOYShop_CategoryAttributeConfig{
                 $html[] = '<div class="image_select" id="image_select_wrapper_'.$h_formID.'">';
 
                 //選択ボタン
-                $html[] = '<a class="button" href="javascript:void(0);" onclick="return ImageSelect.popup(\''.$h_formID.'\');">Select</a>';
+                $html[] = '<a class="btn btn-default" href="javascript:void(0);" onclick="return ImageSelect.popup(\''.$h_formID.'\');">Select</a>';
 
                 //クリアボタン
-                $html[] = '<a class="button" href="javascript:void(0);" onclick="return ImageSelect.clear(\''.$h_formID.'\');">Clear</a>';
+                $html[] = '<a class="btn btn-default" href="javascript:void(0);" onclick="return ImageSelect.clear(\''.$h_formID.'\');">Clear</a>';
 
                 //プレビュー画像
                 $html[] = '<a id="image_select_preview_link_'.$h_formID.'" href="'.$h_value.'" onclick="return common_click_image_to_layer(this);" target="_blank">';
@@ -411,7 +411,7 @@ class SOYShop_CategoryAttributeConfig{
                 break;
         }
 
-        $return = $title .  $body . "\n";
+        $return = "<div class=\"form-group\">" . $title .  $body . "</div>\n";
 
         return $return;
     }

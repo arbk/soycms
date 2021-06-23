@@ -55,6 +55,11 @@ class AdminPage extends WebPage{
 		$this->addLabel("mail_config_extension_html", array(
 			"html" => $html
 		));
+
+		//置換文字列の拡張
+		$this->createAdd("replace_string_list", "_common.Config.ReplaceStringListComponent", array(
+			"list" => self::_getReplaceStringList()
+		));
 	}
 
 	function buildForm($type){
@@ -110,6 +115,23 @@ class AdminPage extends WebPage{
 		));
 	}
 
+	private function _getReplaceStringList(){
+		SOYShopPlugin::load("soyshop.order.mail.replace");
+		$values = SOYShopPlugin::invoke("soyshop.order.mail.replace",array("mode" => "strings"))->getStrings();
+		if(!count($values)) return array();
+
+		$list = array();
+		foreach($values as $strings){
+			if(!is_array($strings) || !count($strings)) continue;
+			foreach($strings as $replace => $v){
+				if(!strlen($replace) || !strlen($v)) continue;
+				$list[$replace] = $v;
+			}
+		}
+
+		return $list;
+	}
+
 	function getMailActive(){
 		return $this->mail["active"];
 	}
@@ -143,5 +165,26 @@ class AdminPage extends WebPage{
 		);
 
 		return (isset($array[$type])) ? $array[$type] : "注文受付メール雛型（管理者向け）";
+	}
+
+	function getBreadcrumb(){
+		$type = (isset($_GET["type"])) ? $_GET["type"] : "order";
+		return BreadcrumbComponent::build($this->getMailText($type), array("Config" => "設定", "Config.Mail" => "メール設定"));
+	}
+
+	function getFooterMenu(){
+		try{
+			return SOY2HTMLFactory::createInstance("Config.FooterMenu.MailTemplateFooterMenuPage")->getObject();
+		}catch(Exception $e){
+			//
+			return null;
+		}
+	}
+
+	function getScripts(){
+		$root = SOY2PageController::createRelativeLink("./js/");
+		return array(
+			$root . "main.pack.js",
+		);
 	}
 }

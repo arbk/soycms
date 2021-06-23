@@ -47,6 +47,7 @@ class PluginBlockComponent implements BlockComponent{
 		}
 
         $articlePageUrl = "";
+		$categoryPageUrl = "";
 		if($this->isStickUrl){
 			try{
 				$pageDao = SOY2DAOFactory::create("cms.BlogPageDAO");
@@ -56,17 +57,20 @@ class PluginBlockComponent implements BlockComponent{
 					$articlePageUrl = SOY2PageController::createLink("Page.Preview") ."/". $blogPage->getId() . "?uri=". $blogPage->getEntryPageURL();
 				}else{
 					$articlePageUrl = $page->getSiteRootUrl() . $blogPage->getEntryPageURL();
+					$categoryPageUrl = $page->getSiteRootUrl() . $blogPage->getCategoryPageURL();
 				}
 			}catch(Exception $e){
 				$this->isStickUrl = false;
 			}
 		}
 
-		SOY2::import("site_include.block._common.EntryListComponent");
-		return SOY2HTMLFactory::createInstance("EntryListComponent",array(
+		SOY2::import("site_include.block._common.BlockEntryListComponent");
+		SOY2::import("site_include.blog.component.CategoryListComponent");
+		return SOY2HTMLFactory::createInstance("BlockEntryListComponent",array(
 			"list" => $array,
 			"isStickUrl" => $this->isStickUrl,
-			"articlePageUrl" => (isset($articlePageUrl)) ? $articlePageUrl : null,
+			"articlePageUrl" => $articlePageUrl,
+			"categoryPageUrl" => $categoryPageUrl,
 			"blogPageId"=>$this->blogPageId,
 			"soy2prefix"=>"block",
 		));

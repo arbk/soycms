@@ -57,8 +57,11 @@ class IndexPage extends WebPage{
 		$searchLogic->setOrder($sort);
 
 		//データ取得
-		$total = $searchLogic->getTotalCount();
-		$reviews = $searchLogic->getReviews();
+		$total = (int)$searchLogic->getTotalCount();
+		$reviews = ($total > 0) ? $searchLogic->getReviews() : array();
+
+		DisplayPlugin::toggle("has_review", $total > 0);
+		DisplayPlugin::toggle("no_review", $total === 0);
 
 		/*表示*/
 
@@ -84,7 +87,6 @@ class IndexPage extends WebPage{
 
     	$this->createAdd("review_list", "_common.Review.ReviewListComponent", array(
     		"list" => $reviews,
-    		"itemDao" => $itemDao
     	));
 
     	//操作周り
@@ -134,4 +136,19 @@ class IndexPage extends WebPage{
     private function isReview(){
     	return (class_exists("SOYShopPluginUtil") && (SOYShopPluginUtil::checkIsActive("item_review")));
     }
+
+	function getBreadcrumb(){
+		return BreadcrumbComponent::build("レビュー");
+	}
+
+	function getFooterMenu(){
+		try{
+			return SOY2HTMLFactory::createInstance("Review.FooterMenu.ReviewFooterMenuPage", array(
+				"arguments" => array(null)
+			))->getObject();
+		}catch(Exception $e){
+			//
+			return null;
+		}
+	}
 }

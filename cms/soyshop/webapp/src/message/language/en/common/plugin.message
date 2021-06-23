@@ -17,6 +17,7 @@ UNSPECIFIED = unspecified
 METHOD_PAYMENT = Payment method
 PAYMENT_CREDIT_CART = Credit card payment
 PAYMENT_CACH = Cash payment
-PAYMENT_CASH = Cash payment
+PAYMENT_CREDIT_RECURRING = Recurring billing
+PAYMENT_STORE = Cash payment
 
 ITEM_OPTION = Item Option

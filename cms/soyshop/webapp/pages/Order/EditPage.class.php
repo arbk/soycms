@@ -10,6 +10,8 @@ class EditPage extends WebPage{
 	private $id;
 
 	function doPost(){
+		if(!AUTH_OPERATE) return;	//操作権限がないアカウントの場合は以後のすべての動作を封じる
+
 		if(soy2_check_token()){
 
 			$logic = SOY2Logic::createInstance("logic.order.OrderLogic");
@@ -77,14 +79,17 @@ class EditPage extends WebPage{
 
 			$itemChange = array();
 
+			SOY2::import("domain.config.SOYShop_ShopConfig");
+			$cnf = SOYShop_ShopConfig::load();
+
 			if(isset($_POST["Item"])){
 				$newItems = $_POST["Item"];
 				foreach($itemOrders as $id => $itemOrder){
 					$key = $itemOrder->getId();
 					if(isset($newItems[$key])){
 						$newName  = (isset($newItems[$key]["itemName"])) ? $newItems[$key]["itemName"] : "";
-						$newPrice = (isset($newItems[$key]["itemPrice"])) ? $newItems[$key]["itemPrice"] : null;
-						$newCount = (isset($newItems[$key]["itemCount"])) ? $newItems[$key]["itemCount"] : null;
+						$newPrice = (isset($newItems[$key]["itemPrice"])) ? $newItems[$key]["itemPrice"] : 0;
+						$newCount = (isset($newItems[$key]["itemCount"])) ? $newItems[$key]["itemCount"] : 0;
 						$newAttributes = (isset($newItems[$key]["attributes"])) ? $newItems[$key]["attributes"] : array();
 						$delete   = ( isset($newItems[$key]["itemDelete"]) && $newItems[$key]["itemDelete"] );
 
@@ -143,27 +148,29 @@ class EditPage extends WebPage{
 			){
 				$dao = SOY2DAOFactory::create("shop.SOYShop_ItemDAO");
 				foreach($_POST["AddItemByName"]["name"] as $key => $value){
-					$name = trim($_POST["AddItemByName"]["name"][$key]);
-					$price = trim($_POST["AddItemByName"]["price"][$key]);
-					$count = trim($_POST["AddItemByName"]["count"][$key]);
+					$name = (isset($_POST["AddItemByName"]["name"][$key])) ? trim($_POST["AddItemByName"]["name"][$key]) : "";
+					if(!strlen($name)) continue;
+					$price = (isset($_POST["AddItemByName"]["price"][$key]) && is_numeric($_POST["AddItemByName"]["price"][$key])) ? (int)trim($_POST["AddItemByName"]["price"][$key]) : 0;
+					if(!$cnf->getAllowRegistrationZeroYenProducts() && $price === 0) continue;	//0円商品をカートに入れる事を許可しない
 
-					if(strlen($name) > 0 && strlen($price)>0 && $count > 0){
-						$itemId = 0;//ない商品はid=0
+					$count = (isset($_POST["AddItemByName"]["count"][$key]) && is_numeric($_POST["AddItemByName"]["count"][$key])) ? (int)trim($_POST["AddItemByName"]["count"][$key]) : 1;
+					if(!$cnf->getAllowRegistrationZeroQuantityProducts() && $count === 0) continue;	//0円商品をカートに入れる事を許可しない
 
-						$itemOrder = new SOYShop_ItemOrder();
-						$itemOrder->setOrderId($this->id);
-						$itemOrder->setItemId($itemId);
-						$itemOrder->setItemCount($count);
-						$itemOrder->setItemPrice($price);
-						$itemOrder->setTotalPrice($price * $count);
-						$itemOrder->setItemName($name);
+					$itemId = 0;//ない商品はid=0
 
-						$newItemOrders[] = $itemOrder;
-						$itemChange[] = $itemOrder->getItemName() . "（" . $itemOrder->getItemPrice() . "円×" . $itemOrder->getItemCount() . "点）を追加しました。";
+					$itemOrder = new SOYShop_ItemOrder();
+					$itemOrder->setOrderId($this->id);
+					$itemOrder->setItemId($itemId);
+					$itemOrder->setItemCount($count);
+					$itemOrder->setItemPrice($price);
+					$itemOrder->setTotalPrice($price * $count);
+					$itemOrder->setItemName($name);
 
-						//在庫数の変更
-						self::changeStock($itemOrder, $count);
-					}
+					$newItemOrders[] = $itemOrder;
+					$itemChange[] = $itemOrder->getItemName() . "（" . $itemOrder->getItemPrice() . "円×" . $itemOrder->getItemCount() . "点）を追加しました。";
+
+					//在庫数の変更
+					self::changeStock($itemOrder, $count);
 				}
 
 				//検索用のセッションのクリア
@@ -215,7 +222,8 @@ class EditPage extends WebPage{
 			}
 
 			//変更実行
-			if(count($change) > 0 || count($itemChange) > 0){
+			$isChange = (count($change) || count($itemChange));
+			if($isChange){
 
 				/*
 				 *
@@ -246,7 +254,6 @@ class EditPage extends WebPage{
 				//モジュール分の加算
 				$modulePrice = 0;
 
-				$moduleDao = SOY2DAOFactory::create("plugin.SOYShop_PluginConfigDAO");
 				foreach($modules as $moduleId => $module){
 
 					//税金関係の場合はモジュールから削除して、後で再計算して登録
@@ -256,13 +263,8 @@ class EditPage extends WebPage{
 					}
 
 					//モジュールの再計算のための拡張ポイントを利用する
-					try{
-						$moduleObj = $moduleDao->getByPluginId($moduleId);
-					}catch(Exception $e){
-						$moduleObj = null;
-					}
-
-					if(isset($moduleObj)){
+					$moduleObj = soyshop_get_plugin_object($moduleId);
+					if(!is_null($moduleObj->getId())){
 						SOYShopPlugin::load("soyshop.order.module", $moduleObj);
 						$delegate = SOYShopPlugin::invoke("soyshop.order.module", array(
 							"mode" => "edit",
@@ -310,7 +312,7 @@ class EditPage extends WebPage{
 					if(count($itemChange) > 0){
 						foreach($itemOrders as $itemOrder){
 							//注文数が空の場合は削除
-							if($itemOrder->getItemCount() == 0){
+							if(!$cnf->getAllowRegistrationZeroQuantityProducts() && $itemOrder->getItemCount() == 0){
 								$itemOrderDAO->delete($itemOrder);
 							}else{
 								$itemOrderDAO->update($itemOrder);
@@ -319,13 +321,12 @@ class EditPage extends WebPage{
 						//追加商品
 						SOYShopPlugin::load("soyshop.item.order");
 						foreach($newItemOrders as $itemOrder){
-							if($itemOrder->getItemCount() > 0){
-								$itemOrderId = $itemOrderDAO->insert($itemOrder);
-								SOYShopPlugin::invoke("soyshop.item.order", array(
-									"mode" => "order",
-									"itemOrderId" => $itemOrderId
-								));
-							}
+							if(!$cnf->getAllowRegistrationZeroQuantityProducts() && $itemOrder->getItemCount() === 0) continue;
+							$itemOrderId = $itemOrderDAO->insert($itemOrder);
+							SOYShopPlugin::invoke("soyshop.item.order", array(
+								"mode" => "order",
+								"itemOrderId" => $itemOrderId
+							));
 						}
 
 						SOYShopPlugin::invoke("soyshop.item.order", array(
@@ -346,14 +347,24 @@ class EditPage extends WebPage{
 					$dao->rollback();
 					SOY2PageController::jump("Order.Edit." . $this->id . "?failed");
 				}
-
-				//SOY2PageController::jump("Order.Detail." . $this->id . "?updated");
-				SOY2PageController::jump("Order.Edit." . $this->id . "?updated");
 			}
 
+			SOYShopPlugin::load("soyshop.order.edit");
+			SOYShopPlugin::invoke("soyshop.order.edit", array(
+				"orderId" => $order->getId(),
+				"mode" => "update",
+				"isChange" => $isChange
+			));
+
+			//エラーがあった時に何らかの事をする
+			SOYShopPlugin::invoke("soyshop.order.edit", array(
+				"orderId" => $order->getId(),
+				"mode" => "error",
+				"isChange" => $isChange
+			));
+
 			//変更なし
-			//SOY2PageController::jump("Order.Detail." . $this->id);
-			SOY2PageController::jump("Order.Edit." . $this->id);
+			SOY2PageController::jump("Order.Edit." . $this->id . "?updated");
 		}
 	}
 
@@ -386,18 +397,10 @@ class EditPage extends WebPage{
 	//外税 $reducedRateTotalは軽減税率商品金額の合算
 	private function setConsumptionTax($config, $total, $reducedRateTotal){
 		$pluginId = $config->getConsumptionTaxModule();
-
 		if(!isset($pluginId)) return null;
 
-   		$pluginDao = SOY2DAOFactory::create("plugin.SOYShop_PluginConfigDAO");
-
-   		try{
-   			$plugin = $pluginDao->getByPluginId($pluginId);
-   		}catch(Exception $e){
-   			return null;
-   		}
-
-   		if($plugin->getIsActive() == SOYShop_PluginConfig::PLUGIN_INACTIVE) return null;
+		$plugin = soyshop_get_plugin_object($pluginId);
+   		if(is_null($plugin->getId()) || $plugin->getIsActive() == SOYShop_PluginConfig::PLUGIN_INACTIVE) return null;
 
    		SOYShopPlugin::load("soyshop.tax.calculation", $plugin);
 		return SOYShopPlugin::invoke("soyshop.tax.calculation", array(
@@ -453,18 +456,26 @@ class EditPage extends WebPage{
 	}
 
 	function __construct($args) {
+		if(!AUTH_OPERATE || !isset($args[0])) SOY2PageController::jump("Order");
+		$this->id = (int)$args[0];
+
 		MessageManager::addMessagePath("admin");
-		$this->id = (isset($args[0])) ? (int)$args[0] : "";
 
 		SOY2::import("domain.config.SOYShop_ShopConfig");
 
 		parent::__construct();
 
-		try{
-			$order = SOY2Logic::createInstance("logic.order.OrderLogic")->getById($this->id);
-		}catch(Exception $e){
-			SOY2PageController::jump("Order.Detail." . $this->id);
-		}
+		$order = soyshop_get_order_object($this->id);
+		if(is_null($order->getId())) SOY2PageController::jump("Order");
+
+		//エラーメッセージ等
+		SOYShopPlugin::load("soyshop.order.edit");
+		$msgs = SOYShopPlugin::invoke("soyshop.order.edit", array("orderId" => $order->getId(),"mode" => "message"))->getMessages();
+		if(is_null($msgs)) $msgs = array();
+
+		$this->createAdd("message_list", "_common.Order.EditPageMessageListComponent", array(
+			"list" => $msgs,
+		));
 
 		//言語設定
 		$attrs = $order->getAttributeList();
@@ -525,7 +536,7 @@ class EditPage extends WebPage{
 		));
 
 		$this->addLabel("order_price", array(
-			"text" => number_format($order->getPrice()) . " 円"
+			"text" => soy2_number_format($order->getPrice()) . " 円"
 		));
 
 		//支払い方法の変更
@@ -623,6 +634,10 @@ class EditPage extends WebPage{
 			"name" => "ClaimedAddress[address2]",
 			"value" => (isset($claimedAddress["address2"])) ? $claimedAddress["address2"] : ""
 		));
+		$this->addInput("claimed_customerinfo_address3", array(
+			"name" => "ClaimedAddress[address3]",
+			"value" => (isset($claimedAddress["address3"])) ? $claimedAddress["address3"] : ""
+		));
 		$this->addInput("claimed_customerinfo_tel_number", array(
 			"name" => "ClaimedAddress[telephoneNumber]",
 			"value" => (isset($claimedAddress["telephoneNumber"])) ? $claimedAddress["telephoneNumber"] : ""
@@ -660,6 +675,10 @@ class EditPage extends WebPage{
 			"name" => "Address[address2]",
 			"value" => (isset($address["address2"])) ? $address["address2"] : ""
 		));
+		$this->addInput("order_customerinfo_address3", array(
+			"name" => "Address[address3]",
+			"value" => (isset($address["address3"])) ? $address["address3"] : ""
+		));
 		$this->addInput("order_customerinfo_tel_number", array(
 			"name" => "Address[telephoneNumber]",
 			"value" => (isset($address["telephoneNumber"])) ? $address["telephoneNumber"] : ""
@@ -671,13 +690,18 @@ class EditPage extends WebPage{
 		));
 
 		/*** 注文商品 ***/
+		//仕入値を出力するか？
+		$this->addModel("is_purchase_price", array(
+			"visible" => (SOYShop_ShopConfig::load()->getDisplayPurchasePriceOnAdmin())
+		));
+
 		$this->createAdd("item_list", "_common.Order.ItemOrderFormListComponent", array(
 			"list" => $logic->getItemsByOrderId($this->id),
 			"htmlObj" => $this
 		));
 
 		$this->addLabel("order_total_price", array(
-			"text" => number_format($order->getPrice())
+			"text" => soy2_number_format($order->getPrice())
 		));
 
 		$this->createAdd("module_list", "_common.Order.ModuleFormListComponent", array(
@@ -856,6 +880,7 @@ class EditPage extends WebPage{
 		if(isset($address["area"]) && isset($newAddress["area"]) &&  $address["area"] != $newAddress["area"])			$change[]=self::getHistoryText("請求先",SOYShop_Area::getAreaText($address["area"]) ,SOYShop_Area::getAreaText($newAddress["area"]));
 		if(isset($address["address1"]) && isset($newAddress["address1"]) && $address["address1"] != $newAddress["address1"])$change[]=self::getHistoryText("請求先",$address["address1"] ,$newAddress["address1"]);
 		if(isset($address["address2"]) && isset($newAddress["address2"]) && $address["address2"] != $newAddress["address2"])$change[]=self::getHistoryText("請求先",$address["address2"] ,$newAddress["address2"]);
+		if(isset($address["address3"]) && isset($newAddress["address3"]) && $address["address3"] != $newAddress["address3"])$change[]=self::getHistoryText("請求先",$address["address3"] ,$newAddress["address3"]);
 		if(isset($address["telephoneNumber"]) && isset($newAddress["telephoneNumber"]) && $address["telephoneNumber"] != $newAddress["telephoneNumber"])$change[]=self::getHistoryText("請求先",$address["telephoneNumber"] ,$newAddress["telephoneNumber"]);
 
 		$order->setClaimedAddress($newAddress);
@@ -878,6 +903,7 @@ class EditPage extends WebPage{
 		if(isset($address["area"]) && isset($newAddress["area"]) && $address["area"] != $newAddress["area"])				$change[]=self::getHistoryText("宛先",SOYShop_Area::getAreaText($address["area"]) ,SOYShop_Area::getAreaText($newAddress["area"]));
 		if(isset($address["address1"]) && isset($newAddress["address1"]) && $address["address1"] != $newAddress["address1"])$change[]=self::getHistoryText("宛先",$address["address1"] ,$newAddress["address1"]);
 		if(isset($address["address2"]) && isset($newAddress["address2"]) && $address["address2"] != $newAddress["address2"])$change[]=self::getHistoryText("宛先",$address["address2"] ,$newAddress["address2"]);
+		if(isset($address["address3"]) && isset($newAddress["address3"]) && $address["address3"] != $newAddress["address3"])$change[]=self::getHistoryText("宛先",$address["address3"] ,$newAddress["address3"]);
 		if(isset($address["telephoneNumber"]) && isset($newAddress["telephoneNumber"]) && $address["telephoneNumber"] != $newAddress["telephoneNumber"])$change[]=self::getHistoryText("宛先",$address["telephoneNumber"] ,$newAddress["telephoneNumber"]);
 
 		$order->setAddress($newAddress);
@@ -1098,7 +1124,7 @@ class EditPage extends WebPage{
 
 		foreach($modules as $key => $module){
 			if(isset($newModules[$key])){
-				$newValue = (isset($newModules[$key]["price"])) ? $newModules[$key]["price"] : 0;
+				$newValue = (isset($newModules[$key]["price"])) ? (int)str_replace(",", "", $newModules[$key]["price"]) : 0;
 				$newName  = (isset($newModules[$key]["name"])) ? $newModules[$key]["name"] : "";
 				$newIsInclude = (isset($newModules[$key]["isInclude"]) && $newModules[$key]["isInclude"] == 1);
 				$delete   = ( isset($newModules[$key]["delete"]) && $newModules[$key]["delete"] );
@@ -1150,17 +1176,23 @@ class EditPage extends WebPage{
 		return $array;
 	}
 
-	function getCSS(){
-		$root = SOY2PageController::createRelativeLink("./js/");
-		return array(
-			$root . "tools/soy2_date_picker.css"
-		);
+	function getBreadcrumb(){
+		return BreadcrumbComponent::build("注文編集", array("Order" => "注文管理", "Order.Detail." . $this->id => "注文詳細"));
 	}
+
+	// function getCSS(){
+	// 	$root = SOY2PageController::createRelativeLink("./js/");
+	// 	return array(
+	// 		$root . "tools/soy2_date_picker.css"
+	// 	);
+	// }
 
 	function getScripts(){
 		$root = SOY2PageController::createRelativeLink("./js/");
 		return array(
-			$root . "tools/soy2_date_picker.pack.js"
+			//$root . "tools/soy2_date_picker.pack.js"
+			$root . "tools/datepicker-ja.js",
+			$root . "tools/datepicker.js"
 		);
 	}
 }

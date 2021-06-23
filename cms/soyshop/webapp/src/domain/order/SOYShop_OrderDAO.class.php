@@ -39,6 +39,14 @@ abstract class SOYShop_OrderDAO extends SOY2DAO{
 	abstract function countByUserIdIsRegistered($userId);
 
 	/**
+	 * @return column_count
+	 * @columns count(id) as count
+	 * @query #userId# = :userId AND #status# = 5
+	 * @order id desc
+	 */
+	abstract function countByUserIdIsCanceled($userId);
+
+	/**
 	 * @return object
 	 * @query #id# = :id AND #userId# = :userId
 	 */
@@ -74,6 +82,66 @@ abstract class SOYShop_OrderDAO extends SOY2DAO{
 	 * @return object
 	 */
 	abstract function getByTrackingNumber($trackingNumber);
+
+	/**
+	 * @final
+	 */
+	function getTrackingNumberListByIds($ids){
+		if(!is_array($ids) || !count($ids)) return array();
+
+		try{
+			$res = $this->executeQuery("SELECT id, tracking_number FROM soyshop_order WHERE id IN (" . implode(",", $ids) . ")");
+		}catch(Exception $e){
+			$res = array();
+		}
+		if(!count($res)) return array();
+
+		$list = array();
+		foreach($res as $v){
+			$list[(int)$v["id"]] = $v["tracking_number"];
+		}
+		return $list;
+	}
+
+	/**
+	 * @final
+	 */
+	function getOrderIdAndUserIdPairList($ids){
+		if(!is_array($ids) || !count($ids)) return array();
+
+		try{
+			$res = $this->executeQuery("SELECT id, user_id FROM soyshop_order WHERE id IN (" . implode(",", $ids) . ")");
+		}catch(Exception $e){
+			$res = array();
+		}
+		if(!count($res)) return array();
+
+		$list = array();
+		foreach($res as $v){
+			$list[(int)$v["id"]] = (int)$v["user_id"];
+		}
+		return $list;
+	}
+
+	/**
+	 * @final
+	 */
+	function getOrderDateListByIds($ids){
+		if(!is_array($ids) || !count($ids)) return array();
+
+		try{
+			$res = $this->executeQuery("SELECT id, order_date FROM soyshop_order WHERE id IN (" . implode(",", $ids) . ")");
+		}catch(Exception $e){
+			$res = array();
+		}
+		if(!count($res)) return array();
+
+		$list = array();
+		foreach($res as $v){
+			$list[(int)$v["id"]] = (int)$v["order_date"];
+		}
+		return $list;
+	}
 
 	/**
 	 * @trigger onInsert

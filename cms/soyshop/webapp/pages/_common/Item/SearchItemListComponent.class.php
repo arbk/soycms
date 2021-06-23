@@ -1,7 +1,7 @@
 <?php
 
 class SearchItemListComponent extends HTMLList{
-	
+
 	private $detailLink;
 	private $categories;
 	private $orderDAO;
@@ -21,6 +21,16 @@ class SearchItemListComponent extends HTMLList{
 		$this->addLabel("item_publish", array(
 			"text" => $item->getPublishText()
 		));
+
+		$imagePath = soyshop_convert_file_path_on_admin($item->getAttribute("image_small"));
+		if(!strlen($imagePath)) $imagePath = soyshop_get_item_sample_image();
+		$this->addImage("item_small_image", array(
+            //"src" => "/" . SOYSHOP_ID . "/im.php?src=" . $imagePath . "&width=60",	//im.phpが使えなくなった
+			"src" => $imagePath,
+			"attr:style" => "width:60px;"
+
+        ));
+
 		$this->addLabel("sale_text", array(
 			"text" => " ".MessageManager::get("ITEM_ON_SALE"),
 			"visible" => $item->isOnSale()
@@ -35,21 +45,21 @@ class SearchItemListComponent extends HTMLList{
 		));
 
 		$this->addLabel("item_price", array(
-			"text" => number_format($item->getPrice())
+			"text" => soy2_number_format($item->getPrice())
 		));
 		$this->addModel("is_sale", array(
 			"visible" => $item->isOnSale()
 		));
 		$this->addLabel("sale_price", array(
-			"text" => number_format($item->getSalePrice())
+			"text" => soy2_number_format($item->getSalePrice())
 		));
 
 		$this->addLabel("item_stock", array(
-			"text" => number_format($item->getStock())
+			"text" => soy2_number_format($item->getStock())
 		));
 
 		$this->addLabel("item_category", array(
-			"text" => (isset($this->categories[$item->getCategory()])) ? $this->categories[$item->getCategory()]->getName() : "-"
+			"text" => (is_numeric($item->getCategory()) && isset($this->categories[$item->getCategory()])) ? $this->categories[$item->getCategory()]->getName() : "-"
 		));
 
 		$detailLink = $this->getDetailLink() . $item->getId();
@@ -58,7 +68,7 @@ class SearchItemListComponent extends HTMLList{
 		));
 
 		$this->addLabel("order_count", array(
-			"text" => number_format($this->getOrderCount($item->getId()))
+			"text" => soy2_number_format(self::_getOrderCount($item->getId()))
 		));
 	}
 
@@ -84,7 +94,8 @@ class SearchItemListComponent extends HTMLList{
 		$this->orderDAO = $orderDAO;
 	}
 
-	function getOrderCount($id){
+	private function _getOrderCount($id){
+		if(!is_numeric($id)) return 0;
 		try{
 			return $this->orderDAO->countByItemId($id);
 		}catch(Exception $e){
@@ -92,4 +103,3 @@ class SearchItemListComponent extends HTMLList{
 		}
 	}
 }
-?>

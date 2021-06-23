@@ -1,8 +1,13 @@
 # soycms
-非公式 PHP7用  
-PHP7でSOY CMSを動かすためにいくつか修正している他、PHP5でも影響のある不具合を修正  
+非公式 PHP7以降用(PHP8でも動作確認済み)  
+表示速度がとにかく速いCMSを主眼において開発を続けています。  
+https://saitodev.co/category/SEO  
+  
+当リポジトリの改修内容を公式の開発の方が採用することを節に願います。  
 公式:http://www.soycms.net/  
-
+  
+PHP7以降でSOY CMSを動かすためにいくつか修正している他、PHP5でも影響のある不具合を修正  
+  
 MySQL5.7で標準設定になったsql_modeのONLY_FULL_GROUP_BYにも対応  
 
 packageディレクトリ内にパッケージ化したzipファイルがあります。  

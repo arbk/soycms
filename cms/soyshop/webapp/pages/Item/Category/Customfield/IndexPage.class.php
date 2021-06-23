@@ -111,7 +111,18 @@ class IndexPage extends WebPage{
             "list" => $config,
             "types" => $types
         ));
-
-        DisplayPlugin::toggle("custom_plugin", SOYShopPluginUtil::checkIsActive("common_category_customfield"));
     }
+
+	function getBreadcrumb(){
+		return BreadcrumbComponent::build("カスタム項目管理", array("Item" => "商品管理", "Item.Category" => "カテゴリ管理"));
+	}
+
+	function getFooterMenu(){
+		try{
+			return SOY2HTMLFactory::createInstance("Item.FooterMenu.CategoryFooterMenuPage")->getObject();
+		}catch(Exception $e){
+			//
+			return null;
+		}
+	}
 }

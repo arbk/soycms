@@ -11,7 +11,7 @@ class ZeroSaitodevPlugin{
 			"author" => "齋藤毅",
 			"url" => "https://saitodev.co/",
 			"mail" => "tsuyoshi@saitodev.co",
-			"version"=>"1.0"
+			"version"=>"1.1"
 		));
 
 		//二回目以降の動作
@@ -41,7 +41,7 @@ class ZeroSaitodevPlugin{
 		if(file_exists($cacheFile) && self::checkCacheOld($cacheFile)){
 			$contents = file_get_contents($cacheFile);
 		}else{
-			$contents = file_get_contents("https://saitodev.co/soycms.xml", false, $ctx = stream_context_create(array(
+			$contents = @file_get_contents("https://saitodev.co/soycms.xml", false, $ctx = stream_context_create(array(
 				'http' => array(
 					'timeout' => 3
 				)
@@ -59,9 +59,10 @@ class ZeroSaitodevPlugin{
 				if(property_exists($entries, "entry") && count($entries->entry)){
 					$html[] = "<div class=\"alert alert-info\" style=\"margin:5px 20px;\">下記で紹介している機能を使用する場合はSOY CMSのバージョンアップを行って下さい。最新版のダウンロードは<a href=\"https://saitodev.co/soycms\" target=\"_blank\" style=\"text-decoration:underline;\">こちら</a>から</div>";
 					$html[] = "<ul class=\"soycms_news\">";
-					for($i = 0; $i < count($entries->entry); $i++){
+					$entCnt = count($entries->entry);
+					for($i = 0; $i < $entCnt; ++$i){
 						$entry = $entries->entry[$i];
-						$html[] = "<li>" . $entry->create_date . "&nbsp;&nbsp;&nbsp;<a href=\"" . $entry->url . "\" target=\"_blank\">" . $entry->entry_title . "</a></li>";
+						$html[] = "<li>" . $entry->create_date . "&nbsp;&nbsp;&nbsp;<a href=\"" . $entry->url . "\" target=\"_blank\" rel=\"noopener\">" . $entry->entry_title . "</a></li>";
 					}
 					$html[] = "</ul>";
 				}
@@ -72,7 +73,11 @@ class ZeroSaitodevPlugin{
 		}
 
 		//記事一覧へのリンク
-		$html[] = "<div class=\"soycms_news text-right\"><a href=\"https://saitodev.co/category/SOY_CMS\" target=\"_blank\">SOY CMSの記事をもっと読む</a></div>";
+		$html[] = "<div class=\"soycms_news text-center\">";
+		$html[] = "<a href=\"https://saitodev.co/category/SOY_CMS\" target=\"_blank\" rel=\"noopener\" class=\"btn btn-info\">SOY CMSの記事をもっと読む</a>";
+		$html[] = "&nbsp;&nbsp;";
+		$html[] = "<a href=\"https://saitodev.co/app/bulletin/board/topic/1\" target=\"_blank\" rel=\"noopener\" class=\"btn btn-warning\">SOY CMSの掲示板を開く</a>";
+		$html[] = "</div>";
 		$html[] = "<style>" . file_get_contents(dirname(__FILE__) . "/css/style.css") . "</style>";
 
 		return array("title" => $title, "content" => implode("\n", $html));

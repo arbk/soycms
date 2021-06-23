@@ -100,8 +100,16 @@ function soyshop_parts_mypage_login($html, $page){
 		"link" => soyshop_get_mypage_url() . "/register",
 		"soy2prefix" => SOYSHOP_SITE_PREFIX
 	));
+	$obj->addModel("is_login_link", array(
+		"visible" => (SOYShop_DataSets::get("config.mypage.id") != "none"),
+		"soy2prefix" => SOYSHOP_SITE_PREFIX
+	));
 	$obj->addLink("login_link", array(
 		"link" => soyshop_get_mypage_url() . "/login",
+		"soy2prefix" => SOYSHOP_SITE_PREFIX
+	));
+	$obj->addLabel("login_link_text", array(
+		"text" => soyshop_get_mypage_url() . "/login",
 		"soy2prefix" => SOYSHOP_SITE_PREFIX
 	));
 
@@ -176,6 +184,15 @@ function soyshop_parts_mypage_login($html, $page){
 		"soy2prefix" => SOYSHOP_SITE_PREFIX
 	));
 
+	$obj->addModel("is_bank", array(
+		"visible" => (SOYShopPluginUtil::checkIsActive("transfer_information")),
+		"soy2prefix" => SOYSHOP_SITE_PREFIX
+	));
+	$obj->addLink("bank_link", array(
+		"link" => soyshop_get_mypage_url() . "/bank",
+		"soy2prefix" => SOYSHOP_SITE_PREFIX
+	));
+
 	$obj->addModel("is_inquiry", array(
 		"visible" => (SOYShopPluginUtil::checkIsActive("inquiry_on_mypage")),
 		"soy2prefix" => SOYSHOP_SITE_PREFIX
@@ -196,11 +213,16 @@ function soyshop_parts_mypage_login($html, $page){
 		$logoutLink .= "?r=" . soyshop_remove_get_value(rawurldecode($_SERVER["REQUEST_URI"]));
 	}
 
-	$obj->addLink("logout_link", array(
+	$obj->addActionLink("logout_link", array(
 		"link" => $logoutLink,
 		"soy2prefix" => SOYSHOP_SITE_PREFIX
 	));
 
+
+	$obj->addModel("is_cart_link", array(
+		"visible" => (SOYShop_DataSets::get("config.cart.cart_id") != "none"),
+		"soy2prefix" => SOYSHOP_SITE_PREFIX
+	));
 
 	//ログインしている時だけカートを表示したい場合用
 	$obj->addLink("cart_link", array(
@@ -212,9 +234,25 @@ function soyshop_parts_mypage_login($html, $page){
 	$obj->addModel("is_reserve", array(
 		"visible" => (SOYShopPluginUtil::checkIsActive("reserve_calendar") && soyshop_get_mypage_id() == "bootstrap")
 	));
-	
+
 	$obj->addLink("reserve_link", array(
 		"link" => soyshop_get_mypage_url() . "/reserve",
+		"soy2prefix" => SOYSHOP_SITE_PREFIX
+	));
+
+	SOYShopPlugin::load("soyshop.mypage.card");
+	$obj->addModel("is_card", array(
+		"visible" => SOYShopPlugin::invoke("soyshop.mypage.card")->hasOptionPage(),
+		"soy2prefix" => SOYSHOP_SITE_PREFIX
+	));
+
+	$obj->addLink("card_link", array(
+		"link" => soyshop_get_mypage_url() . "/card",
+		"soy2prefix" => SOYSHOP_SITE_PREFIX
+	));
+
+	$obj->addLabel("board_link_text", array(
+		"text" => soyshop_get_mypage_url() . "/board",
 		"soy2prefix" => SOYSHOP_SITE_PREFIX
 	));
 

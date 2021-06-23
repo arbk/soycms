@@ -1,6 +1,7 @@
 <?php
 SOY2::import("domain.user.SOYShop_User");
 SOY2::import("domain.order.SOYShop_ItemModule");
+SOYShopPlugin::load("soyshop.order.module");
 SOYShopPlugin::load("soyshop.order.status");
 SOYShopPlugin::load("soyshop.order.status.sort");
 
@@ -10,11 +11,12 @@ SOYShopPlugin::load("soyshop.order.status.sort");
 class SOYShop_Order {
 
 	//注文ステータス
+	const ORDER_STATUS_INVALID = 0;		//仮登録した注文をそのまま破棄(クレジットカード周辺)
 	const ORDER_STATUS_INTERIM = 1;		//仮登録
-	const ORDER_STATUS_REGISTERED = 2; //新規受付
-	const ORDER_STATUS_RECEIVED = 3; //受付完了
-	const ORDER_STATUS_SENDED = 4; //発送済み
-	const ORDER_STATUS_CANCELED = 5; //キャンセル
+	const ORDER_STATUS_REGISTERED = 2; 	//新規受付
+	const ORDER_STATUS_RECEIVED = 3; 	//受付完了
+	const ORDER_STATUS_SENDED = 4; 		//発送済み
+	const ORDER_STATUS_CANCELED = 5; 	//キャンセル
 
 	//支払ステータス
 	const PAYMENT_STATUS_WAIT = 1; //支払待ち
@@ -214,12 +216,12 @@ class SOYShop_Order {
 		static $list;	//2度読み込むことがないのでstatic
 		if(is_null($list)){
 			$list = array(
-					//支払ステータス
-					SOYShop_Order::PAYMENT_STATUS_WAIT => "支払待ち",
-					SOYShop_Order::PAYMENT_STATUS_CONFIRMED => "支払確認済み",
-					SOYShop_Order::PAYMENT_STATUS_ERROR => "入金エラー",
-					SOYShop_Order::PAYMENT_STATUS_DIRECT => "直接支払",
-					SOYShop_Order::PAYMENT_STATUS_REFUNDED => "返金済み",
+				//支払ステータス
+				SOYShop_Order::PAYMENT_STATUS_WAIT => "支払待ち",
+				SOYShop_Order::PAYMENT_STATUS_CONFIRMED => "支払確認済み",
+				SOYShop_Order::PAYMENT_STATUS_ERROR => "入金エラー",
+				SOYShop_Order::PAYMENT_STATUS_DIRECT => "直接支払",
+				SOYShop_Order::PAYMENT_STATUS_REFUNDED => "返金済み",
 	    	);
 
 			//拡張ポイント
@@ -335,13 +337,20 @@ class SOYShop_Order {
     	$this->claimedAddress = $claimedAddress;
     }
     function getAddressArray(){
-		if(is_null($this->address) || !strlen($this->address)) return array("name" => "", "zipCode" => "", "area" => "", "address1" => "", "address2" => "");
-		return soy2_unserialize($this->address);
+		return self::_address($this->address);
     }
     function getClaimedAddressArray(){
-		if(is_null($this->claimedAddress) || !strlen($this->claimedAddress)) return array("name" => "", "zipCode" => "", "area" => "", "address1" => "", "address2" => "");
-		return soy2_unserialize($this->claimedAddress);
+		return self::_address($this->claimedAddress);
     }
+	private function _address($str){
+		$addr = (is_string($str) && strlen($str)) ? soy2_unserialize($str) : array();
+		if(!is_array($addr)) $addr = array();
+		foreach(array("name", "zipCode", "area", "address1", "address2", "address3") as $l){
+			if(!isset($addr[$l])) $addr[$l] = "";
+		}
+		return $addr;
+	}
+
     function getAttributes() {
     	return $this->attributes;
     }
@@ -353,7 +362,22 @@ class SOYShop_Order {
     function getAttributeList(){
     	if(is_array($this->attributes) && count($this->attributes) === 0) return array();
     	$res = soy2_unserialize($this->attributes);
-    	return (is_array($res)) ? $res : array();
+		if(!is_array($res)) return array();
+
+		//表記名を変更する
+		$replacements = SOYShopPlugin::invoke("soyshop.order.module", array(
+			"mode" => "replace",
+			"moduleIds" => array_keys($res)
+		))->getReplacements();
+
+		if(count($replacements)){
+			foreach($replacements as $moduleId => $new){
+				if(!isset($res[$moduleId]) || !isset($res[$moduleId]["value"])) continue;
+				$res[$moduleId]["value"] = $new;
+			}
+		}
+
+		return $res;
     }
     function getAttribute($key) {
     	$attributes = $this->getAttributeList();

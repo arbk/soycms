@@ -26,6 +26,6 @@ class ModuleFormListComponent extends HTMLList {
 			"value" => $entity->getPrice()
 		));
 
-		return $entity->isVisible();
+		return ($entity->isVisible());
 	}
 }

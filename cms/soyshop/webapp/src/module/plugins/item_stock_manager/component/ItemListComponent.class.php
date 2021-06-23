@@ -3,7 +3,7 @@
 class ItemListComponent extends HTMLList{
 
 	private $detailLink;
-	private $categories;
+	private $categories=array();
 
 	private $stockLogic;
 
@@ -14,9 +14,11 @@ class ItemListComponent extends HTMLList{
 		));
 
 		$imagePath = soyshop_convert_file_path_on_admin($item->getAttribute("image_small"));
-		if(!strlen($imagePath)) $imagePath = "/" . SOYSHOP_ID . "/themes/sample/noimage.jpg";
+		if(!strlen($imagePath)) $imagePath = soyshop_get_item_sample_image();
 		$this->addImage("item_small_image", array(
-            "src" => SOYSHOP_SITE_URL . "im.php?src=" . $imagePath . "&width=60",
+			//"src" => "/" . SOYSHOP_ID . "/im.php?src=" . $imagePath . "&width=60",	//im.phpが使えなくなった
+			"src" => $imagePath,
+			"attr:style" => "width:60px;"
         ));
 
 		$this->addLabel("item_id", array(
@@ -44,13 +46,13 @@ class ItemListComponent extends HTMLList{
 		));
 
 		$this->addLabel("item_price", array(
-			"text" => number_format($item->getPrice())
+			"text" => soy2_number_format($item->getPrice())
 		));
 		$this->addModel("is_sale", array(
 			"visible" => $item->isOnSale()
 		));
 		$this->addLabel("sale_price", array(
-			"text" => number_format($item->getSalePrice())
+			"text" => soy2_number_format($item->getSalePrice())
 		));
 
 		$this->addInput("item_stock_input", array(
@@ -72,8 +74,9 @@ class ItemListComponent extends HTMLList{
 //			"text" => number_format(self::getOrderCount($item))
 		));
 
+		$categoryId = (is_numeric($item->getCategory())) ? (int)$item->getCategory() : 0;
 		$this->addLabel("item_category", array(
-			"text" => (isset($this->categories[$item->getCategory()])) ? $this->categories[$item->getCategory()]->getNameWithStatus() : "-"
+			"text" => (is_array($this->categories) && isset($this->categories[$categoryId])) ? $this->categories[$categoryId]->getNameWithStatus() : "-"
 		));
 	}
 
@@ -95,4 +98,3 @@ class ItemListComponent extends HTMLList{
 		$this->stockLogic = $stockLogic;
 	}
 }
-?>

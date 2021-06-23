@@ -8,6 +8,8 @@ class DetailPage extends WebPage{
 	public $backward;
 
 	function doPost(){
+		if(!AUTH_OPERATE) return;	//操作権限がないアカウントの場合は以後のすべての動作を封じる
+
 		if(!soy2_check_token()){
 			SOY2PageController::jump("User.Detail." . $this->id);
 		}
@@ -16,7 +18,7 @@ class DetailPage extends WebPage{
 		$dao = SOY2DAOFactory::create("user.SOYShop_UserDAO");
 
 		//元のデータを読み込む：readonlyな値をからの値で上書きしないように
-		$user = $dao->getById($this->id);
+		$user = soyshop_get_user_object($this->id);
 
 		if(isset($_POST["Customer"])){
 			$detail = $_POST["Customer"];
@@ -30,7 +32,7 @@ class DetailPage extends WebPage{
 			}
 
 			//ログインIDの重複チェック
-			if(strlen($_POST["Customer"]["accountId"])){
+			if(isset($_POST["Customer"]["accountId"]) && strlen($_POST["Customer"]["accountId"])){
 				//重複している場合は元の値を上書き
 				try{
 					$oldUser = $dao->getByAccountIdAndNotId($_POST["Customer"]["accountId"], $this->id);
@@ -149,21 +151,30 @@ class DetailPage extends WebPage{
 
     	parent::__construct();
 
-    	$dao = SOY2DAOFactory::create("user.SOYShop_UserDAO");
+		$this->addLabel("user_label", array("text" => SHOP_USER_LABEL));
 
-    	try{
-    		$shopUser = $dao->getById($id);
-    	}catch(Exception $e){
-    		SOY2PageController::jump("User");
-    		exit;
-    	}
+		//詳細ページを開いた時に何らかの処理をする
+		SOYShopPlugin::load("soyshop.user");
+		SOYShopPlugin::invoke("soyshop.user", array(
+			"mode" => "detail",
+			"userId" => $this->id
+		));
+
+		DisplayPlugin::toggle("sended", isset($_GET["sended"]));
+
+    	$shopUser = soyshop_get_user_object($id);
+		if(is_null($shopUser->getId())) SOY2PageController::jump("User");
 
 		//カートIDとマイページIDがnoneの場合は公開側からの注文ボタンを表示しない
 		DisplayPlugin::toggle("order_cart_link", (soyshop_get_cart_id() != "none" && soyshop_get_mypage_id() != "none"));
 
 		//管理画面から注文ボタン
 		SOY2::import("domain.config.SOYShop_ShopConfig");
-		DisplayPlugin::toggle("orderable_button", SOYShop_ShopConfig::load()->getDisplayOrderButtonOnUserAdminPage());
+		$isDisplayOrderButton = SOYShop_ShopConfig::load()->getDisplayOrderButtonOnUserAdminPage();
+		DisplayPlugin::toggle("orderable_button", $isDisplayOrderButton);
+
+		//例外：注文関連ボタンを表示しない設定だけれども、マイページが有効の場合はログインボタンを出力する
+		DisplayPlugin::toggle("log_in_button", (!$isDisplayOrderButton && soyshop_get_mypage_id() != "none"));
 
     	//ユーザの画像保存ディレクトリが無い場合は生成する
 		$dir = $shopUser->getAttachmentsPath();
@@ -187,13 +198,12 @@ class DetailPage extends WebPage{
 		));
 
 		/* フォーム */
-    	self::buildForm($shopUser);		//共通など。
-		self::buildJobForm($shopUser);		//法人
-		self::buildProfileForm($shopUser);	//プロフィール
-		self::buildMailLogForm($shopUser);	//メールログ
-		self::buildPointForm($shopUser);	//ポイント
-		self::buildTicketForm($shopUser);	//チケット
-    	self::buildAddressForm($shopUser);	//お届け先
+    	self::_buildForm($shopUser);		//共通など。
+		self::_buildJobForm($shopUser);		//法人
+		self::_buildProfileForm($shopUser);	//プロフィール
+		self::_buildAddressForm($shopUser);	//お届け先
+		self::_buildPointForm($shopUser);	//ポイント
+		self::_buildTicketForm($shopUser);	//チケット
 
     	/**
     	 * ユーザカスタムフィールド
@@ -224,32 +234,37 @@ class DetailPage extends WebPage{
 
 
 		//注文
-		$orderDao = SOY2DAOFactory::create("order.SOYShop_OrderDAO");
-		$count = $orderDao->countByUserIdIsRegistered($id);
-
-		//1つしかなければそこにリンクする
-		if($count == 1){
-			try{
-				$orders = $orderDao->getByUserIdIsRegistered($id);
-				$order = $orders[0];
-			}catch(Exception $e){
-				//
-			}
-		}
+		list($count, $cancelCount) = self::_getOrderCountByUserId($id);
 
 		$this->addLabel("order_count", array(
 			"text" => $count,
 		));
+		DisplayPlugin::toggle("cancel_count", $cancelCount);
+		$this->addLabel("order_cancel_count", array(
+			"text" => $cancelCount
+		));
+		// $this->addLink("order_list_link", array(
+		// 		"link" => ( is_numeric($count) && isset($order) )
+		// 		? SOY2PageController::createLink("Order.Detail.".$order->getId())
+		// 		: SOY2PageController::createLink("Order?search[userId]=" . $shopUser->getId()),
+		// ));
 		$this->addLink("order_list_link", array(
-				"link" => ( is_numeric($count) && isset($order) )
-				? SOY2PageController::createLink("Order.Detail.".$order->getId())
-				: SOY2PageController::createLink("Order?search[userId]=" . $shopUser->getId()),
+			"link" => SOY2PageController::createLink("Order?search[userId]=" . $shopUser->getId()),
+			"visible" => AUTH_ADMINORDER
 		));
 		$this->addLink("order_register_link", array(
-			"link" => SOY2PageController::createLink("Order.Register.User." . $shopUser->getId())
+			"link" => SOY2PageController::createLink("Order.Register.User." . $shopUser->getId()),
+			"visible" => AUTH_ADMINORDER
 		));
 		$this->addLink("order_cart_link", array(
-			"link" => soyshop_get_site_url(true) . "?purchase=proxy&user_id=" . $shopUser->getId(),
+			"link" => soyshop_get_mypage_url(true) . "/login?purchase=proxy&user_id=" . $shopUser->getId(),
+			"visible" => AUTH_ADMINORDER,
+			"target" => "_blank"
+		));
+
+		$this->addLink("mypage_login_link", array(
+			"link" => soyshop_get_mypage_url(true) . "/login?purchase=proxy&user_id=" . $shopUser->getId(),
+			"visible" => AUTH_ADMINORDER,
 			"target" => "_blank"
 		));
 
@@ -259,15 +274,27 @@ class DetailPage extends WebPage{
 		));
 
 		$this->addModel("zip2address_js", array(
-			"src" => soyshop_get_site_url() . "themes/common/js/zip2address.js"
+			"src" => soyshop_get_zip_2_address_js_filepath()
 		));
+   }
+
+   private function _getOrderCountByUserId($userId){
+	   $dao = SOY2DAOFactory::create("order.SOYShop_OrderDAO");
+	   try{
+		   $count = $dao->countByUserIdIsRegistered($userId);
+		   $cancelCount = $dao->countByUserIdIsCanceled($userId);
+	   }catch(Exception $e){
+		   $count = 0;
+		   $cancelCount = 0;
+	   }
+	   return array($count, $cancelCount);
    }
 
 	/**
 	 * フォーム
 	 * @param SOYShop_User $user
 	 */
-   private function buildForm(SOYShop_User $user){
+   private function _buildForm(SOYShop_User $user){
 		//共通コンポーネントに移し替え  soyshop/component/UserComponent.class.php buildFrom()
 
 		//以前のフォーム 後方互換
@@ -298,7 +325,8 @@ class DetailPage extends WebPage{
 
 		//メールアドレス 変更リンク
     	$this->addLink("mail_edit_link", array(
-    		"link" => SOY2PageController::createLink("User.Edit.Mail." . $this->id)
+    		"link" => SOY2PageController::createLink("User.Edit.Mail." . $this->id),
+			"visible" => AUTH_ADMINORDER
     	));
 
 		//パスワード 登録済みの場合 表示
@@ -313,7 +341,8 @@ class DetailPage extends WebPage{
 
     	//パスワード 変更リンク
     	$this->addLink("password_edit_link", array(
-    		"link" => SOY2PageController::createLink("User.Edit.Password." . $this->id)
+    		"link" => SOY2PageController::createLink("User.Edit.Password." . $this->id),
+			"visible" => AUTH_ADMINORDER
     	));
 
 		//登録日時
@@ -354,6 +383,10 @@ class DetailPage extends WebPage{
 
 		//項目の非表示用タグ
 		foreach(SOYShop_ShopConfig::load()->getCustomerAdminConfig() as $key => $bool){
+			if($key == "accountId" && $bool){
+				//ログインIDのみ、マイページでログインIDを使用する時だけtrueにする
+				$bool = (SOYShop_ShopConfig::load()->getAllowLoginIdLogin() != 0);
+			}
 			DisplayPlugin::toggle($key, $bool);
 		}
     }
@@ -362,7 +395,7 @@ class DetailPage extends WebPage{
 	 * 法人関連フォーム
 	 * @param SOYShop_User $user
 	 */
-	private function buildJobForm(SOYShop_User $user){
+	private function _buildJobForm(SOYShop_User $user){
 		/* 勤務先 */
 		DisplayPlugin::toggle("office_items", SOYShop_ShopConfig::load()->getDisplayUserOfficeItems());
 
@@ -414,26 +447,13 @@ class DetailPage extends WebPage{
     		"value" => $user->getJobFaxNumber(),
     		"size" => 30
     	));
-
-		/*** カード会員操作 ***/
-		SOYShopPlugin::load("soyshop.operate.credit");
-		$delegate = SOYShopPlugin::invoke("soyshop.operate.credit", array(
-			"user" => $user,
-			"mode" => "user_detail",
-		));
-		$list = $delegate->getList();
-		DisplayPlugin::toggle("operate_credit_menu", (is_array($list) && count($list) > 0));
-
-		$this->createAdd("operate_list", "_common.User.OperateListComponent", array(
-			"list" => $list
-		));
 	}
 
 	/**
 	 * プロフィール関連フォーム
 	 * @param SOYShop_User $user
 	 */
-	private function buildProfileForm(SOYShop_User $user){
+	private function _buildProfileForm(SOYShop_User $user){
 		SOY2::import("domain.config.SOYShop_ShopConfig");
 		DisplayPlugin::toggle("profile_items", SOYShop_ShopConfig::load()->getDisplayUserProfileItems());
 
@@ -448,50 +468,22 @@ class DetailPage extends WebPage{
 	 * お届け先フォーム
 	 * @param SOYShop_User $user
 	 */
-	private function buildAddressForm(SOYShop_User $user){
-
+	private function _buildAddressForm(SOYShop_User $user){
 		$this->createAdd("address_list", "_common.User.AddressListComponent", array(
 			"list" => $user->getAddressListArray()
 		));
-	}
-
-	private function buildMailLogForm(SOYShop_User $user){
-		$mailLogDao = SOY2DAOFactory::create("logging.SOYShop_MailLogDAO");
-		$mailLogDao->setLimit(10);
-		try{
-			$mailLogs = $mailLogDao->getByUserId($user->getId());
-		}catch(Exception $e){
-			$mailLogs = array();
-		}
-
-		DisplayPlugin::toggle("display_mail_history", count($mailLogs));
-		$this->createAdd("mail_history_list", "_common.Order.MailHistoryListComponent", array(
-    		"list" => $mailLogs
-    	));
 	}
 
 	/**
 	 * ポイントフォーム
 	 * @param SOYShop_User $user
 	 */
-	private function buildPointForm(SOYShop_User $user){
-
+	private function _buildPointForm(SOYShop_User $user){
 		//ポイント
     	$activedPointPlugin = (class_exists("SOYShopPluginUtil") && (SOYShopPluginUtil::checkIsActive("common_point_base")));
     	DisplayPlugin::toggle("point", $activedPointPlugin);
 
-		$point = 0;
-		$timeLimit = null;
-		$histories = array();
-
-		/* ここ以下はポイント有効時 */
-		if($activedPointPlugin){
-			SOY2::imports("module.plugins.common_point_base.domain.*");
-			$point = $user->getPoint();
-
-	    	$timeLimit = self::getTimeLimit($user->getId());
-	    	$histories = self::getPointHistories($user->getId());
-		}
+		list($point, $timeLimit) = ($activedPointPlugin) ? self::_getPointAndTimeLimitByUserId($user) : array(0, null);
 
 		//ポイントプラグインを無効にしていても下記の処理は行う
 		$this->addInput("point", array(
@@ -501,49 +493,35 @@ class DetailPage extends WebPage{
 		));
 
 		$this->addLabel("time_limit", array(
-			"text" => (isset($timeLimit)) ? date("Y-m-d H:i:s", $timeLimit) : "無期限"
-		));
-
-		DisplayPlugin::toggle("point_history", (count($histories) > 0));
-		$this->createAdd("point_history_list", "_common.User.PointHistoryListComponent", array(
-			"list" => $histories
+			"text" => (is_numeric($timeLimit)) ? date("Y-m-d H:i:s", $timeLimit) : "無期限"
 		));
 	}
 
-	private function getTimeLimit($userId){
-		return SOYShopPlugin::invoke("soyshop.point", array("userId" => $userId))->getTimeLimit();
-	}
-
-	private function getPointHistories($userId){
-		try{
-			return SOY2DAOFactory::create("SOYShop_PointHistoryDAO")->getByUserId($userId);
-		}catch(Exception $e){
-			return array();
-		}
+	private function _getPointAndTimeLimitByUserId(SOYShop_User $user){
+		SOY2::imports("module.plugins.common_point_base.domain.*");
+		$point = $user->getPoint();
+		$timeLimit = SOYShopPlugin::invoke("soyshop.point", array("userId" => $user->getId()))->getTimeLimit();
+		return array($point, $timeLimit);
 	}
 
 	/**
 	 * チケットフォーム
 	 * @param SOYShop_User $user
 	 */
-	private function buildTicketForm(SOYShop_User $user){
-
+	private function _buildTicketForm(SOYShop_User $user){
 		//チケット
     	$activedTicketPlugin = (class_exists("SOYShopPluginUtil") && (SOYShopPluginUtil::checkIsActive("common_ticket_base")));
     	DisplayPlugin::toggle("ticket", $activedTicketPlugin);
 
 		/* ここ以下はチケット有効時 */
 		if($activedTicketPlugin){
-			SOY2::imports("module.plugins.common_ticket_base.domain.*");
-			$count = self::getTicketCountByUserId($user->getId());
-			$histories = self::getTicketHistories($user->getId());
+			$count = self::_getTicketCountByUserId($user->getId());
 			SOY2::import("module.plugins.common_ticket_base.util.TicketBaseUtil");
 			$config = TicketBaseUtil::getConfig();
 			$label = $config["label"];
 			$unit = $config["unit"];
 		}else{
 			$count = 0;
-			$histories = array();
 			$label = "チケット";
 			$unit = "枚";
 		}
@@ -562,14 +540,10 @@ class DetailPage extends WebPage{
     		"value" => $count,
     		"style" => "ime-mode:inactive;"
     	));
-
-    	DisplayPlugin::toggle("ticket_history", (count($histories) > 0));
-    	$this->createAdd("ticket_history_list", "_common.User.TicketHistoryListComponent", array(
-    		"list" => $histories
-    	));
 	}
 
-	private function getTicketCountByUserId($userId){
+	private function _getTicketCountByUserId($userId){
+		SOY2::imports("module.plugins.common_ticket_base.domain.*");
 		try{
 			return SOY2DAOFactory::create("SOYShop_TicketDAO")->getByUserId($userId)->getCount();
 		}catch(Exception $e){
@@ -577,26 +551,34 @@ class DetailPage extends WebPage{
 		}
 	}
 
-	private function getTicketHistories($userId){
+	function getBreadcrumb(){
+		return BreadcrumbComponent::build(SHOP_USER_LABEL . "情報詳細", array("User" => SHOP_USER_LABEL . "管理"));
+	}
+
+	function getFooterMenu(){
 		try{
-			return SOY2DAOFactory::create("SOYShop_TicketHistoryDAO")->getByUserId($userId);
+			return SOY2HTMLFactory::createInstance("User.FooterMenu.DetailFooterMenuPage", array(
+				"arguments" => array($this->id)
+			))->getObject();
 		}catch(Exception $e){
-			return array();
+			return null;
 		}
 	}
 
 	function getScripts(){
 		$root = SOY2PageController::createRelativeLink("./js/");
 		return array(
-			$root . "tools/soy2_date_picker.pack.js"
+			//$root . "tools/soy2_date_picker.pack.js"
+			$root . "tools/datepicker-ja.js",
+			$root . "tools/datepicker.js"
 		);
 	}
 
-	function getCSS(){
-		$root = SOY2PageController::createRelativeLink("./js/");
-		return array(
-			"./css/admin/user_detail.css",
-			$root . "tools/soy2_date_picker.css"
-		);
-	}
+	// function getCSS(){
+	// 	//$root = SOY2PageController::createRelativeLink("./js/");
+	// 	return array(
+	// 		"./css/admin/user_detail.css",
+	// 		//$root . "tools/soy2_date_picker.css"
+	// 	);
+	// }
 }

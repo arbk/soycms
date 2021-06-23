@@ -1,8 +1,8 @@
 /**
- * Polski translation
+ * Polskie tłumaczenie
  * @author Marcin Mikołajczyk <marcin@pjwstk.edu.pl>
  * @author Bogusław Zięba <bobi@poczta.fm>
- * @version 2018-08-23
+ * @version 2020-03-29
  */
 (function(root, factory) {
 	if (typeof define === 'function' && define.amd) {
@@ -14,12 +14,12 @@
 	}
 }(this, function(elFinder) {
 	elFinder.prototype.i18.pl = {
-		translator : 'Marcin Mikołajczyk &lt;marcin@pjwstk.edu.pl&gt;, Bogusław Zięba &lt;bobi@poczta.fm&gt;',
+		translator : 'Marcin Mikołajczyk &lt;marcin@pjwstk.edu.pl&gt;, Bogusław Zięba &lt;bobi@poczta.fm&gt;, Bogusław Zięba &lt;bobi@poczta.fm&gt;',
 		language   : 'Polski',
 		direction  : 'ltr',
-		dateFormat : 'd.m.Y H:i', // Mar 13, 2012 05:27 PM
-		fancyDateFormat : '$1 H:i', // will produce smth like: Today 12:25 PM
-		nonameDateFormat : 'ymd-His', // to apply if upload file is noname: 120513172700
+		dateFormat : 'd.m.Y H:i', // will show like: 29.03.2020 06:58
+		fancyDateFormat : '$1 H:i', // will show like: Dzisiaj 06:58
+		nonameDateFormat : 'ymd-His', // noname upload will show like: 200329-065813
 		messages   : {
 
 			/********************************** errors **********************************/
@@ -115,6 +115,7 @@
 			'errEditorNotFound'    : 'Nie znaleziono edytora tego typu pliku.', // from v2.1.25 added 23.5.2017
 			'errServerError'       : 'Wystąpił błąd po stronie serwera .', // from v2.1.25 added 16.6.2017
 			'errEmpty'             : 'Nie można do pustego folderu "$1".', // from v2.1.25 added 22.6.2017
+			'moreErrors'           : 'Jest jeszcze $1 błąd/błędy.', // from v2.1.44 added 9.12.2018
 
 			/******************************* commands names ********************************/
 			'cmdarchive'   : 'Utwórz archiwum',
@@ -225,7 +226,7 @@
 			'ntfchkdir'   : 'Sprawdzanie folderu docelowego', // from v2.1.24 added 3.5.2017
 			'ntfundo'     : 'Cofanie poprzedniej operacji', // from v2.1.27 added 31.07.2017
 			'ntfredo'     : 'Ponownie poprzednio cofnięte', // from v2.1.27 added 31.07.2017
-			'ntfchkcontent' : 'Checking contents', // from v2.1.41 added 3.8.2018
+			'ntfchkcontent' : 'Sprawdzanie zawartości', // from v2.1.41 added 3.8.2018
 
 			/*********************************** volumes *********************************/
 			'volume_Trash' : 'Śmieci', //from v2.1.24 added 29.4.2017
@@ -289,8 +290,9 @@
 			'untitled file.txt' : 'NowyPlik.txt', // added 10.11.2015
 			'untitled folder'   : 'NowyFolder',   // added 10.11.2015
 			'Archive'           : 'NoweArchiwum',  // from v2.1 added 10.11.2015
-			'untitled file'     : 'NewFile.$1',  // from v2.1.41 added 6.8.2018
-			'extentionfile'     : '$1 File',     // from v2.1.41 added 6.8.2018
+			'untitled file'     : 'NowyPlik.$1',  // from v2.1.41 added 6.8.2018
+			'extentionfile'     : '$1 Plik',    // from v2.1.41 added 6.8.2018
+			'extentiontype'     : '$1: $2',      // from v2.1.43 added 17.10.2018
 
 			/********************************** messages **********************************/
 			'confirmReq'      : 'Wymagane potwierdzenie',
@@ -301,6 +303,7 @@
 			'confirmNonUTF8'  : 'Nie można wykryć kodowania tego pliku. Musi być tymczasowo przekształcony do UTF-8. <br/> Proszę wybrać kodowanie znaków tego pliku.', // from v2.1.19 added 28.11.2016
 			'confirmNotSave'  : 'Został zmodyfikowany.<br/>Utracisz pracę, jeśli nie zapiszesz zmian.', // from v2.1 added 15.7.2015
 			'confirmTrash'    : 'Czy na pewno chcesz przenieść elementy do kosza?', //from v2.1.24 added 29.4.2017
+			'confirmMove'     : 'Czy na pewno chcesz przenieść elementy do "$1"?', //from v2.1.50 added 27.7.2019
 			'apllyAll'        : 'Zastosuj do wszystkich',
 			'name'            : 'Nazwa',
 			'size'            : 'Rozmiar',
@@ -432,7 +435,7 @@
 			'firstLetterSearch': 'Wyszukiwanie pierwszej litery', // from v2.1.23 added 24.3.2017
 			'presets'         : 'Wstępnie ustalone', // from v2.1.25 added 26.5.2017
 			'tooManyToTrash'  : 'To zbyt wiele rzeczy, więc nie mogą być w koszu.', // from v2.1.25 added 9.6.2017
-			'TextArea'        : 'TextArea', // from v2.1.25 added 14.6.2017
+			'TextArea'        : 'PoleTekstowe', // from v2.1.25 added 14.6.2017
 			'folderToEmpty'   : 'Opróżnij folder "$1".', // from v2.1.25 added 22.6.2017
 			'filderIsEmpty'   : 'Brak elementów w folderze "$1".', // from v2.1.25 added 22.6.2017
 			'preference'      : 'Preferencje', // from v2.1.26 added 28.6.2017
@@ -440,6 +443,7 @@
 			'clearBrowserData': 'Zainicjuj ustawienia zapisane w tej przeglądarce', // from v2.1.26 added 28.6.2017
 			'toolbarPref'     : 'Ustawienia paska narzędzi', // from v2.1.27 added 2.8.2017
 			'charsLeft'       : '... pozostało $1 znak(ów).',  // from v2.1.29 added 30.8.2017
+			'linesLeft'       : '... pozostało $1 lini.',  // from v2.1.52 added 16.1.2020
 			'sum'             : 'Suma', // from v2.1.29 added 28.9.2017
 			'roughFileSize'   : 'Przybliżony rozmiar pliku', // from v2.1.30 added 2.11.2017
 			'autoFocusDialog' : 'Skoncentruj się na elemencie dialogowym po najechaniu myszą',  // from v2.1.30 added 2.11.2017
@@ -475,9 +479,19 @@
 			'showHidden'      : 'Pokaż ukryte pozycje', // from v2.1.41 added 24.7.2018
 			'hideHidden'      : 'Ukryj ukryte pozycje', // from v2.1.41 added 24.7.2018
 			'toggleHidden'    : 'Pokaż/Ukryj ukryte pozycje', // from v2.1.41 added 24.7.2018
-			'makefileTypes'   : 'File types to enable with "New file"', // from v2.1.41 added 7.8.2018
-			'typeOfTextfile'  : 'Type of the Text file', // from v2.1.41 added 7.8.2018
-			'add'             : 'Add', // from v2.1.41 added 7.8.2018
+			'makefileTypes'   : 'Typy plików, które można włączyć za pomocą "Nowy plik"', // from v2.1.41 added 7.8.2018
+			'typeOfTextfile'  : 'Typ pliku tekstowego', // from v2.1.41 added 7.8.2018
+			'add'             : 'Dodaj', // from v2.1.41 added 7.8.2018
+			'theme'           : 'Motyw', // from v2.1.43 added 19.10.2018
+			'default'         : 'Domyślnie', // from v2.1.43 added 19.10.2018
+			'description'     : 'Opis', // from v2.1.43 added 19.10.2018
+			'website'         : 'Witryna', // from v2.1.43 added 19.10.2018
+			'author'          : 'Autor', // from v2.1.43 added 19.10.2018
+			'email'           : 'E-mail', // from v2.1.43 added 19.10.2018
+			'license'         : 'Licencja', // from v2.1.43 added 19.10.2018
+			'exportToSave'    : 'Tego elementu nie można zapisać. Aby uniknąć utraty zmian, musisz wyeksportować go na swój komputer.', // from v2.1.44 added 1.12.2018
+			'dblclickToSelect': 'Kliknij dwukrotnie plik, aby go wybrać.', // from v2.1.47 added 22.1.2019
+			'useFullscreen'   : 'Użyj trybu pełnoekranowego', // from v2.1.47 added 19.2.2019
 
 			/********************************** mimetypes **********************************/
 			'kindUnknown'     : 'Nieznany',

@@ -2,15 +2,14 @@
 
 class IndexPage extends WebPage{
 
+	private $title;
+
 	function doPost(){}
 
 	function __construct($args){
 		$pluginId = (isset($args[0])) ? $args[0] : null;
-		try{
-			$plugin = SOY2DAOFactory::create("plugin.SOYShop_PluginConfigDAO")->getByPluginId($pluginId);
-		}catch(Exception $e){
-			SOY2PageController::jump("");
-		}
+		$plugin = soyshop_get_plugin_object($pluginId);
+		if(is_null($plugin->getId())) SOY2PageController::jump("");
 
 		parent::__construct();
 
@@ -18,14 +17,21 @@ class IndexPage extends WebPage{
 		SOYShopPlugin::load("soyshop.order.upload", $plugin);
 		$detail = self::delegate($pluginId)->getContent();
 
+		$this->title = (isset($detail["title"])) ? $detail["title"] : null;
+
 		$this->addLabel("page_name", array(
-			"text" => (isset($detail["title"])) ? $detail["title"] : null
+			"text" => $this->title
 		));
 
 		$this->addLabel("page_content", array(
 			"html" => (isset($detail["content"])) ? $detail["content"] : null
 		));
 	}
+
+	function getBreadcrumb(){
+		return BreadcrumbComponent::build($this->title, array("Order" => "注文管理"));
+	}
+
 
 	function getScripts(){
 		$scripts = self::delegate()->getScripts();

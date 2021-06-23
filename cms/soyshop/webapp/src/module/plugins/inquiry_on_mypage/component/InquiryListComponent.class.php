@@ -2,6 +2,8 @@
 
 class InquiryListComponent extends HTMLList {
 
+	private $userNameList = array();
+
 	protected function populateItem($entity) {
 
 		$this->addLabel("tracking_number", array(
@@ -9,15 +11,20 @@ class InquiryListComponent extends HTMLList {
 		));
 
 		$this->addLabel("create_date", array(
-			"text" => date("Y-m-d H:i:s", $entity->getCreateDate())
+			"text" => (is_numeric($entity->getCreateDate())) ? date("Y-m-d H:i:s", $entity->getCreateDate()) : ""
 		));
 
+		$userId = (is_numeric($entity->getUserId())) ? (int)$entity->getUserId() : 0;
 		$this->addLink("user_link", array(
-			"link" => SOY2PageController::createLink("User.Detail." . $entity->getUserId())
+			"link" => SOY2PageController::createLink("User.Detail." . $userId)
 		));
 
 		$this->addLabel("user_name", array(
-			"text" => soyshop_get_user_object($entity->getUserId())->getName()
+			"text" => (isset($this->userNameList[$userId])) ? $this->userNameList[$userId] : ""
+		));
+
+		$this->addLabel("is_confirm", array(
+			"text" => ($entity->getIsConfirm()) ? "確認済み" : "未確認"
 		));
 
 		$this->addLink("mail_detail_link", array(
@@ -25,5 +32,9 @@ class InquiryListComponent extends HTMLList {
 		));
 
 		if($entity->getMailLogId() == 0) return false;
+	}
+
+	function setUserNameList($userNameList){
+		$this->userNameList = $userNameList;
 	}
 }

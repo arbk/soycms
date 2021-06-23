@@ -89,6 +89,7 @@ class DetailPage extends WebPage{
 	}
 
     function __construct($args) {
+		if(!AUTH_CONFIG) SOY2PageController::jump("Item");
 
     	//IDがない場合はカテゴリのトップページに飛ばす
     	if(!isset($args[0])){
@@ -115,6 +116,14 @@ class DetailPage extends WebPage{
 		));
 
 		self::buildForm($category, $categories);
+
+		SOYShopPlugin::load("soyshop.notepad");
+		$this->addLabel("notepad_extension", array(
+			"html" => SOYShopPlugin::invoke("soyshop.notepad", array(
+				"mode" => "category",
+				"id" => $category->getId()
+			))->getHtml()
+		));
     }
 
     private function buildForm($entity, $parents){
@@ -205,12 +214,8 @@ class DetailPage extends WebPage{
 		));
 
 		SOYShopPlugin::load("soyshop.category.customfield");
-		$html = SOYShopPlugin::display("soyshop.category.customfield", array(
-			"category" => $entity
-		));
-
 		$this->addLabel("category_custom_field", array(
-			"html" => $html
+			"html" => SOYShopPlugin::display("soyshop.category.customfield", array("category" => $entity))
 		));
 
 		$this->addCheckBox("category_is_open", array(
@@ -249,6 +254,19 @@ class DetailPage extends WebPage{
     function getAttachments($category){
     	return $category->getAttachments();
     }
+
+	function getBreadcrumb(){
+		return BreadcrumbComponent::build("カテゴリ詳細", array("Item" => "商品管理", "Item.Category" => "カテゴリ管理"));
+	}
+
+	function getFooterMenu(){
+		try{
+			return SOY2HTMLFactory::createInstance("Item.FooterMenu.CategoryFooterMenuPage")->getObject();
+		}catch(Exception $e){
+			//
+			return null;
+		}
+	}
 
     function getScripts(){
 		$root = SOY2PageController::createRelativeLink("./js/");

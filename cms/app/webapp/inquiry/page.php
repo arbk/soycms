@@ -101,10 +101,8 @@ class SOYInquiry_PageApplication{
 		$page_link = $this->pageUrl;
 
 		//template directory setting
-		$templateDir = SOY2::RootDir() . "template/" . $config->getTheme() . "/";
-		if(!file_exists($templateDir)){
-			$templateDir = SOY2::RootDir() . "template/default/";
-		}
+		if(!defined("SOYSHOP_INQUIRY_FORM_THEME")) define("SOYSHOP_INQUIRY_FORM_THEME", $config->getTheme());
+		$templateDir = SOYInquiryUtil::getTemplateDir(SOYSHOP_INQUIRY_FORM_THEME);
 		$this->templateDir = $templateDir;
 
 		//ブロックしている時の表示
@@ -130,7 +128,7 @@ class SOYInquiry_PageApplication{
 
 	    	//不正な書き換えでない場合のみ
 	    	if(md5($value) == $_POST["form_hash"]){
-	    		$_POST["data"] = unserialize($value);
+	    		$_POST["data"] = json_decode($value, true);
 	    	}
 	    }
 
@@ -189,10 +187,20 @@ class SOYInquiry_PageApplication{
 
 			//Google reCAPTCHA v3を利用している場合はここで調べる
 			if(isset($_POST["google_recaptcha"]) && strlen($_POST["google_recaptcha"])){
-				$obj = CMSPlugin::loadPluginConfig("re_captcha_v3");
-				if(strlen($obj->getSecretKey())){
+				if(defined("SOYSHOP_ID")){	//SOY Shop版
+					$old = SOYInquiryUtil::switchSOYShopConfig(SOYSHOP_ID);
+					SOY2::import("module.plugins.reCAPTCHAv3.util.reCAPTCHAUtil");
+					$shopconf = reCAPTCHAUtil::getConfig();
+					$secretKey = (isset($shopconf["secret_key"])) ? $shopconf["secret_key"] : "";
+					SOYInquiryUtil::resetConfig($old);
+				}else{	// SOY CMS版
+					$obj = CMSPlugin::loadPluginConfig("re_captcha_v3");
+					$secretKey = $obj->getSecretKey();
+				}
+
+				if(strlen($secretKey)){
 					$reCapValues = array(
-						"secret" => $obj->getSecretKey(),
+						"secret" => $secretKey,
 						"response" => $_POST["google_recaptcha"]
 					);
 					$ch = curl_init("https://www.google.com/recaptcha/api/siteverify");
@@ -221,7 +229,7 @@ class SOYInquiry_PageApplication{
 		    	$errors = $this->checkPostData($_POST["data"], $columns);
 
 		    	//問い合わせを追加＆メール送信
-		    	$inquiry = $this->addInquiry($form->getId(), $columns, $_POST["data"], $this->pageUrl);
+				$inquiry = $this->addInquiry($form->getId(), $columns, $_POST["data"], $this->pageUrl);
 
 		    	@include_once($templateDir . "send.php");
 
@@ -245,7 +253,7 @@ class SOYInquiry_PageApplication{
 
 	    //確認画面表示（Captcha判定に失敗したときのためにこのIF文は分離しておく必要がある）
 		if(isset($_POST["confirm"]) || isset($_POST["confirm_x"])){
-			$errors = $this->checkPostData($_POST["data"], $columns);
+			$errors = self::checkPostData($_POST["data"], $columns);
 
 			if(empty($errors)){
 
@@ -267,8 +275,8 @@ class SOYInquiry_PageApplication{
 					$captcha_url = $this->pageUrl . "?captcha=" . $captcha_filename;
 				}
 
-				$hidden_hash = md5(serialize($_POST["data"]));
-				$hidden_value = base64_encode(serialize($_POST["data"]));
+				$hidden_hash = md5(json_encode($_POST["data"]));
+				$hidden_value = base64_encode(json_encode($_POST["data"]));
 
 				$hidden_forms = '<input type="hidden" name="form_hash" value="' . $hidden_hash . '" />';
 				$hidden_forms.= '<input type="hidden" name="form_value" value="' . $hidden_value . '" />';
@@ -293,6 +301,8 @@ class SOYInquiry_PageApplication{
 		//ランダムな値を作成
 		$random_hash = md5(mt_rand());
 
+		SOYInquiryUtil::setParameters();
+
 		ob_start();
 		$this->outputCSS();
     	include_once($templateDir . "form.php");
@@ -305,7 +315,7 @@ class SOYInquiry_PageApplication{
 	/**
 	 * POSTされた値をチェックする
 	 */
-	function checkPostData($data, $columns){
+	private function checkPostData($data, $columns){
 		$errors = array();
 
 		foreach($columns as $column){
@@ -320,7 +330,8 @@ class SOYInquiry_PageApplication{
 			}
 			$obj = $column->getColumn($this->form);
 
-			if(false === $obj->validate()){
+			//エラーチェック　連番の場合は必須でもチェックしない
+			if(get_class($obj) != "SerialNumberColumn" && false === $obj->validate()){
 				$errors[$id] = $obj->getErrorMessage();
 				$errors[$column->getColumnId()] = $errors[$id];
 			}
@@ -390,9 +401,27 @@ class SOYInquiry_PageApplication{
 
 			$inquiryMailBody = $logic->getInquiryMailBody($inquiry, $columns);
 
+			//連番はここで値を更新
+			foreach($columns as $column){
+				if($column->getType() == "SerialNumber"){
+					$config = soy2_unserialize($column->getConfig());
+					if(!isset($config["serialNumber"]) || !is_numeric($config["serialNumber"])) $config["serialNumber"] = 1;
+
+					//連番を更新する
+					$config["serialNumber"]++;
+					$column->setConfig($config);
+
+					try{
+						SOY2DAOFactory::create("SOYInquiry_ColumnDAO")->update($column);
+					}catch(Exception $e){
+						//
+					}
+				}
+			}
+
 			//管理者用メールボディ
 			$mailBody[0] = $inquiryMailBody;
-    		if($this->form->getConfigObject()->getIsIncludeAdminURL()){
+			if($this->form->getConfigObject()->getIsIncludeAdminURL()){
 				$mailBody[0] .= "\r\n\r\n-- \r\n問い合わせへのリンク:\r\n" . $this->getInquiryLink($inquiry, $this->serverConfig) . "\r\n";
     		}
 
@@ -444,7 +473,11 @@ class SOYInquiry_PageApplication{
 				$userMailAddress[] = $column->getValue();
 			}else if($column->getType() == "ConfirmMailAddress" && is_array($column->getValue())){
 				$value = $column->getValue();
-				$userMailAddress[] = (isset($value[0])) ? $value[0] : (isset($value[1])) ? $value[1] : null;
+				$userMailAddr = (isset($value[0])) ? $value[0] : null;
+				if(is_null($userMailAddr)) $userMailAddr = (isset($value[1])) ? $value[1] : null;
+				if(isset($userMailAddr)) $userMailAddress[] = $userMailAddr;
+
+				//$userMailAddress[] = (isset($value[0])) ? $value[0] : (isset($value[1])) ? $value[1] : null;
 			}
 		}
 		$mailLogic->sendNotifyMail($columns, $userMailAddress, $mailBody);

@@ -4,30 +4,40 @@ SOY2::import("domain.config.SOYShop_ShopConfig");
 class ShopConfigPage extends WebPage{
 
 	private $config;
-	private $pluginDao;
 
 	function doPost(){
 		$config = $this->config;
 
 		foreach(array(
+			"isTrailingSlash" => 0,
+			"isDomainWww" => 0,
 			"consumptionTaxInclusivePricingRate" => SOYShop_ShopConfig::CONSUMPTION_TAX_RATE,
 			"consumptionTaxInclusiveCommission" => 0,
 			"isOrderListOneYearsWonth" => 0,
 			"displayStockCount" => 0,
 			"ignoreStock" => 0,
 			"isHiddenStockCount" => 0,
+			"searchChildItemOnListPage" => 0,
+			"searchChildItemOnDetailPage" => 0,
 			"displayPageAfterLogout" => 0,
 			"displaySendInformationForm" => 0,
 			"allowMailAddressLogin" => 0,
 			"allowLoginIdLogin" => 0,
+			"passwordCount" => 8,
 			"displayUsableTagList" => 0,
 			"useUserCode" => 0,
 			"insertDummyMailAddress" => 0,
 			"insertDummyMailAddressOnAdmin" => 0,
 			"insertDummyMailAddressOnAdminRegister" => 0,
 			"insertDummyAddressOnAdmin" => 0,
-			"isChildItemOnAdminOrder" => 0,
+			//"isChildItemOnAdminOrder" => 0,
 			"isUnregisteredItem" => 0,
+			"displayRegisterAfterItemSearchOnAdmin" => 0,
+			"addSearchChildItemNameOnAdmin" => 0,
+			"allowRegistrationZeroYenProducts" => 0,
+			"allowRegistrationZeroQuantityProducts" => 0,
+			"changeParentItemNameOnAdmin" => 0,	//管理画面で子商品名を親商品名(商品コードも含む)に変換する
+			"displayPurchasePriceOnAdmin" => 0,
 			"displayOrderAdminPage" => 0,
 			"displayItemAdminPage" => 0,
 			"displayUserAdminPage" => 0,
@@ -61,9 +71,10 @@ class ShopConfigPage extends WebPage{
 
 	function __construct() {
 		$this->config = SOYShop_ShopConfig::load();
-		$this->pluginDao = SOY2DAOFactory::create("plugin.SOYShop_PluginConfigDAO");
 
 		parent::__construct();
+
+		$this->addLabel("user_label", array("text" => SHOP_USER_LABEL));
 
 		error_reporting(E_ALL ^ E_NOTICE);
 		$this->buildForm();
@@ -90,6 +101,7 @@ class ShopConfigPage extends WebPage{
 		));
 
 		$company = $config->getCompanyInformation();
+		if(!isset($company["building"])) $company["building"] = "";
 
 		foreach($company as $key => $value){
 			$this->addInput("company_" . $key, array(
@@ -112,6 +124,35 @@ class ShopConfigPage extends WebPage{
 		//SOY Appのロゴ画像のパス
 		$this->addLabel("appLogoPathSample", array(
 			"text" => SOYAppUtil::getSOYAppLogoPath()
+		));
+
+		//カノニカルURL
+		$this->addCheckBox("is_trailing_slash", array(
+			"name" => "Config[isTrailingSlash]",
+			"value" => 1,
+			"selected" => ($config->getIsTrailingSlash() == 1),
+			"label" => "あり"
+		));
+
+		$this->addCheckBox("no_trailing_slash", array(
+			"name" => "Config[isTrailingSlash]",
+			"value" => 0,
+			"selected" => ($config->getIsTrailingSlash() == 0),
+			"label" => "なし"
+		));
+
+		$this->addCheckBox("is_domain_www", array(
+			"name" => "Config[isDomainWww]",
+			"value" => 1,
+			"selected" => ($config->getIsDomainWww() == 1),
+			"label" => "あり"
+		));
+
+		$this->addCheckBox("no_domain_www", array(
+			"name" => "Config[isDomainWww]",
+			"value" => 0,
+			"selected" => ($config->getIsDomainWww() == 0),
+			"label" => "なし"
 		));
 
 		//消費税別表示モード
@@ -208,6 +249,17 @@ class ShopConfigPage extends WebPage{
 			"label" => "ログインIDでログインを許可する",
 		));
 
+		$this->addInput("accountIdItemName", array(
+			"name" => "Config[accountIdItemName]",
+			"value" => $config->getAccountIdItemName()
+		));
+
+		$this->addInput("passwordCount", array(
+			"name" => "Config[passwordCount]",
+			"value" => $config->getPasswordCount(),
+			"style" => "width:60px;"
+		));
+
 		//在庫無視モード
 		$this->addCheckBox("ignoreStock", array(
 			"selected" => $config->getIgnoreStock(),
@@ -222,6 +274,22 @@ class ShopConfigPage extends WebPage{
 			"value" => 1,
 			"name" => "Config[isHiddenStockCount]",
 			"label" => "在庫数を無視している時、商品毎の在庫数を---にする",
+			"isBoolean" => 1
+		));
+
+		$this->addCheckBox("searchChildItemOnListPage", array(
+			"selected" => $config->getSearchChildItemOnListPage(),
+			"value" => 1,
+			"name" => "Config[searchChildItemOnListPage]",
+			"label" => "商品一覧ページで子商品のデータを取得する",
+			"isBoolean" => 1
+		));
+
+		$this->addCheckBox("searchChildItemOnDetailPage", array(
+			"selected" => $config->getSearchChildItemOnDetailPage(),
+			"value" => 1,
+			"name" => "Config[searchChildItemOnDetailPage]",
+			"label" => "商品詳細ページで子商品のデータを取得する",
 			"isBoolean" => 1
 		));
 
@@ -337,7 +405,7 @@ class ShopConfigPage extends WebPage{
 			"name" => "Config[useUserCode]",
 			"value" => 1,
 			"selected" => $config->getUseUserCode(),
-			"label" => "顧客コードを使用する"
+			"label" => SHOP_USER_LABEL . "コードを使用する"
 		));
 
 		$this->addCheckBox("insertDummyMailAddress", array(
@@ -351,35 +419,77 @@ class ShopConfigPage extends WebPage{
 			"name" => "Config[insertDummyMailAddressOnAdmin]",
 			"value" => 1,
 			"selected" => $config->getInsertDummyMailAddressOnAdmin(),
-			"label" => "管理画面からの注文時、顧客のメールアドレスにダミーのメールアドレスを挿入する"
+			"label" => "管理画面からの注文時、" . SHOP_USER_LABEL . "のメールアドレスにダミーのメールアドレスを挿入する"
 		));
 
 		$this->addCheckBox("insertDummyMailAddressOnAdminRegister", array(
 			"name" => "Config[insertDummyMailAddressOnAdminRegister]",
 			"value" => 1,
 			"selected" => $config->getInsertDummyMailAddressOnAdminRegister(),
-			"label" => "管理画面からの顧客登録時、メールアドレスにダミーのメールアドレスを挿入する"
+			"label" => "管理画面からの" . SHOP_USER_LABEL . "登録時、メールアドレスにダミーのメールアドレスを挿入する"
 		));
 
 		$this->addCheckBox("insertDummyAddressOnAdmin", array(
 			"name" => "Config[insertDummyAddressOnAdmin]",
 			"value" => 1,
 			"selected" => $config->getInsertDummyAddressOnAdmin(),
-			"label" => "管理画面からの注文時、顧客の住所にダミーの値を挿入できるボタンを表示する"
+			"label" => "管理画面からの注文時、" . SHOP_USER_LABEL . "の住所にダミーの値を挿入できるボタンを表示する"
 		));
 
-		$this->addCheckBox("isChildItemOnAdminOrder", array(
-			"name" => "Config[isChildItemOnAdminOrder]",
-			"value" => 1,
-			"selected" => $config->getIsChildItemOnAdminOrder(),
-			"label" => "管理画面からの注文の際に子商品を検索結果に含める"
-		));
+		// $this->addCheckBox("isChildItemOnAdminOrder", array(
+		// 	"name" => "Config[isChildItemOnAdminOrder]",
+		// 	"value" => 1,
+		// 	"selected" => $config->getIsChildItemOnAdminOrder(),
+		// 	"label" => "管理画面からの注文の際に子商品を検索結果に含める"
+		// ));
 
 		$this->addCheckBox("isUnregisteredItem", array(
 			"name" => "Config[isUnregisteredItem]",
 			"value" => 1,
 			"selected" => $config->getIsUnregisteredItem(),
 			"label" => "管理画面からの注文の際に未登録商品の追加を許可する"
+		));
+
+		$this->addCheckBox("displayRegisterAfterItemSearchOnAdmin", array(
+			"name" => "Config[displayRegisterAfterItemSearchOnAdmin]",
+			"value" => 1,
+			"selected" => $config->getDisplayRegisterAfterItemSearchOnAdmin(),
+			"label" => "管理画面からの注文の際に商品検索後に商品を登録するフォームを表示する"
+		));
+
+		$this->addCheckBox("addSearchChildItemNameOnAdmin", array(
+			"name" => "Config[addSearchChildItemNameOnAdmin]",
+			"value" => 1,
+			"selected" => $config->getAddSearchChildItemNameOnAdmin(),
+			"label" => "管理画面からの注文の際に商品検索で子商品を加味して検索をする"
+		));
+
+		$this->addCheckBox("allowRegistrationZeroYenProducts", array(
+			"name" => "Config[allowRegistrationZeroYenProducts]",
+			"value" => 1,
+			"selected" => $config->getAllowRegistrationZeroYenProducts(),
+			"label" => "管理画面からの注文の際に0円の商品(未登録商品のみ)をカートに入れる事を許可する"
+		));
+
+		$this->addCheckBox("allowRegistrationZeroQuantityProducts", array(
+			"name" => "Config[allowRegistrationZeroQuantityProducts]",
+			"value" => 1,
+			"selected" => $config->getAllowRegistrationZeroQuantityProducts(),
+			"label" => "管理画面からの注文の際に商品(未登録商品のみ)をカートに0個入れる事を許可する"
+		));
+
+		$this->addCheckBox("changeParentItemNameOnAdmin", array(
+			"name" => "Config[changeParentItemNameOnAdmin]",
+			"value" => 1,
+			"selected" => $config->getChangeParentItemNameOnAdmin(),
+			"label" => "管理画面でカートや注文詳細で表記されている子商品名を親商品名に変換する"
+		));
+
+		$this->addCheckBox("displayPurchasePriceOnAdmin", array(
+			"name" => "Config[displayPurchasePriceOnAdmin]",
+			"value" => 1,
+			"selected" => $config->getDisplayPurchasePriceOnAdmin(),
+			"label" => "管理画面からの注文の際に単価の横に仕入値を表示する"
 		));
 
 		$this->addCheckBox("displayOrderAdminPage", array(
@@ -400,14 +510,14 @@ class ShopConfigPage extends WebPage{
 			"name" => "Config[displayUserAdminPage]",
 			"value" => 1,
 			"selected" => $config->getDisplayUserAdminPage(),
-			"label" => "管理画面で顧客タブを表示する"
+			"label" => "管理画面で" . SHOP_USER_LABEL . "タブを表示する"
 		));
 
 		$this->addCheckBox("displayOrderButtonOnUserAdminPage", array(
 			"name" => "Config[displayOrderButtonOnUserAdminPage]",
 			"value" => 1,
 			"selected" => $config->getDisplayOrderButtonOnUserAdminPage(),
-			"label" => "管理画面の顧客詳細で注文関連のボタンを表示する"
+			"label" => "管理画面の" . SHOP_USER_LABEL . "詳細で注文関連のボタンを表示する"
 		));
 
 		$this->addInput("autoOperateAuthorId", array(
@@ -428,14 +538,14 @@ class ShopConfigPage extends WebPage{
 			"name" => "Config[displayUserOfficeItems]",
 			"value" => 1,
 			"selected" => $config->getDisplayUserOfficeItems(),
-			"label" => "勤務先関連の項目を表示する(顧客詳細他、注文時のお届け先等)"
+			"label" => "勤務先関連の項目を表示する(" . SHOP_USER_LABEL . "詳細他、注文時のお届け先等)"
 		));
 
 		$this->addCheckBox("displayUserProfileItems", array(
 			"name" => "Config[displayUserProfileItems]",
 			"value" => 1,
 			"selected" => $config->getDisplayUserProfileItems(),
-			"label" => "顧客詳細の編集画面でプロフィール関連の項目を表示する"
+			"label" => SHOP_USER_LABEL . "詳細の編集画面でプロフィール関連の項目を表示する"
 		));
 
 		$this->addCheckBox("insertDummyItemCode", array(
@@ -518,9 +628,8 @@ class ShopConfigPage extends WebPage{
 	}
 
 	private function getTaxModuleList(){
-
 		try{
-			$plugins = $this->pluginDao->getByType("tax");
+			$plugins = SOY2DAOFactory::create("plugin.SOYShop_PluginConfigDAO")->getByType("tax");
 		}catch(Exception $e){
 			return array();
 		}
@@ -537,13 +646,8 @@ class ShopConfigPage extends WebPage{
 	}
 
 	private function buildTaxModuleLink($pluginId){
-		try{
-			$plugin = $this->pluginDao->getByPluginId($pluginId);
-		}catch(Exception $e){
-			return "";
-		}
-
-		if($plugin->getIsActive() == SOYShop_PluginConfig::PLUGIN_INACTIVE) return "";
+		$plugin = soyshop_get_plugin_object($pluginId);
+		if(is_null($plugin->getId()) || $plugin->getIsActive() == SOYShop_PluginConfig::PLUGIN_INACTIVE) return "";
 
 		return SOY2PageController::createLink("Config.Detail?plugin=" . $pluginId);
 	}
@@ -563,6 +667,10 @@ class ShopConfigPage extends WebPage{
 
 		//テーブルが取得できた場合はfalseを返す
 		return (is_array($res)) ? false : true;
+	}
+
+	function getBreadcrumb(){
+		return BreadcrumbComponent::build("基本設定", array("Config" => "設定"));
 	}
 }
 

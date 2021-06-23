@@ -9,7 +9,6 @@ class reCAPTCHAv3Plugin{
 	private $siteKey;
 	private $secretKey;
 
-
 	function getId(){
 		return self::PLUGIN_ID;
 	}
@@ -21,7 +20,7 @@ class reCAPTCHAv3Plugin{
 			"author"=>"齋藤毅",
 			"url"=>"http://saitodev.co",
 			"mail"=>"tsuyoshi@saitodev.co",
-			"version"=>"0.1"
+			"version"=>"0.5"
 		));
 		CMSPlugin::addPluginConfigPage(self::PLUGIN_ID,array(
 			$this,"config_page"
@@ -44,27 +43,16 @@ class reCAPTCHAv3Plugin{
 		$page = &$arg["page"];
 		if(strpos($page->getUri(), ".xml") !== false) return $html;
 
+		if($page->getPageType() != Page::PAGE_TYPE_APPLICATION || $page->getPageConfigObject()->applicationId != "inquiry") return $html;
 
 		$js = array();
 		$js[] = "<script src=\"https://www.google.com/recaptcha/api.js?render=" . $this->siteKey . "\"></script>";
-
-		//取り急ぎお問い合わせフォームのみ
-		if($page->getPageType() == Page::PAGE_TYPE_APPLICATION && $page->getPageConfigObject()->applicationId == "inquiry"){
-			$js[] = "<script>";
-			$code = file_get_contents(dirname(__FILE__) . "/js/script.js");
-			$js[] = str_replace("##SITE_KEY##", $this->siteKey, $code);
-			$js[] = "</script>";
-		}
-
+		$js[] = "<script>";
+		$code = file_get_contents(dirname(__FILE__) . "/js/script.js");
+		$js[] = str_replace("##SITE_KEY##", $this->siteKey, $code);
+		$js[] = "</script>";
 		$script = implode("\n", $js);
-
-		if(stripos($html,'</body>') !== false){
-			return str_ireplace('</body>',$script."\n".'</body>',$html);
-		}else if(stripos($html,'</html>') !== false){
-			return str_ireplace('</html>',$script."\n".'</html>',$html);
-		}else{
-			return $html.$script;
-		}
+		return $html.$script;	//強制的に末尾に入れてみる
 	}
 
 	function config_page($mes){

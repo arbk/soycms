@@ -3,10 +3,9 @@
 class SOYShop_FreePageBase extends SOYShopPageBase{
 
 	function build($args){
-
 		$page = $this->getPageObject();
+		if(!$page instanceof SOYShop_Page) throw new Exception("failed SOYShop_Page Object on SOYShop_FreePageBase");
 		$obj = $page->getPageObject();
-
 
 		$this->addLabel("free_title", array(
 			"text" => $obj->getTitle(),
@@ -56,7 +55,7 @@ class SOYShop_AppContainer extends SOY2HTML{
 			//読み込み
 			include_once(CMS_COMMON . "soycms.config.php");
 			include_once(CMS_APPLICATION_ROOT_DIR . "webapp/base/CMSApplication.class.php");
-			
+
 			//MySQL版の場合はCMS本体のmysqlの設定ファイルを確認する必要がある
 			if(SOYCMS_DB_TYPE == "mysql" && !defined("ADMIN_DB_DSN")){
 				$mysqlFilePath = CMS_COMMON . "config/db/mysql.php";

@@ -20,13 +20,21 @@ CREATE TABLE soyinquiry_inquiry (
   id INTEGER primary key AUTO_INCREMENT,
   tracking_number VARCHAR(255),
   form_id VARCHAR(255),
-  ip_address VARCHAR(15) NOT NULL,
+  ip_address VARCHAR(40) NOT NULL,
   content TEXT,
   data TEXT,
   flag TINYINT default 1,
   create_date INTEGER NOT NULL,
   form_url VARCHAR(255),
   UNIQUE(form_id, create_date)
+)ENGINE = InnoDB;
+
+CREATE TABLE soyinquiry_entry_relation (
+	inquiry_id INTEGER NOT NULL,
+	site_id INTEGER,
+	page_id INTEGER,
+	entry_id INTEGER NOT NULL,
+	UNIQUE(inquiry_id, entry_id)
 )ENGINE = InnoDB;
 
 CREATE INDEX soyinquiry_tracking_number_idx on soyinquiry_inquiry(tracking_number);
@@ -52,6 +60,6 @@ CREATE TABLE soyinquiry_data_sets(
 ) ENGINE=InnoDB;
 
 CREATE TABLE soyinquiry_ban_ip_address(
-	ip_address VARCHAR(15) NOT NULL UNIQUE,
+	ip_address VARCHAR(40) NOT NULL UNIQUE,
 	log_date INTEGER
 ) ENGINE=InnoDB;

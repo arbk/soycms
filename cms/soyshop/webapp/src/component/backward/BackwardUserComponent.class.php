@@ -11,13 +11,16 @@ class BackwardUserComponent {
 	 * @param SOYShop_User $user
 	 */
 	public function backwardCartRegister(MainCartPageBase $page, SOYShop_User $user){
+
+		$cart = CartLogic::getCart();
+
 		//メールアドレス
 		$page->addInput("mail_address", array(
     		"name" => "Customer[mailAddress]",
     		"value" => $user->getMailAddress(),
+			"readonly" => ($cart->getAttribute("logined"))
     	));
 
-		$cart = CartLogic::getCart();
 		$mypage = MyPageLogic::getMyPage();
 
     	$page->addModel("password_input", array(
@@ -66,20 +69,32 @@ class BackwardUserComponent {
 
 		//生年月日 年
     	$page->addInput("birth_year", array(
+			"type" => "number",
     		"name" => "Customer[birthday][]",
     		"value" => $user->getBirthdayYear(),
+			"size" => 5,
+			"attr:min" => 1900,
+			"attr:max" => date("Y") + 10
     	));
 
 		//生年月日 月
     	$page->addInput("birth_month", array(
+			"type" => "number",
     		"name" => "Customer[birthday][]",
     		"value" => $user->getBirthdayMonth(),
+			"size" => 3,
+			"attr:min" => 1,
+			"attr:max" => 12
     	));
 
 		//生年月日 日
     	$page->addInput("birth_day", array(
+			"type" => "number",
     		"name" => "Customer[birthday][]",
     		"value" => $user->getBirthdayDay(),
+			"size" => 3,
+			"attr:min" => 1,
+			"attr:max" => 31
     	));
 
 		//郵便番号
@@ -105,6 +120,12 @@ class BackwardUserComponent {
     	$page->addInput("address2", array(
     		"name" => "Customer[address2]",
     		"value" => $user->getAddress2(),
+    	));
+
+		//住所入力2
+    	$page->addInput("address3", array(
+    		"name" => "Customer[address3]",
+    		"value" => $user->getAddress3(),
     	));
 
 		//電話番号
@@ -249,6 +270,9 @@ class BackwardUserComponent {
 			$res = false;
 		}
 
+		SOY2::import("domain.config.SOYShop_ShopConfig");
+		$passCnt = SOYShop_ShopConfig::load()->getPasswordCount();
+
 		//パスワード
 		if( $cart->getAttribute("logined") ){
 			//ログイン時：パスワード変更
@@ -264,8 +288,8 @@ class BackwardUserComponent {
 					$user = $userDAO->getById($cart->getAttribute("logined_userid"));
 
 					if( $user->checkPassword($old) ){
-						if( strlen($new) < 8 ){
-							$cart->addErrorMessage("password_error", MessageManager::get("NEW_PASSWORD_COUNT_NOT_ENOUGH"));
+						if( strlen($new) < $passCnt ){
+							$cart->addErrorMessage("password_error", MessageManager::get("NEW_PASSWORD_COUNT_NOT_ENOUGH", array("password_count" => $passCnt)));
 							$res = false;
 						}else{
 							$cart->setAttribute("new_password", $new);
@@ -281,8 +305,8 @@ class BackwardUserComponent {
 		}else{
 			//未ログイン時
 			if( tstrlen($cart->getCustomerInformation()->getPassword()) ){
-				if(tstrlen($cart->getCustomerInformation()->getPassword()) < 8){
-					$cart->addErrorMessage("password_error", MessageManager::get("PASSWORD_COUNT_NOT_ENOUGH"));
+				if(tstrlen($cart->getCustomerInformation()->getPassword()) < $passCnt){
+					$cart->addErrorMessage("password_error", MessageManager::get("PASSWORD_COUNT_NOT_ENOUGH", array("password_count" => $passCnt)));
 					$res = false;
 				}
 			}
@@ -381,20 +405,32 @@ class BackwardUserComponent {
 
 		//生年月日　年
     	$page->addInput("birth_year", array(
+			"type" => "number",
     		"name" => "Customer[birthday][]",
     		"value" => $user->getBirthdayYear(),
+			"size" => 5,
+			"attr:min" => 1900,
+			"attr:max" => date("Y") + 10
     	));
 
 		//生年月日　月
     	$page->addInput("birth_month", array(
+			"type" => "number",
     		"name" => "Customer[birthday][]",
     		"value" => $user->getBirthdayMonth(),
+			"size" => 3,
+			"attr:min" => 1,
+			"attr:max" => 12
     	));
 
 		//生年月日　日
     	$page->addInput("birth_day", array(
+			"type" => "number",
     		"name" => "Customer[birthday][]",
     		"value" => $user->getBirthdayDay(),
+			"size" => 3,
+			"attr:min" => 1,
+			"attr:max" => 31
     	));
 
 		//郵便番号
@@ -429,6 +465,10 @@ class BackwardUserComponent {
     	$page->addInput("user_address2", array(
     		"name" => "Customer[address2]",
     		"value" => $user->getAddress2(),
+    	));
+		$page->addInput("user_address3", array(
+    		"name" => "Customer[address3]",
+    		"value" => $user->getAddress3(),
     	));
 
 		//電話番号
@@ -602,20 +642,32 @@ class BackwardUserComponent {
 
 		//生年月日　年
     	$page->addInput("birth_year", array(
+			"type" => "number",
     		"name" => "Customer[birthday][]",
     		"value" => $user->getBirthdayYear(),
+			"size" => 5,
+			"attr:min" => 1900,
+			"attr:max" => date("Y") + 10
     	));
 
 		//生年月日　月
     	$page->addInput("birth_month", array(
+			"type" => "number",
     		"name" => "Customer[birthday][]",
     		"value" => $user->getBirthdayMonth(),
+			"size" => 3,
+			"attr:min" => 1,
+			"attr:max" => 12
     	));
 
 		//生年月日　日
     	$page->addInput("birth_day", array(
+			"type" => "number",
     		"name" => "Customer[birthday][]",
     		"value" => $user->getBirthdayDay(),
+			"size" => 3,
+			"attr:min" => 1,
+			"attr:max" => 31
     	));
 
 		//郵便番号
@@ -657,6 +709,10 @@ class BackwardUserComponent {
     	$page->addInput("user_address2", array(
     		"name" => "Customer[address2]",
     		"value" => $user->getAddress2(),
+    	));
+		$page->addInput("user_address3", array(
+    		"name" => "Customer[address3]",
+    		"value" => $user->getAddress3(),
     	));
 
 		//電話番号
@@ -760,11 +816,14 @@ class BackwardUserComponent {
 		}
 
 		//パスワード
+		SOY2::import("domain.config.SOYShop_ShopConfig");
+		$passCnt = SOYShop_ShopConfig::load()->getPasswordCount();
+
 		if(tstrlen($user->getPassword()) < 1){
 			$mypage->addErrorMessage("password", MessageManager::get("PASSWORD_EMPTY"));
 			$res = false;
-		}elseif(tstrlen($user->getPassword()) < 8){
-			$mypage->addErrorMessage("password", MessageManager::get("PASSWORD_COUNT_NOT_ENOUGH"));
+		}elseif(tstrlen($user->getPassword()) < $passCnt){
+			$mypage->addErrorMessage("password", MessageManager::get("PASSWORD_COUNT_NOT_ENOUGH", $passCnt));
 			$res = false;
 		}elseif(!preg_match("/^[a-zA-Z0-9]+$/",$user->getPassword())){
     		$mypage->addErrorMessage("password", MessageManager::get("PASSWORD_FALSE"));
@@ -1081,20 +1140,32 @@ class BackwardUserComponent {
 
 		//生年月日 年
 		$page->addInput("birth_year", array(
+			"type" => "number",
     		"name" => "Customer[birthday][0]",
     		"value" => $user->getBirthdayYear(),
+			"size" => 5,
+			"attr:min" => 1900,
+			"attr:max" => date("Y") + 10
     	));
 
 		//生年月日 月
     	$page->addInput("birth_month", array(
+			"type" => "number",
     		"name" => "Customer[birthday][1]",
 			"value" => $user->getBirthdayMonth(),
+			"size" => 3,
+			"attr:min" => 1,
+			"attr:max" => 12
     	));
 
 		//生年月日 日
     	$page->addInput("birth_day", array(
+			"type" => "number",
     		"name" => "Customer[birthday][2]",
     		"value" => $user->getBirthdayDay(),
+			"size" => 3,
+			"attr:min" => 1,
+			"attr:max" => 31
     	));
 
 		//郵便番号
@@ -1217,6 +1288,4 @@ class BackwardUserComponent {
     	));
 
 	}
-
 }
-?>

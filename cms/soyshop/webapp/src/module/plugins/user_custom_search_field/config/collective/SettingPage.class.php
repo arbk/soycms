@@ -45,7 +45,7 @@ class SettingPage extends WebPage{
 
 		parent::__construct();
 
-		DisplayPlugin::toggle("updated", isset($_GET["updated"]));
+
 
 		self::buildSearchForm();
 
@@ -72,15 +72,16 @@ class SettingPage extends WebPage{
 		$this->createAdd("user_list", "_common.User.UserListComponent", array(
 			"list" => self::getUsers(),
 			"detailLink" => SOY2PageController::createLink("User.Detail."),
-//			"config" => SOYShop_ShopConfig::load(),
-			"appLimit" => true
 		));
 
-		$this->addModel("datapicker_css", array(
-			"href" => SOY2PageController::createRelativeLink("./js/") . "tools/soy2_date_picker.css"
+		// $this->addModel("datapicker_css", array(
+		// 	"href" => SOY2PageController::createRelativeLink("./js/") . "tools/soy2_date_picker.css"
+		// ));
+		$this->addModel("datapicker_ja_js", array(
+			"src" => SOY2PageController::createRelativeLink("./js/") . "tools/datepicker-ja.js"
 		));
 		$this->addModel("datapicker_js", array(
-			"src" => SOY2PageController::createRelativeLink("./js/") . "tools/soy2_date_picker.pack.js"
+			"src" => SOY2PageController::createRelativeLink("./js/") . "tools/datepicker.js"
 		));
 	}
 

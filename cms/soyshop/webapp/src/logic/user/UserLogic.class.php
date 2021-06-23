@@ -3,20 +3,16 @@
 class UserLogic extends SOY2LogicBase{
 
     function remove($userId){
-    	$userDao = SOY2DAOFactory::create("user.SOYShop_UserDAO");
-
-    	try{
-    		$user = $userDao->getById($userId);
-    	}catch(Exception $e){
-    		return false;
-    	}
+		$user = soyshop_get_user_object($userId);
+		if(is_null($user->getId())) return false;
 
     	$mailAddress = $user->getMailAddress();
 
     	//ユーザが存在していた場合
+		$res = false;
     	if(isset($mailAddress)){
+			$userDao = SOY2DAOFactory::create("user.SOYShop_UserDAO");
 			$i = 0;
-			$res = false;
 			do{
 				try{
 					$deleteAddress = $mailAddress . "_delete_" . $i;
@@ -57,15 +53,14 @@ class UserLogic extends SOY2LogicBase{
     		}
     	}
 
-    	if($res){
-    		$loginDao = SOY2DAOFactory::create("user.SOYShop_AutoLoginSessionDAO");
-    		try{
-    			$loginDao->deleteByUserId($userId);
-    			return true;
-    		}catch(Exception $e){
-    			return false;
-    		}
-    	}
+		if(!$res) return false;
+
+		try{
+			SOY2DAOFactory::create("user.SOYShop_AutoLoginSessionDAO")->deleteByUserId($userId);
+			return true;
+		}catch(Exception $e){
+			return false;
+		}
     }
 
 	/** プロフィール **/
@@ -108,10 +103,8 @@ class UserLogic extends SOY2LogicBase{
 		$path = $this->makeDirectory($userId) . $new;
 		@move_uploaded_file($tmp, $path);
 
-		$res = $this->checkSizeBeforeResize(getimagesize($path), $resizeWidth);
-
 		//リサイズ
-		if($isResize && $res){
+		if($isResize && self::_checkSizeBeforeResize(getimagesize($path), $resizeWidth)){
 			soy2_resizeimage($path, $path, $resizeWidth);
 		}
 
@@ -123,10 +116,8 @@ class UserLogic extends SOY2LogicBase{
 		$path = $this->makeTmpDirectory() . $new;
 		@move_uploaded_file($tmp, $path);
 
-		$res = $this->checkSizeBeforeResize(getimagesize($path),$resizeWidth);
-
 		//リサイズ
-		if($isResize && $res){
+		if($isResize && self::_checkSizeBeforeResize(getimagesize($path),$resizeWidth)){
 			soy2_resizeimage($path, $path, $resizeWidth);
 		}
 
@@ -138,14 +129,8 @@ class UserLogic extends SOY2LogicBase{
 		return md5($file . time()) . $fileType;
 	}
 
-	function checkSizeBeforeResize($image, $resize_width){
-		$res = true;
-		$width = $image[0];
-		if($resize_width - $width > 0){
-			$res = false;
-		}
-
-		return $res;
+	function _checkSizeBeforeResize($image, $resize_width){
+		return (isset($image[0]) && ($image[0] - $resize_width));
 	}
 
 	function makeDirectory($userId){
@@ -189,5 +174,41 @@ class UserLogic extends SOY2LogicBase{
 		}
 		$dir->close();
 	}
+
+	function getUserNameListByUserIds($userIds){
+		static $list;
+		if(is_null($list)) $list = array();
+
+		//既に取得している顧客名は再び検索しない
+		$alreadyUserIds = array_keys($list);
+		if(count($alreadyUserIds)){
+			foreach($alreadyUserIds as $userId){
+				$idx = array_search($userId, $userIds);
+				if(!is_numeric($idx)) continue;
+				unset($userIds[$idx]);
+				$userIds = array_values($userIds);
+			}
+			if(!count($userIds)) return $list;
+		}
+
+		try{
+			$results = self::_dao()->executeQuery("SELECT id, name FROM soyshop_user WHERE id IN (" . implode(",", $userIds) . ")");
+		}catch(Exception $e){
+			$results = array();
+		}
+		if(count($results)){
+			foreach($results as $res){
+				if(!isset($res["name"]) || !strlen($res["name"])) continue;
+				$list[(int)$res["id"]] = $res["name"];
+			}
+		}
+
+		return $list;
+	}
+
+	private function _dao(){
+		static $dao;
+		if(is_null($dao)) $dao = SOY2DAOFactory::create("user.SOYShop_UserDAO");
+		return $dao;
+	}
 }
-?>

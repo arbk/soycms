@@ -64,8 +64,7 @@ class IndexPage extends WebPage{
 			$cart->setAttribute("payment_module", $moduleId);
 
 			//選択されたプラグインのみを読み込む：plugins/$moduleId/soyshop.payment.php
-			$moduleDAO = SOY2DAOFactory::create("plugin.SOYShop_PluginConfigDAO");
-			$paymentModule = $moduleDAO->getByPluginId($moduleId);
+			$paymentModule = soyshop_get_plugin_object($moduleId);
 			SOYShopPlugin::load("soyshop.payment", $paymentModule);
 
 			//選択されたプラグインを実行
@@ -81,8 +80,7 @@ class IndexPage extends WebPage{
 			$cart->setAttribute("delivery_module",$moduleId);
 
 			//選択されたプラグインのみを読み込む
-			$moduleDAO = SOY2DAOFactory::create("plugin.SOYShop_PluginConfigDAO");
-			$deliveryModule = $moduleDAO->getByPluginId($moduleId);
+			$deliveryModule = soyshop_get_plugin_object($moduleId);
 			SOYShopPlugin::load("soyshop.delivery", $deliveryModule);
 
 			//選択されたプラグインを実行
@@ -202,6 +200,9 @@ class IndexPage extends WebPage{
 
 		parent::__construct();
 
+		//エラー
+		DisplayPlugin::toggle("order_error", count($this->cart->getErrorMessages()));
+
 		$this->itemInfo();
 		$this->dateInfo();
 		$this->userInfo();
@@ -213,8 +214,6 @@ class IndexPage extends WebPage{
 		$this->pointForm();
 		$this->orderCustomForm();
 		$this->confirmForm();
-
-		self::displayErrors();
 
 		//リセットボタンの表示
 		$items = $this->cart->getItems();
@@ -230,19 +229,27 @@ class IndexPage extends WebPage{
 		return array(
 			"./css/admin/user_detail.css",
 			"./css/admin/order_register.css",
-			"./js/tools/soy2_date_picker.css",
+			//"./js/tools/soy2_date_picker.css",
 		);
 	}
 
 	function getScripts(){
+		$root = SOY2PageController::createRelativeLink("./js/");
 		return array(
-			"./js/tools/soy2_date_picker.pack.js"
+			//"./js/tools/soy2_date_picker.pack.js"
+			$root . "tools/datepicker-ja.js",
+			$root . "tools/datepicker.js"
 		);
 	}
 
 
 	//商品情報
 	function itemInfo(){
+
+		//仕入値を出力するか？
+		$this->addModel("is_purchase_price", array(
+			"visible" => (SOYShop_ShopConfig::load()->getDisplayPurchasePriceOnAdmin())
+		));
 
 		$items = $this->cart->getItems();
 		$cnt = count($items);
@@ -258,7 +265,7 @@ class IndexPage extends WebPage{
 		));
 
 		$this->addLabel("total_item_price", array(
-				"text" => number_format($this->cart->getItemPrice())
+				"text" => soy2_number_format($this->cart->getItemPrice())
 		));
 
 		//モジュール料金
@@ -269,7 +276,7 @@ class IndexPage extends WebPage{
 
 		//総額
 		$this->addLabel("total_price", array(
-				"text" => number_format($this->cart->getTotalPrice())
+				"text" => soy2_number_format($this->cart->getTotalPrice())
 		));
 
 		//在庫切れ
@@ -285,6 +292,7 @@ class IndexPage extends WebPage{
 		$this->addInput("order_date", array(
 				"name" => "order_date",
 				"value" => $this->cart->getOrderDateText(),
+				"readonly" => true
 		));
 
 		DisplayPlugin::toggle("no_order_date", !strlen($this->cart->getOrderDateText()));
@@ -396,6 +404,11 @@ class IndexPage extends WebPage{
 			"text" => $user->getAddress2(),
 		));
 
+		//住所入力3
+		$this->addLabel("address3_on_admin", array(
+			"text" => $user->getAddress3(),
+		));
+
 		//電話番号
 		$this->addLabel("telephone_number_on_admin", array(
 			"text" => $user->getTelephoneNumber(),
@@ -491,6 +504,10 @@ class IndexPage extends WebPage{
 
     	$this->addLabel("send_address2", array(
     		"text" => (isset($address["address2"])) ? $address["address2"] : "",
+    	));
+
+		$this->addLabel("send_address3", array(
+    		"text" => (isset($address["address3"])) ? $address["address3"] : "",
     	));
 
     	$this->addLabel("send_tel_number", array(
@@ -639,13 +656,7 @@ class IndexPage extends WebPage{
 		));
 	}
 
-	/**
-	 * エラー
-	 */
-	private function displayErrors(){
-		$this->addLabel("order_error",array(
-				"text" => "エラーにより注文を進めることができませんでした。",
-				"visible" => count($this->cart->getErrorMessages()),
-		));
+	function getBreadcrumb(){
+		return BreadcrumbComponent::build("注文を追加する", array("Order" => "注文管理"));
 	}
 }

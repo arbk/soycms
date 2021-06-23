@@ -5,6 +5,9 @@ if(isset($_SERVER["HTTP_X_SAKURA_FORWARDED_FOR"])){
 	$_SERVER["SERVER_PORT"] = "443";
 }
 
+//session → If you do not load it here, set it in php.config.php.
+if(file_exists(dirname(__FILE__) . "/session.conf.php")) include_once("session.conf.php");
+
 //define
 define("SOYSHOP_ROOT",str_replace("\\","/",dirname(dirname(dirname(__FILE__)))) . "/");
 define("SOYSHOP_WEBAPP",SOYSHOP_ROOT . "webapp/");
@@ -50,16 +53,21 @@ SOY2::import("base.SOYShopSiteController");
 SOY2::import("base.define", ".php");
 SOY2::import("base.func.common", ".php");
 SOY2::import("logic.plugin.SOYShopPlugin");
-SOY2::imports("base.site.*");
-SOY2::imports("base.site.pages.*");
-SOY2::imports("base.site.classes.*");
 
 //init controller
 SOY2PageController::init("SOYShopSiteController");
 
-//debug switch
-define("SOYSHOP_"."DEVELOPING_MODE", false);
-define("DEBUG_MODE", false);
+//SOY Shopのバージョン
+define("SOYSHOP_VERSION", trim(file_get_contents(SOYSHOP_ROOT . "VERSION")));
+if(preg_match('/^\d/', SOYSHOP_VERSION)){	//本番環境
+	//define("false", false);
+	define("DEBUG_MODE", false);
+}else{
+	//debug switch
+	//define("false", true);
+	define("DEBUG_MODE", true);
+}
+
 define("SOY2HTML_AUTO_GENERATE", false);
 
 if(DEBUG_MODE){
@@ -104,3 +112,8 @@ if(defined("SOYCMS_ALLOW_PHP_SCRIPT")){
 }else{
 	define("SOY2HTML_ALLOW_PHP_SCRIPT",false);
 }
+
+//CartLogicの内容の一部をSQLite DBに移行するモード
+//define("SOYSHOP_USE_CART_TABLE_MODE", false && extension_loaded("sqlite3") && extension_loaded("pdo_sqlite"));
+define("SOYSHOP_USE_CART_TABLE_MODE", false);
+if(SOYSHOP_USE_CART_TABLE_MODE) SOY2::import("base.cart.db", ".php");

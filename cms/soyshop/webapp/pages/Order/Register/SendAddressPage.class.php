@@ -100,15 +100,12 @@ class SendAddressPage extends WebPage{
     		"value" => (isset($address["area"])) ? $address["area"] : null,
     	));
 
-    	$this->addInput("address1", array(
-    		"name" => "Address[address1]",
-    		"value" => (isset($address["address1"])) ? $address["address1"] : "",
-    	));
-
-    	$this->addInput("address2", array(
-    		"name" => "Address[address2]",
-    		"value" => (isset($address["address2"])) ? $address["address2"] : "",
-    	));
+		for($i = 1; $i <= 3; $i++){
+			$this->addInput("address" . $i, array(
+	    		"name" => "Address[address" . $i . "]",
+	    		"value" => (isset($address["address" . $i])) ? $address["address" . $i] : "",
+	    	));
+		}
 
     	$this->addInput("tel_number", array(
     		"name" => "Address[telephoneNumber]",
@@ -118,10 +115,14 @@ class SendAddressPage extends WebPage{
 		//法人名(勤務先など)
 		SOY2::import("domain.config.SOYShop_ShopConfig");
 		DisplayPlugin::toggle("office_item", SOYShop_ShopConfig::load()->getDisplayUserOfficeItems());
-		
+
     	$this->addInput("office", array(
     		"name" => "Address[office]",
     		"value" => (isset($address["office"])) ? $address["office"] : "",
     	));
     }
+
+	function getBreadcrumb(){
+		return BreadcrumbComponent::build("送付先を指定する", array("Order" => "注文管理", "Order.Register" => "注文を追加する"));
+	}
 }

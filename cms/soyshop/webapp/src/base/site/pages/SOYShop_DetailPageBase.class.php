@@ -20,19 +20,14 @@ class SOYShop_DetailPageBase extends SOYShopPageBase{
 		try{
 			$item = $itemDAO->getByAlias($alias);
 		}catch(Exception $e){
-			header("HTTP/1.0 404 Not Found");
-			echo "error";
-			exit;
+			throw new Exception("The specified product cannot be found.");
 		}
 
 		$forAdminOnly = self::getForAdminOnly($item);
 
 		//非公開(非公開プレビューモードは除く) && 削除フラグのチェック
 		if((!$forAdminOnly && $item->getIsOpen() != SOYShop_Item::IS_OPEN)  || $item->getIsDisabled() == SOYShop_Item::IS_DISABLED){
-			//header("HTTP/1.1 410 Gone");
-			header("HTTP/1.0 404 Not Found");
-			echo "error";
-			exit;
+			throw new Exception("The specified product does not have publishing authority.");
 		}
 
 		//子商品だった場合は、親商品の詳細ページにリダイレクト
@@ -53,9 +48,7 @@ class SOYShop_DetailPageBase extends SOYShopPageBase{
 		soyshop_convert_item_detail_page_id($item, $page);
 
 		if(strlen($item->getDetailPageId()) > 0 && $item->getDetailPageId() != $page->getId()){
-			header("HTTP/1.0 404 Not Found");
-			echo "error";
-			exit;
+			throw new Exception("The specified product does not have publishing authority.");
 		}
 
 		try{
@@ -93,10 +86,10 @@ class SOYShop_DetailPageBase extends SOYShopPageBase{
 			if(strlen($description)) $this->getHeadElement()->insertMeta("description", $description . " ");
 
 		}catch(Exception $e){
-			header("HTTP/1.0 500 Internal Server Error");
-			echo "error";
-			exit;
+			throw new Exception("unknown error.");
 		}
+
+		if(!defined("SOYSHOP_PAGE_TYPE")) define("SOYSHOP_PAGE_TYPE", get_class($obj));
 
 		//item
 		$this->createAdd("item", "SOYShop_ItemListComponent", array(

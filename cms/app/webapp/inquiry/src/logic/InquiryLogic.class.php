@@ -23,12 +23,17 @@ class InquiryLogic extends SOY2LogicBase{
     		$column->setInquiry($inquiry);
 
     		$id = $column->getId();
-    		$label = $column->getLabel();
+			if($useMailBody){	//HTMLタグを除きたいが念の為に、メール送信時のみに限定する
+				$label = strip_tags($column->getLabel());
+			}else{
+				$label = $column->getLabel();
+			}
+
 
 			//連番の場合
 			if($column->getType() == "SerialNumber"){
-				$config = soy2_unserialize($column->getConfig());
-				$value = (isset($config["serialNumber"]) && is_numeric($config["serialNumber"])) ? (int)$config["serialNumber"] : 1;
+				SOY2::import("util.SOYInquiryUtil");
+				$value = SOYInquiryUtil::buildSerialNumber(soy2_unserialize($column->getConfig()));
 			}else{
 				$value = ($useMailBody) ? $column->getColumn()->getMailText() : $column->getContent();
 			}
@@ -43,6 +48,18 @@ class InquiryLogic extends SOY2LogicBase{
     		$values[$id] = $value;
 
     		$maxLabelWidth = max(mb_strwidth($label), $maxLabelWidth);
+
+			//記事名 [SOY CMSブログ連携]の場合は次の行で確認用のURLを挿入
+			if($useMailBody && $column->getType() == "SOYCMSBlogEntry"){
+				SOY2::import("util.SOYInquiryUtil");
+				$blogEntryUrl = SOYInquiryUtil::getBlogEntryUrlByInquiryId($inquiry->getId());
+				if(strlen($blogEntryUrl)){
+					$labels[$id . "_url"] = "記事のURL";
+					$values[$id . "_url"] = $blogEntryUrl;
+
+					$maxLabelWidth = max(mb_strwidth($labels[$id . "_url"]), $maxLabelWidth);
+				}
+			}
     	}
 
     	if($useMailBody){
@@ -83,6 +100,29 @@ class InquiryLogic extends SOY2LogicBase{
     	$id = $inquiryDao->insert($inquiry);
     	$inquiry->setId($id);
 
+		// GETでentry_idがあれば、soyinquiry_entry_relationに登録しておく
+		$entryId = SOYInquiryUtil::getParameter("entry_id");
+		if(is_numeric($entryId)){
+			$relDao = SOY2DAOFactory::create("SOYInquiry_EntryRelationDAO");
+			$rel = new SOYInquiry_EntryRelation();
+			$rel->setInquiryId($id);
+			$rel->setEntryId($entryId);
+
+			$siteId = SOYInquiryUtil::getParameter("site_id");
+			if(is_numeric($siteId)) $rel->setSiteId($siteId);
+
+			$pageId = SOYInquiryUtil::getParameter("page_id");
+			if(is_numeric($pageId)) $rel->setPageId($pageId);
+
+			try{
+				$relDao->insert($rel);
+			}catch(Exception $e){
+				//
+			}
+		}
+		//セッションのクリア
+		SOYInquiryUtil::clearParameters();
+
     	return $inquiry;
 
     }
@@ -91,14 +131,14 @@ class InquiryLogic extends SOY2LogicBase{
      * 問い合わせ情報を更新
      */
     function updateInquiry(SOYInquiry_Inquiry $inquiry, $body, $data, $url){
-    	$inquiryDao = $this->getDAO();
+		$inquiryDao = $this->getDAO();
 
     	$inquiry->setContent($body);
     	$inquiry->setData(serialize($data));
     	$inquiry->setFormUrl($url);
 
     	//問い合わせ番号生成->保存
-    	$inquiry->setTrackingNumber($this->getTrackingNumber($inquiry));
+    	if(is_null($inquiry->getTrackingNumber()))$inquiry->setTrackingNumber($this->getTrackingNumber($inquiry));
 
     	$inquiryDao->update($inquiry);
     	return true;
@@ -146,8 +186,8 @@ class InquiryLogic extends SOY2LogicBase{
 			$obj->onSend($inquiry);
 		}
 
-		$this->updateToSOYMail($inquiry,$columns);
-
+		self::_updateToSOYMail($columns);
+		self::_updateToSOYShop($columns);
     }
 
     /**
@@ -163,25 +203,7 @@ class InquiryLogic extends SOY2LogicBase{
 			//NoPersistentは無視して全項目を保存する
 			$id = $column->getId();
 			$column->setInquiry($inquiry);
-
-			//連番の場合
-			if($column->getType() == "SerialNumber"){
-				$config = soy2_unserialize($column->getConfig());
-				if(!isset($config["serialNumber"]) || !is_numeric($config["serialNumber"])) continue;
-				$res[$id] = (int)$config["serialNumber"];
-
-				//連番を更新する
-				$config["serialNumber"] = $res[$id] + 1;
-				$column->setConfig($config);
-
-				try{
-					SOY2DAOFactory::create("SOYInquiry_ColumnDAO")->update($column);
-				}catch(Exception $e){
-					//
-				}
-			}else{
-				$res[$id] = $column->getContent();
-			}
+			$res[$id] = $column->getContent();
 		}
 
 		return $res;
@@ -190,15 +212,106 @@ class InquiryLogic extends SOY2LogicBase{
     /**
      * SOYMailと同期して更新する
      */
-    function updateToSOYMail($inquiry,$columns){
-    	$values = array();
+    private function _updateToSOYMail($columns){
+		list($sql, $binds) = self::_buildQueryAndBinds($columns, "mail");
+		if(!strlen($sql)) return;
 
+		//DSNの書き換え
+		if(defined("SOYMAIL_DSN")){
+			$old = SOY2DAOConfig::Dsn(SOYMAIL_DSN);
+			try{
+	    		$dao = new SOY2DAO();
+	    		$dao->executeUpdateQuery($sql,$binds);
+			}catch(Exception $e){
+				//
+			}
+
+			SOY2DAOConfig::Dsn($old);
+		}
+    }
+
+    /**
+     * SOYShopと同期する
+     */
+    private function _updateToSOYShop($columns){
+		list($sql, $binds) = self::_buildQueryAndBinds($columns, "shop");
+		if(!strlen($sql)) return;
+
+		if(defined("SOYINQUERY_SOYSHOP_CONNECT_SITE_ID") && strlen(SOYINQUERY_SOYSHOP_CONNECT_SITE_ID)){
+			$old = SOYInquiryUtil::switchConfig();
+			$siteDao = SOY2DAOFactory::create("SOYShop_SiteDAO");
+			try{
+				$site = $siteDao->getById(SOYINQUERY_SOYSHOP_CONNECT_SITE_ID);
+			}catch(Exception $e){
+				$site = new SOYShop_Site();
+			}
+			if(!defined("SOYSHOP_SITE_ID")) define("SOYSHOP_SITE_ID", $site->getSiteId());
+			SOYInquiryUtil::resetConfig($old);
+
+			//ここからSOY Shopの顧客名簿に値を放り込む作業
+			$old = SOYInquiryUtil::switchSOYShopConfig(SOYSHOP_SITE_ID);
+
+			try{
+	    		$dao = new SOY2DAO();
+	    		$dao->executeUpdateQuery($sql, $binds);
+			}catch(Exception $e){
+				//
+			}
+
+			//パスワードの登録
+			SOY2::import("util.SOYShopPluginUtil");
+			if(SOYShopPluginUtil::checkIsActive("generate_password")){	//パスワードの自動生成　後ほどパスワードをメールで通知する
+				$mailAddress = "";
+				foreach($binds as $bind){
+					if(preg_match('/^([a-zA-Z0-9])+([a-zA-Z0-9\._-])*@([a-zA-Z0-9_-])+([a-zA-Z0-9\._-]+)+$/', $bind)){
+						$mailAddress = trim($bind);
+					}
+				}
+
+				if(strlen($mailAddress)){
+					include_once(SOY2::RootDir() . "base/func/common.php");
+					SOY2::import("module.plugins.generate_password.util.GeneratePasswordUtil");
+					$cnf = GeneratePasswordUtil::getConfig();
+					$len = (isset($cnf["password_strlen"]) && is_numeric($cnf["password_strlen"])) ? (int)$cnf["password_strlen"] : 12;
+					$pw = soyshop_create_random_string($len);
+
+					$userDao = SOY2DAOFactory::create("user.SOYShop_UserDAO");
+					try{
+						$user = $userDao->getByMailAddress($mailAddress);
+						GeneratePasswordUtil::saveAutoGeneratePassword($user->getMailAddress(), $pw);
+						$user->setPassword($user->hashPassword($pw));
+						$userDao->update($user);
+					}catch(Exception $e){
+						//
+					}
+				}
+			}
+
+			SOYInquiryUtil::resetConfig($old);
+		}
+    }
+
+	/**
+	 * @modeにはmail or shopが入る
+	 */
+	private function _buildQueryAndBinds($columns, $mode="mail"){
+		if(!is_array($columns) || !count($columns)) return array("", array());
+
+		$values = array();
 		foreach($columns as $column){
 			$obj = $column->getColumn($this->form);
 
-			$soyMailData = $obj->convertToSOYMail();
-			if($soyMailData) $values = array_merge($values, $soyMailData);
+			switch($mode){
+				case "shop":
+					$data = $obj->convertToSOYShop();
+					break;
+				default:
+				case "mail":
+					$data = $obj->convertToSOYMail();
+			}
+			if($data) $values = array_merge($values, $data);
 		}
+		if(!count($values)) return array("", array());
 
 		/*
 		 * 投稿元フォーム情報を追加
@@ -212,96 +325,51 @@ class InquiryLogic extends SOY2LogicBase{
 		 */
 		$keys = array();
 		$alias = array();
-		$data = array();
+		$binds = array();
 		$cnt = 0;
 
 		//メールアドレスの値があるか？チェック
 		$isMailAddress = false;
 		foreach($values as $key => $val) {
-			if(strlen($key)<1)continue;
+			if(strlen($key) < 1) continue;
 
 			//文字列に@があるものの場合にメールアドレスとみなす
-			if($key==="mail_address" && strpos($val,"@") > 0)$isMailAddress = true;
+			if($key === "mail_address" && strpos($val, "@") > 0) $isMailAddress = true;
 
 			$keys[$cnt] = $key;
 			$alias[$cnt] = ":datum".$cnt;
-			$data[":datum".$cnt] = $val;
+			$binds[":datum".$cnt] = $val;
 
 			$cnt++;
 		}
 
+		//keysが一つもない場合はここで処理を終了する
+		if(!count($keys)) return array("", array());
+
 		//メールアドレスの値がない場合はここで処理を終了する
-		if($isMailAddress===false)return;
+		if(!$isMailAddress) return array("", array());
 
 		//is_disabled
 		$keys[] = "is_disabled";
 		$alias[] = "0";
+
+		if($mode == "shop"){
+			$keys[] = "user_type";
+			$alias[] = 1;
+		}
 
 		//register_date, update_date
 		$keys[] = "register_date";
 		$keys[] = "update_date";
 		$alias[] = ":now";
 		$alias[] = ":now";
-		$data[":now"] = time();
+		$binds[":now"] = time();
 
-		$sql  = "insert into soymail_user(" . implode(",", $keys) . ") ";
+		//SQLを組み立てる
+		$sql  = "insert into soy" . $mode . "_user(" . implode(",", $keys) . ") ";
 		$sql .= "values(". implode(",", $alias) . ")";
-
-		//DSNの書き換え
-		if(defined("SOYMAIL_DSN")){
-
-			$old = SOY2DAOConfig::Dsn(SOYMAIL_DSN);
-
-			try{
-	    		$dao = new SOY2DAO();
-	    		$dao->executeUpdateQuery($sql,$data);
-			}catch(Exception $e){
-
-			}
-
-			SOY2DAOConfig::Dsn($old);
-		}
-
-		//SOYShopでも同様の同期作業を行う
-		$this->updateToSOYShop($keys, $alias, $data);
-    }
-
-    /**
-     * @ToDo
-     * SOYMailとの同期の際に用いたデータを使用してSOYShopと同期する
-     */
-    function updateToSOYShop($keys, $alias, $data){
-
-		if(defined("SOYINQUERY_SOYSHOP_CONNECT_SITE_ID") && strlen(SOYINQUERY_SOYSHOP_CONNECT_SITE_ID)){
-
-			$old = SOYInquiryUtil::switchConfig();
-
-			$siteDao = SOY2DAOFactory::create("SOYShop_SiteDAO");
-			try{
-				$site = $siteDao->getById(SOYINQUERY_SOYSHOP_CONNECT_SITE_ID);
-			}catch(Exception $e){
-				$site = new SOYShop_Site();
-			}
-			if(!defined("SOYSHOP_SITE_ID")) define("SOYSHOP_SITE_ID", $site->getSiteId());
-
-			SOYInquiryUtil::resetConfig($old);
-
-			//ここからSOY Shopの顧客名簿に値を放り込む作業
-			$old = SOYInquiryUtil::switchSOYShopConfig(SOYSHOP_SITE_ID);
-
-			$sql  = "insert into soyshop_user(" . implode(",", $keys) . ") ";
-			$sql .= "values(". implode(",", $alias) . ")";
-
-			try{
-	    		$dao = new SOY2DAO();
-	    		$dao->executeUpdateQuery($sql, $data);
-			}catch(Exception $e){
-				//
-			}
-
-			SOYInquiryUtil::resetConfig($old);
-		}
-    }
+		return array($sql, $binds);
+	}
 
     /**
      * 問い合わせ番号を生成

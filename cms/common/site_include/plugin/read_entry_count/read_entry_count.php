@@ -18,7 +18,7 @@ class ReadEntryCountPlugin{
 			"author"=>"齋藤毅",
 			"url"=>"http://saitodev.co",
 			"mail"=>"tsuyoshi@saitodev.co",
-			"version"=>"0.6"
+			"version"=>"0.9"
 		));
 
 		CMSPlugin::addPluginConfigPage(self::PLUGIN_ID,array(
@@ -33,8 +33,9 @@ class ReadEntryCountPlugin{
 				//
 			//公開側
 			}else{
+				CMSPlugin::setEvent('onEntryOutput', self::PLUGIN_ID, array($this, "display"));
 				//公開側のページを表示させたときに、メタデータを表示する
-				CMSPlugin::setEvent('onPageOutput',$this->getId(),array($this,"onPageOutput"));
+				CMSPlugin::setEvent('onPageOutput', self::PLUGIN_ID, array($this,"onPageOutput"));
 			}
 
 		}else{
@@ -42,18 +43,24 @@ class ReadEntryCountPlugin{
 		}
 	}
 
+	function display($arg){
+		$entryId = $arg["entryId"];
+		$htmlObj = $arg["SOY2HTMLObject"];
+
+		$htmlObj->addLabel("view_count", array(
+			"soy2prefix" => "cms",
+			"text" => (isset($entryId) && is_numeric($entryId)) ? self::_getReadEntryCountObject($entryId)->getCount() : 0//self::getReadEntryCountObject($entryId)->getCount()
+		));
+	}
 	/**
 	 * 公開側の出力
 	 */
 	function onPageOutput($obj){
 
 		//ブログの記事ページを開いた時のみ集計
+		SOY2::import('site_include.CMSBlogPage');
 		if(($obj instanceof CMSBlogPage) && $obj->mode == CMSBlogPage::MODE_ENTRY && !is_null($obj->entry->getId())){
-			$cntObj = self::getReadEntryCountObject($obj->entry->getId());
-			$cnt = (int)$cntObj->getCount();
-			$cnt++;
-			$cntObj->setCount($cnt);
-			self::save($cntObj);
+			self::_aggregate($obj->entry->getId());
 		}
 
 		SOY2::imports("site_include.plugin.read_entry_count.component.*");
@@ -93,14 +100,26 @@ class ReadEntryCountPlugin{
 		}
 	}
 
-	private function getReadEntryCountObject($entryId){
+	private function _aggregate($entryId){
+		$obj = self::_getReadEntryCountObject($entryId);
+		$cnt = (int)$obj->getCount();
+		$cnt++;
+		$obj->setCount($cnt);
+		self::save($obj);
+	}
+
+	private function _getReadEntryCountObject($entryId){
+		static $list;
+		if(is_null($list)) $list = array();
+		if(isset($list[$entryId])) return $list[$entryId];
 		try{
-			return self::dao()->getByEntryId($entryId);
+			$list[$entryId] = self::dao()->getByEntryId($entryId);
 		}catch(Exception $e){
 			$obj = new ReadEntryCount();
 			$obj->setEntryId($entryId);
-			return $obj;
+			$list[$entryId] = $obj;
 		}
+		return $list[$entryId];
 	}
 
 	private function save(ReadEntryCount $obj){
@@ -110,14 +129,16 @@ class ReadEntryCountPlugin{
 			try{
 				self::dao()->update($obj);
 			}catch(Exception $e){
-				var_dump($e);
+				//
 			}
 		}
 	}
 
 	private function get(){
+		//無駄な処理になるけれども、直前で再度DAOクラスを読み込むことにした
+		SOY2::imports("site_include.plugin.read_entry_count.domain.*");
 		try{
-			return self::dao()->getRanking($this->limit);
+			return SOY2DAOFactory::create("ReadEntryCountDAO")->getRanking($this->limit);
 		}catch(Exception $e){
 			return array();
 		}
@@ -126,7 +147,7 @@ class ReadEntryCountPlugin{
 	private function getByLabelIds($labelIds, $blogPageId){
 		if(!count($labelIds)) return self::get();
 		try{
-			return self::dao()->getRankingByLabelIds($labelIds, $blogPageId, $this->limit);
+			return SOY2DAOFactory::create("ReadEntryCountDAO")->getRankingByLabelIds($labelIds, $blogPageId, $this->limit);
 		}catch(Exception $e){
 			return array();
 		}
@@ -192,7 +213,7 @@ class ReadEntryCountPlugin{
 			try{
 				$dao->executeUpdateQuery($sql, array());
 			}catch(Exception $e){
-				var_dump($e);
+				//
 			}
 		}
 
@@ -225,12 +246,8 @@ class ReadEntryCountPlugin{
 	}
 
 	public static function register(){
-
 		$obj = CMSPlugin::loadPluginConfig(self::PLUGIN_ID);
-		if(!$obj){
-			$obj = new ReadEntryCountPlugin();
-		}
-
+		if(!$obj) $obj = new ReadEntryCountPlugin();
 		CMSPlugin::addPlugin(self::PLUGIN_ID, array($obj, "init"));
 	}
 }

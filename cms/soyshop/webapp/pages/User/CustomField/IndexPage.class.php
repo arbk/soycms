@@ -95,8 +95,8 @@ class IndexPage extends WebPage{
     	if(!$correct){
     		SOY2PageController::jump("User");
     	}
-    	
-    	
+
+
     	parent::__construct();
 
     	$this->addModel("updated", array(
@@ -122,10 +122,18 @@ class IndexPage extends WebPage{
 			"list" => $config,
 			"types" => $types
 		));
-
-    	$this->addModel("is_custom_plugin", array(
-			"visible" => $correct
-		));
     }
+
+	function getBreadcrumb(){
+		return BreadcrumbComponent::build("ユーザカスタム項目管理", array("User" => SHOP_USER_LABEL . "管理"));
+	}
+
+	function getFooterMenu(){
+		try{
+			return SOY2HTMLFactory::createInstance("User.FooterMenu.UserFooterMenuPage")->getObject();
+		}catch(Exception $e){
+			//
+			return null;
+		}
+	}
 }
-?>

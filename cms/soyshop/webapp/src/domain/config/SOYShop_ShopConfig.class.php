@@ -16,6 +16,8 @@ class SOYShop_ShopConfig {
 
 	private $appName = "SOY Shop";
 	private $appLogoPath = "./img/logo.png";
+	private $isTrailingSlash = 1;	//カノニカルURLでトライリングスラッシュの有無
+	private $isDomainWww = 1;		//www.ありドメインの時のカノニカルURLの出力設定
 
 	private $consumptionTax = 0;
 	private $consumptionTaxModule;
@@ -28,6 +30,8 @@ class SOYShop_ShopConfig {
 	private $displayStockCount = 0;
 	private $ignoreStock;
 	private $isHiddenStockCount;	//在庫数無視モードで在庫数を隠すか？
+	private $searchChildItemOnListPage = 1;
+	private $searchChildItemOnDetailPage = 1;
 	private $displayChildItem;
 	private $childItemStock;
 	private $noChildItemStock;
@@ -45,6 +49,8 @@ class SOYShop_ShopConfig {
 	private $displaySendInformationForm = 1;
 	private $allowMailAddressLogin = 1;
 	private $allowLoginIdLogin = 0;
+	private $accountIdItemName = "ログインID";
+	private $passwordCount = 8;		//パスワードの最低文字数
 	private $displayUsableTagList = 0;
 	private $useUserCode = 0;			//顧客コード
 	private $insertDummyMailAddress = 1;
@@ -52,8 +58,14 @@ class SOYShop_ShopConfig {
 	private $insertDummyMailAddressOnAdminRegister = 0;
 	private $insertDummyAddressOnAdmin = 0;
 
-	private $isChildItemOnAdminOrder = 0;	//管理画面からの注文の際に子商品を検索結果に含める
+	//private $isChildItemOnAdminOrder = 0;	//管理画面からの注文の際に子商品を検索結果に含める
 	private $isUnregisteredItem = 1;		//管理画面からの注文の際に未登録商品の追加を許可する
+	private $displayRegisterAfterItemSearchOnAdmin = 1;	//管理画面からの注文の際に商品検索後に商品を登録するフォームを表示する
+	private $addSearchChildItemNameOnAdmin = 1;			//管理画面からの注文の際に商品検索で子商品を加味して検索をする
+	private $allowRegistrationZeroYenProducts = 0;	//管理画面からの注文の際に0円の商品をカートに入れる事を許可する
+	private $allowRegistrationZeroQuantityProducts = 0;	//管理画面からの注文の際に商品をカートに0個入れる事を許可する
+	private $changeParentItemNameOnAdmin = 0;	//管理画面でカートや注文詳細で表記されている子商品名を親商品名に変換する
+	private $displayPurchasePriceOnAdmin = 0;	//管理画面からの注文の際に単価の横に仕入値を出力する
 
 	private $displayOrderAdminPage = 1;
 	private $displayItemAdminPage = 1;
@@ -76,6 +88,7 @@ class SOYShop_ShopConfig {
 		"name" => "",
 		"address1" => "",
 		"address2" => "",
+		"building" => "",	//建物名
 		"telephone" => "",
 		"fax" => "",
 		"mailaddress" => "",
@@ -88,6 +101,7 @@ class SOYShop_ShopConfig {
 		"accountId"		=>	false,
 		"name"			=>	true,
 		"reading"		=>	true,
+		"honorific"		=>  false,
 		"nickname" 		=>	true,
 		"zipCode"		=>	true,
 		"address"		=>	true,
@@ -107,6 +121,7 @@ class SOYShop_ShopConfig {
 		"accountId" 	=>	false,
 		"name"			=>	true,
 		"reading"		=>	true,
+		"honorific"		=> false,
 		"nickname"		=>	false,
 		"zipCode"		=>	true,
 		"address"		=>	true,
@@ -126,6 +141,7 @@ class SOYShop_ShopConfig {
 		"accountId" 	=>	true,
 		"name"			=>	true,
 		"reading"		=>	true,
+		"honorific"		=> 	false,
 		"nickname"		=>	true,
 		"zipCode"		=>	true,
 		"address"		=>	true,
@@ -139,23 +155,26 @@ class SOYShop_ShopConfig {
 		"memo"			=> true
 	);
 
-	private $customerFormLabels = array(
-		"mailAddress"	=>	"メールアドレス",
-		"accountId"		=>	"ログインID(マイページのみ)",
-		"name"			=>	"名前",
-		"reading"		=>	"フリガナ",
-		"nickname" 		=>	"ニックネーム(マイページのみ)",
-		"zipCode"		=>	"郵便番号",
-		"address"		=>	"住所",
-		"telephoneNumber"	=> "電話番号",
-		"gender"		=> "性別",
-		"birthday"		=> "生年月日",
-		"faxNumber"		=> "FAX番号",
-		"cellphoneNumber"	=> "携帯番号",
-		"url"			=> "URL(マイページのみ)",
-		"jobName"		=> "職業",
-		"memo"			=> "備考"
-	);
+	function getCustomerDisplayFormConfigList(){
+		return array(
+			"mailAddress"	=>	"メールアドレス",
+			"accountId"		=>	"ログインID(マイページのみ)",
+			"name"			=>	"名前",
+			"reading"		=>	"フリガナ",
+			"honorific"		=>	"敬称(管理画面のみ)",
+			"nickname" 		=>	"ニックネーム(マイページのみ)",
+			"zipCode"		=>	"郵便番号",
+			"address"		=>	"住所",
+			"telephoneNumber"	=> "電話番号",
+			"gender"		=> "性別",
+			"birthday"		=> "生年月日",
+			"faxNumber"		=> "FAX番号",
+			"cellphoneNumber"	=> "携帯番号",
+			"url"			=> "URL(マイページのみ)",
+			"jobName"		=> "職業",
+			"memo"			=> "備考"
+		);;
+	}
 
 	private $requireText = "(必須)";
 
@@ -173,18 +192,21 @@ class SOYShop_ShopConfig {
 		"deliveryMail" => true
 	);
 
-	private $orderItemLabels = array(
-		"orderId" => "注文ID",
-		"trackingNumber" => "注文番号",
-		"orderDate" => "注文時刻",
-		"customerName" => "顧客名",
-		"totalPrice" => "合計金額",
-		"status" => "状態",
-		"paymentStatus" => "支払い状態",
-		"confirmMail" => "注文確認メール",
-		"paymentMail" => "支払確認メール",
-		"deliveryMail" => "発送メール"
-	);
+	function getOrderItemList(){
+		return array(
+			"orderId" => "注文ID",
+			"trackingNumber" => "注文番号",
+			"orderDate" => "注文時刻",
+			"customerName" => "顧客名",
+			"totalPrice" => "合計金額",
+			"status" => "状態",
+			"paymentStatus" => "支払い状態",
+			"confirmMail" => "注文確認メール",
+			"paymentMail" => "支払確認メール",
+			"deliveryMail" => "発送メール"
+		);
+	}
+
 
 	const DATASETS_KEY = "soyshop.ShopConfig";
 
@@ -200,9 +222,9 @@ class SOYShop_ShopConfig {
 		if(!class_exists("SOYAppUtil")) SOY2::import("util.SOYAppUtil");
 
 		/**
-		 * shop.db site_nameとurlの変更
+		 * shop.db site_nameとurlの変更→廃止
 		 */
-		self::saveShopDbSiteConfig($obj->getShopName(), $siteUrl);
+		//self::saveShopDbSiteConfig($obj->getShopName(), $siteUrl);
 
 		/**
 		 * cms.db site_nameとurlの変更
@@ -218,30 +240,31 @@ class SOYShop_ShopConfig {
 		);
 	}
 
-	private static function saveShopDbSiteConfig($shopName, $publishUrl){
-		$old = SOYAppUtil::switchAppMode("shop");
-		$shopSiteDao = SOY2DAOFactory::create("SOYShop_SiteDAO");
-		try{
-			$site = $shopSiteDao->getBySiteId(SOYSHOP_ID);
-		}catch(Exception $e){
-			$site = new SOYShop_Site();
-		}
-
-		if(!is_null($site->getId())){
-			$site->setName($shopName);
-
-			if(isset($publishUrl) && strlen($publishUrl)){
-				$site->setUrl($publishUrl);
-			}
-
-			try{
-				$shopSiteDao->update($site);
-			}catch(Exception $e){
-				//
-			}
-		}
-		SOYAppUtil::resetAppMode($old);
-	}
+	//廃止
+	// private static function saveShopDbSiteConfig($shopName, $publishUrl){
+	// 	$old = SOYAppUtil::switchAppMode("shop");
+	// 	$shopSiteDao = SOY2DAOFactory::create("SOYShop_SiteDAO");
+	// 	try{
+	// 		$site = $shopSiteDao->getBySiteId(SOYSHOP_ID);
+	// 	}catch(Exception $e){
+	// 		$site = new SOYShop_Site();
+	// 	}
+	//
+	// 	if(!is_null($site->getId())){
+	// 		$site->setName($shopName);
+	//
+	// 		if(isset($publishUrl) && strlen($publishUrl)){
+	// 			$site->setUrl($publishUrl);
+	// 		}
+	//
+	// 		try{
+	// 			$shopSiteDao->update($site);
+	// 		}catch(Exception $e){
+	// 			//
+	// 		}
+	// 	}
+	// 	SOYAppUtil::resetAppMode($old);
+	// }
 
 	private static function saveCmsDbSiteConfig($shopName, $publishUrl){
 		$old = SOYAppUtil::switchAdminDsn();
@@ -336,10 +359,6 @@ class SOYShop_ShopConfig {
 		$this->customerAdminConfig["name"] = true;
 	}
 
-	function getCustomerDisplayFormConfigList(){
-		return $this->customerFormLabels;
-	}
-
 	function getOrderItemConfig(){
 		if(count($this->orderItemConfig)){
 			return $this->orderItemConfig;
@@ -354,10 +373,6 @@ class SOYShop_ShopConfig {
 		foreach($this->orderItemConfig as $key => $value){
 			$this->orderItemConfig[$key] = (boolean)@$array[$key];
 		}
-	}
-
-	function getOrderItemList(){
-		return $this->orderItemLabels;
 	}
 
 	function getShopName() {
@@ -384,6 +399,7 @@ class SOYShop_ShopConfig {
 			"name" => "",
 			"address1" => "",
 			"address2" => "",
+			"building" => "",
 			"telephone" => "",
 			"fax" => "",
 			"mailaddress" => "",
@@ -418,6 +434,20 @@ class SOYShop_ShopConfig {
 	}
 	function setAppLogoPath($appLogoPath){
 		$this->appLogoPath = $appLogoPath;
+	}
+
+	function getIsTrailingSlash(){
+		return $this->isTrailingSlash;
+	}
+	function setIsTrailingSlash($isTrailingSlash){
+		$this->isTrailingSlash = $isTrailingSlash;
+	}
+
+	function getIsDomainWww(){
+		return $this->isDomainWww;
+	}
+	function setIsDomainWww($isDomainWww){
+		$this->isDomainWww = $isDomainWww;
 	}
 
 	function getConsumptionTax(){
@@ -499,6 +529,20 @@ class SOYShop_ShopConfig {
 	}
 	function setIsHiddenStockCount($isHiddenStockCount){
 		$this->isHiddenStockCount = $isHiddenStockCount;
+	}
+
+	function getSearchChildItemOnListPage(){
+		return $this->searchChildItemOnListPage;
+	}
+	function setSearchChildItemOnListPage($searchChildItemOnListPage){
+		$this->searchChildItemOnListPage = $searchChildItemOnListPage;
+	}
+
+	function getSearchChildItemOnDetailPage(){
+		return $this->searchChildItemOnDetailPage;
+	}
+	function setSearchChildItemOnDetailPage($searchChildItemOnDetailPage){
+		$this->searchChildItemOnDetailPage = $searchChildItemOnDetailPage;
 	}
 
 	function getDisplayChildItem(){
@@ -606,6 +650,20 @@ class SOYShop_ShopConfig {
 		$this->allowLoginIdLogin = $allowLoginIdLogin;
 	}
 
+	function getAccountIdItemName(){
+		return $this->accountIdItemName;
+	}
+	function setAccountIdItemName($accountIdItemName){
+		$this->accountIdItemName = $accountIdItemName;
+	}
+
+	function getPasswordCount(){
+		return $this->passwordCount;
+	}
+	function setPasswordCount($passwordCount){
+		$this->passwordCount = $passwordCount;
+	}
+
 	function getDisplayUsableTagList(){
 		return $this->displayUsableTagList;
 	}
@@ -648,18 +706,60 @@ class SOYShop_ShopConfig {
 		$this->insertDummyAddressOnAdmin = $insertDummyAddressOnAdmin;
 	}
 
-	function getIsChildItemOnAdminOrder(){
-		return $this->isChildItemOnAdminOrder;
-	}
-	function setIsChildItemOnAdminOrder($isChildItemOnAdminOrder){
-		$this->isChildItemOnAdminOrder = $isChildItemOnAdminOrder;
-	}
+	// function getIsChildItemOnAdminOrder(){
+	// 	return $this->isChildItemOnAdminOrder;
+	// }
+	// function setIsChildItemOnAdminOrder($isChildItemOnAdminOrder){
+	// 	$this->isChildItemOnAdminOrder = $isChildItemOnAdminOrder;
+	// }
 
 	function getIsUnregisteredItem(){
 		return $this->isUnregisteredItem;
 	}
 	function setIsUnregisteredItem($isUnregisteredItem){
 		$this->isUnregisteredItem = $isUnregisteredItem;
+	}
+
+	function getDisplayRegisterAfterItemSearchOnAdmin(){
+		return $this->displayRegisterAfterItemSearchOnAdmin;
+	}
+	function setDisplayRegisterAfterItemSearchOnAdmin($displayRegisterAfterItemSearchOnAdmin){
+		$this->displayRegisterAfterItemSearchOnAdmin = $displayRegisterAfterItemSearchOnAdmin;
+	}
+
+	function getAddSearchChildItemNameOnAdmin(){
+		return $this->addSearchChildItemNameOnAdmin;
+	}
+	function setAddSearchChildItemNameOnAdmin($addSearchChildItemNameOnAdmin){
+		$this->addSearchChildItemNameOnAdmin = $addSearchChildItemNameOnAdmin;
+	}
+
+	function getAllowRegistrationZeroYenProducts(){
+		return $this->allowRegistrationZeroYenProducts;
+	}
+	function setAllowRegistrationZeroYenProducts($allowRegistrationZeroYenProducts){
+		$this->allowRegistrationZeroYenProducts = $allowRegistrationZeroYenProducts;
+	}
+
+	function getAllowRegistrationZeroQuantityProducts(){
+		return $this->allowRegistrationZeroQuantityProducts;
+	}
+	function setAllowRegistrationZeroQuantityProducts($allowRegistrationZeroQuantityProducts){
+		$this->allowRegistrationZeroQuantityProducts = $allowRegistrationZeroQuantityProducts;
+	}
+
+	function getChangeParentItemNameOnAdmin(){
+		return $this->changeParentItemNameOnAdmin;
+	}
+	function setChangeParentItemNameOnAdmin($changeParentItemNameOnAdmin){
+		$this->changeParentItemNameOnAdmin = $changeParentItemNameOnAdmin;
+	}
+
+	function getDisplayPurchasePriceOnAdmin(){
+		return $this->displayPurchasePriceOnAdmin;
+	}
+	function setDisplayPurchasePriceOnAdmin($displayPurchasePriceOnAdmin){
+		$this->displayPurchasePriceOnAdmin = $displayPurchasePriceOnAdmin;
 	}
 
 	function getDisplayOrderAdminPage(){

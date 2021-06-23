@@ -34,12 +34,11 @@ class CustomSearchField extends SOYShopItemCustomFieldBase{
         SOY2::import("module.plugins." . self::FIELD_ID . ".component.FieldFormComponent");
 		$list = CustomSearchFieldUtil::getConfig();
         foreach($list as $key => $field){
-			$html[] = "<dt id=\"csf_field_" . $key . "_dt\">" . htmlspecialchars($field["label"], ENT_QUOTES, "UTF-8") . " (" . CustomSearchFieldUtil::PLUGIN_PREFIX . ":id=\"" . $key . "\")</dt>";
-            $html[] = "<dd id=\"csf_field_" . $key . "\">";
-
+			$html[] = "<div class=\"form-group\" id=\"csf_field_" . $key . "_group\">";
+			$html[] = "<label>" . htmlspecialchars($field["label"], ENT_QUOTES, "UTF-8") . " (" . CustomSearchFieldUtil::PLUGIN_PREFIX . ":id=\"" . $key . "\")</label><br>";
             $value = (isset($values[$key])) ? $values[$key] : null;
             $html[] = FieldFormComponent::buildForm($key, $field, $value);
-            $html[] = "</dd>";
+            $html[] = "</div>";
 
 			//関連付けモードを起動するか調べる
 			if(!$associationMode && isset($field["showInput"]) && is_numeric($field["showInput"])) $associationMode = true;
@@ -75,11 +74,9 @@ class CustomSearchField extends SOYShopItemCustomFieldBase{
 			$html[] = '}';
 
 			$html[] = 'if(isCategory){';
-			$html[] = '	$("#csf_field_' . $key . '_dt").show();';
-			$html[] = '	$("#csf_field_' . $key . '").show();';
+			$html[] = '	$("#csf_field_' . $key . '_group").show();';
 			$html[] = '}else{';
-			$html[] = '	$("#csf_field_' . $key . '_dt").hide();';
-			$html[] = '	$("#csf_field_' . $key . '").hide();';
+			$html[] = '	$("#csf_field_' . $key . '_group").hide();';
 			$html[] = '}';
 		}
 		$html[] = "}, 1300);";
@@ -102,7 +99,7 @@ class CustomSearchField extends SOYShopItemCustomFieldBase{
             //多言語化対応はデータベースから値を取得した時点で行っている
             $csfValue = (isset($values[$key])) ? $values[$key] : null;
 			if(isset($csfValue) && $field["type"] == CustomSearchFieldUtil::TYPE_TEXTAREA){
-				$csfValue = nl2br($csfValue);
+				$csfValue = soyshop_customfield_nl2br($csfValue);
 			}
 
 			$csfValueLength = strlen(trim(strip_tags($csfValue)));
@@ -127,9 +124,14 @@ class CustomSearchField extends SOYShopItemCustomFieldBase{
                 "html" => (isset($csfValue)) ? $csfValue : null
             ));
 
+			$htmlObj->addLink($key . "_link", array(
+				"soy2prefix" => CustomSearchFieldUtil::PLUGIN_PREFIX,
+				"link" => (isset($csfValue) && strlen($csfValue)) ? $csfValue : null
+			));
+
             switch($field["type"]){
                 case CustomSearchFieldUtil::TYPE_CHECKBOX:
-                    if(strlen($field["option"][SOYSHOP_PUBLISH_LANGUAGE])){
+                    if(isset($field["option"][SOYSHOP_PUBLISH_LANGUAGE]) && strlen($field["option"][SOYSHOP_PUBLISH_LANGUAGE])){
                         $vals = explode(",", $csfValue);
                         $opts = explode("\n", $field["option"][SOYSHOP_PUBLISH_LANGUAGE]);
                         foreach($opts as $i => $opt){

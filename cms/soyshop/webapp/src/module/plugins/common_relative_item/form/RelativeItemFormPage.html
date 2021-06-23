@@ -1,18 +1,19 @@
-<dt>関連商品</dt>
-<dd>
+<div class="alert alert-success">関連商品</div>
+
+<div class="form-group">
+	<label>関連商品の追加</label><br>
+	商品コード:<select id="relative_item_add" soy:id="relative_item_select"></select>
+	<a class="btn btn-primary btn-sm" href="javascript:void(0);" onclick="return add_relative_item();">追加</a>
+
 	<div id="relative_items_wrapper">
 	<!-- soy:id="relative_item_list" -->
 	<p>
-	商品コード:<input class="relative_items" id="" type="text" name="" value="" soy:id="item_code_input" />
+	商品コード:<input class="relative_items" id="" type="text" value="" soy:id="item_code_input" />
 	<label soy:id="label_for"><!-- soy:id="item_name" /--></label>
 	</p>
 	<!-- /soy:id="relative_item_list" -->
 	</div>
-
-	<h4>関連商品の追加</h4>
-	商品コード:<select id="relative_item_add" soy:id="relative_item_select"></select>
-	<a class="button" href="javascript:void(0);" onclick="return add_relative_item();">追加</a>
-</dd>
+</div>
 
 <script type="text/javascript">
 

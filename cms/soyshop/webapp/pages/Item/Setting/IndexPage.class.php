@@ -8,9 +8,7 @@ class IndexPage extends WebPage{
 	function doPost(){
 
 		if(soy2_check_token()){
-			if(count($_POST["items"])){
-
-
+			if(isset($_POST["items"]) && count($_POST["items"])){
 				foreach($_POST["items"] as $itemId){
 					try{
 						$item = $this->itemDao->getById($itemId);
@@ -76,25 +74,39 @@ class IndexPage extends WebPage{
 		//表示順リンク
 //		$this->buildSortLink($searchLogic, $sort);
 
-		$appLimit = SOY2ActionSession::getUserSession()->getAttribute("app_shop_auth_limit");
-		DisplayPlugin::toggle("app_limit_function", $appLimit);
-
 		$this->addForm("form");
 
-		SOY2::import("domain.config.SOYShop_ShopConfig");
+		//在庫数と注文数を事前に取得しておく
+		list($stocks, $orders) = self::_getStocksAndOrders($items);
+
 		$this->createAdd("item_list", "_common.Item.ItemListComponent", array(
 			"list" => $items,
-			"itemOrderDAO" => SOY2DAOFactory::create("order.SOYShop_ItemOrderDAO"),
-			"detailLink" => SOY2PageController::createLink("Item.Detail."),
-			"categories" => soyshop_get_category_objects(),
-			"config" => SOYShop_ShopConfig::load(),
-			"appLimit" => $appLimit
+			"itemStocks" => $stocks,
+			"orderCounts" => $orders,
+			"detailLink" => SOY2PageController::createLink("Item.Detail.")
 		));
 
 		$this->addSelect("category_change_select", array(
 			"name" => "category",
 			"options" => self::buildCategoryList(),
 		));
+	}
+
+	//在庫数と注文数を事前に取得しておく
+	private function _getStocksAndOrders($items){
+		if(!count($items)) return array(array(), array());
+
+		$itemIds = array();
+		foreach($items as $item){
+			$itemIds[] = $item->getId();
+		}
+
+		if(!count($itemIds)) return array(array(), array());
+
+		$stocks = SOY2Logic::createInstance("logic.shop.item.ItemLogic")->getStockListByItemIds($itemIds);
+		$orders = SOY2Logic::createInstance("logic.order.OrderLogic")->getOrderCountListByItemIds($itemIds);
+
+		return array($stocks, $orders);
 	}
 
 	private function buildForm(){
@@ -131,19 +143,34 @@ class IndexPage extends WebPage{
 		$this->addSelect("item_category", array(
 			"name" => "SearchForm[category]",
 			"options" => self::buildCategoryList(true),
-			"selected" => $form["category"]
+			"selected" => (isset($form["category"])) ? $form["category"] : ""
 		));
 
 		return $form;
-
+	}
 
 	private function buildCategoryList($minusMode = false){
 		$list = array();
 		if($minusMode){
 			$list["-1"] = "カテゴリなし";
 		}
-		
+
 		return $list + soyshop_get_category_list();
+	}
+
+	function getBreadcrumb(){
+		return BreadcrumbComponent::build("商品のカテゴリ一括設定", array("Item" => "商品管理"));
+	}
+
+	function getFooterMenu(){
+		try{
+			return SOY2HTMLFactory::createInstance("Item.FooterMenu.ItemFooterMenuPage", array(
+				"arguments" => array(null)
+			))->getObject();
+		}catch(Exception $e){
+			//
+			return null;
+		}
 	}
 
 	private function getParameter($key){

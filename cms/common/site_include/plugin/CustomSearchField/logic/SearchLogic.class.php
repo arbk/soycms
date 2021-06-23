@@ -19,6 +19,9 @@ class SearchLogic extends SOY2LogicBase{
     function search($labelId, $limit=null){
         self::setCondition();
 
+		// $whereが空の場合は検索しない
+		if(!count($this->where)) return array();
+
         $sql = "SELECT DISTINCT s.entry_id, s.*, ent.* " .
                 "FROM Entry ent ".
 				"INNER JOIN EntryLabel lab ".
@@ -34,9 +37,12 @@ class SearchLogic extends SOY2LogicBase{
 		if(isset($limit) && is_numeric($limit) && $limit > 0){
 			$sql .= " LIMIT " . (int)$limit;
 
-			//OFFSET
-	        $offset = $limit * ($current - 1);
-	        if($offset > 0) $sql .= " OFFSET " . $offset;
+			//ページャ
+			$args = self::__getArgs();
+			if(isset($args[0]) && strpos($args[0], "page-") === 0){
+				$pageNumber = (int)str_replace("page-", "", $args[0]);
+				if($pageNumber > 0) $sql .= " OFFSET " . ($limit * $pageNumber);
+			}
 		}
 
         try{
@@ -55,19 +61,26 @@ class SearchLogic extends SOY2LogicBase{
         return $entries;
     }
 
-    function getTotal(){
+    function getTotal($labelId){
         self::setCondition();
+
+		// $whereが空の場合は検索しない
+		if(!count($this->where)) return 0;
 
         $sql = "SELECT COUNT(ent.id) AS total " .
                 "FROM Entry ent ".
+				"INNER JOIN EntryLabel lab ".
+	            "ON ent.id = lab.entry_id ".
                 "INNER JOIN EntryCustomSearch s ".
-                "ON ent.id = s.ent_id ";
+                "ON ent.id = s.entry_id ";
         $sql .= self::buildWhere();    //カウントの時と共通の処理は切り分ける
 
+		$this->binds[":labelId"] = $labelId;
+
         try{
-            $res = $this->itemDao->executeQuery($sql, $this->binds);
+            $res = $this->entryDao->executeQuery($sql, $this->binds);
         }catch(Exception $e){
-            return 0;
+			return 0;
         }
 
         return (isset($res[0]["total"])) ? (int)$res[0]["total"] : 0;
@@ -87,11 +100,15 @@ class SearchLogic extends SOY2LogicBase{
     }
 
     private function setCondition(){
+		$q = CustomSearchFieldUtil::getParameter("q");
+		$params = CustomSearchFieldUtil::getParameter("c_search");
+
         if(!count($this->where)){
             //記事検索
-			if(isset($_GET["q"]) && strlen($_GET["q"])){
+			$q = (is_string($q)) ? trim($q) : null;
+			if(strlen($q)){
 				$this->where["query"] = " (ent.title LIKE :query OR ent.content LIKE :query OR ent.more LIKE :query) ";
-				$this->binds[":query"] = "%" . trim($_GET["q"]) . "%";
+				$this->binds[":query"] = "%" . $q . "%";
 			}
 
             foreach(CustomSearchFieldUtil::getConfig() as $key => $field){
@@ -102,21 +119,21 @@ class SearchLogic extends SOY2LogicBase{
                     case CustomSearchFieldUtil::TYPE_STRING:
                     case CustomSearchFieldUtil::TYPE_TEXTAREA:
                     case CustomSearchFieldUtil::TYPE_RICHTEXT:
-						if(isset($_GET["c_search"][$key])){
+						if(isset($params[$key])){
 							//文字列として検索
-							if(is_string($_GET["c_search"][$key]) && strlen($_GET["c_search"][$key])){
+							if(is_string($params[$key]) && strlen($params[$key])){
 								//否定として検索
 								if(isset($field["denial"]) && $field["denial"] == 1){
 									$this->where[$key] = "s." . $key . " != :" . $key;
-									$this->binds[":" . $key] = trim($_GET["c_search"][$key]);
+									$this->binds[":" . $key] = trim($params[$key]);
 								}else{
 									$this->where[$key] = "s." . $key . " LIKE :" . $key;
-									$this->binds[":" . $key] = "%" . trim($_GET["c_search"][$key]) . "%";
+									$this->binds[":" . $key] = "%" . trim($params[$key]) . "%";
 								}
 							//配列として検索
-							}else if(is_array($_GET["c_search"][$key]) && count($_GET["c_search"][$key])){
+							}else if(is_array($params[$key]) && count($params[$key])){
 								$w = array();
-	                            foreach($_GET["c_search"][$key] as $i => $v){
+	                            foreach($params[$key] as $i => $v){
 	                                if(!strlen($v)) continue;
 	                                $w[] = "s." . $key . " LIKE :" . $key . $i;
 	                                $this->binds[":" . $key . $i] = "%" . trim($v) . "%";
@@ -129,10 +146,10 @@ class SearchLogic extends SOY2LogicBase{
                     //範囲の場合
                     case CustomSearchFieldUtil::TYPE_RANGE:
 						//配列で渡す
-						if(isset($_GET["c_search"][$key]) && is_array($_GET["c_search"][$key])){
+						if(isset($params[$key]) && is_array($params[$key])){
 							$cnt = 0;
 							$rWhere = array();
-							$cnds = $_GET["c_search"][$key];
+							$cnds = $params[$key];
 							for($i = 0; $i < count($cnds); $i++){
 								$ws = "";
 								$we = "";
@@ -159,13 +176,13 @@ class SearchLogic extends SOY2LogicBase{
 						//通常の検索 @ToDo >= or <=の対応を考える
 						}else{
 							$ws = "";$we = "";    //whereのスタートとエンド
-	                        if(isset($_GET["c_search"][$key . "_start"]) && strlen($_GET["c_search"][$key . "_start"]) && is_numeric($_GET["c_search"][$key . "_start"])){
+	                        if(isset($params[$key . "_start"]) && strlen($params[$key . "_start"]) && is_numeric($params[$key . "_start"])){
 	                            $ws = "s." . $key . " >= :" . $key . "_start";
-	                            $this->binds[":" . $key . "_start"] = (int)$_GET["c_search"][$key . "_start"];
+	                            $this->binds[":" . $key . "_start"] = (int)$params[$key . "_start"];
 	                        }
-	                        if(isset($_GET["c_search"][$key . "_end"]) && strlen($_GET["c_search"][$key . "_end"]) && is_numeric($_GET["c_search"][$key . "_end"])){
+	                        if(isset($params[$key . "_end"]) && strlen($params[$key . "_end"]) && is_numeric($params[$key . "_end"])){
 	                            $we = "s." . $key .  " <= :" . $key . "_end";
-	                            $this->binds[":" . $key . "_end"] = (int)$_GET["c_search"][$key . "_end"];
+	                            $this->binds[":" . $key . "_end"] = (int)$params[$key . "_end"];
 	                        }
 	                        if(strlen($ws) && strlen($we)){
 	                            $this->where[$key] = "(" . $ws . " AND " . $we . ")";
@@ -178,9 +195,9 @@ class SearchLogic extends SOY2LogicBase{
 
                     //チェックボックスの場合
                     case CustomSearchFieldUtil::TYPE_CHECKBOX:
-                        if(isset($_GET["c_search"][$key]) && count($_GET["c_search"][$key])){
+                        if(isset($params[$key]) && count($params[$key])){
                             $w = array();
-                            foreach($_GET["c_search"][$key] as $i => $v){
+                            foreach($params[$key] as $i => $v){
                                 if(!strlen($v)) continue;
                                 $w[] = "s." . $key . " LIKE :" . $key . $i;
                                 $this->binds[":" . $key . $i] = "%" . trim($v) . "%";
@@ -191,9 +208,9 @@ class SearchLogic extends SOY2LogicBase{
 
                     //数字、ラジオボタン、セレクトボックス
                     default:
-                        if(isset($_GET["c_search"][$key]) && strlen($_GET["c_search"][$key])){
+                        if(isset($params[$key]) && strlen($params[$key])){
                             $this->where[$key] = "s." . $key . " = :" . $key;
-                            $this->binds[":" . $key] = $_GET["c_search"][$key];
+                            $this->binds[":" . $key] = $params[$key];
                         }
                 }
             }
@@ -250,57 +267,78 @@ class SearchLogic extends SOY2LogicBase{
     // }
 
 	/** 商品一覧ページ用 **/
-    function getEntryList($key, $value, $current, $offset, $limit){
-
-        $confs = CustomSearchFieldUtil::getConfig();
-        if(!isset($confs[$key])) return array();
-
-        $binds = array(":now" => time());
-
-        $sql = "SELECT ent.* " .
-                "FROM Entry ent ".
-                "INNER JOIN EntryCustomSearch s ".
-                "ON ent.id = s.entry_id ";
-        $sql .= self::buildListWhere();    //カウントの時と共通の処理は切り分ける
-        switch($confs[$key]["type"]){
-            case CustomSearchFieldUtil::TYPE_CHECKBOX:
-                $sql .= "AND s." . $key . " LIKE :" . $key;
-                $binds[":" . $key] = "%" . trim($value) . "%";
-                break;
-            default:
-                $sql .= "AND s." . $key . " = :" . $key;
-                $binds[":" . $key] = trim($value);
-        }
-
-        //$sql .= self::buildOrderBySQLOnListPage($obj);
-		if(isset($limit) && is_numeric($limit) && $limit > 0){
-			$sql .= " LIMIT " . $limit;
-
-	        //OFFSET
-	        $offset = $limit * ($current - 1);
-	        if($offset > 0) $sql .= " OFFSET " . $offset;
-		}
-
-        try{
-            $res = $this->entryDao->executeQuery($sql, $binds);
-        }catch(Exception $e){
-            return array();
-        }
-
-        if(count($res) === 0) return array();
-
-        $entries = array();
-        foreach($res as $obj){
-            if(!isset($obj["id"])) continue;
-            $entries[] = $this->entryDao->getObject($obj);
-        }
-
-        return $entries;
-    }
+    // function getEntryList($key, $value, $current, $offset, $limit){
+	//
+    //     $confs = CustomSearchFieldUtil::getConfig();
+    //     if(!isset($confs[$key])) return array();
+	//
+    //     $binds = array(":now" => time());
+	//
+    //     $sql = "SELECT ent.* " .
+    //             "FROM Entry ent ".
+    //             "INNER JOIN EntryCustomSearch s ".
+    //             "ON ent.id = s.entry_id ";
+    //     $sql .= self::buildListWhere();    //カウントの時と共通の処理は切り分ける
+    //     switch($confs[$key]["type"]){
+    //         case CustomSearchFieldUtil::TYPE_CHECKBOX:
+    //             $sql .= "AND s." . $key . " LIKE :" . $key;
+    //             $binds[":" . $key] = "%" . trim($value) . "%";
+    //             break;
+    //         default:
+    //             $sql .= "AND s." . $key . " = :" . $key;
+    //             $binds[":" . $key] = trim($value);
+    //     }
+	//
+    //     //$sql .= self::buildOrderBySQLOnListPage($obj);
+	// 	if(isset($limit) && is_numeric($limit) && $limit > 0){
+	// 		$sql .= " LIMIT " . $limit;
+	//
+	// 		//ページャ
+	// 		$args = self::__getArgs();
+	// 		if(isset($args[0]) && strpos($args[0], "page-") === 0){
+	// 			$pageNumber = (int)str_replace("page-", "", $args[0]);
+	// 			if($pageNumber > 0){
+	// 				$offset = $limit * $pageNumber;
+	// 				$sql .= " OFFSET " . $offset;
+	// 			}
+	// 		}
+	// 	}
+	//
+    //     try{
+    //         $res = $this->entryDao->executeQuery($sql, $binds);
+    //     }catch(Exception $e){
+    //         return array();
+    //     }
+	//
+    //     if(count($res) === 0) return array();
+	//
+    //     $entries = array();
+    //     foreach($res as $obj){
+    //         if(!isset($obj["id"])) continue;
+    //         $entries[] = $this->entryDao->getObject($obj);
+    //     }
+	//
+    //     return $entries;
+    // }
 
 	private function buildListWhere(){
 		return "WHERE ent.openPeriodStart < :now ".
 			"AND ent.openPeriodEnd > :now ".
 			"AND ent.isPublished = 1 ";
+    }
+
+	function getArgs(){
+        return self::__getArgs();
+    }
+
+    private function __getArgs(){
+        if(!isset($_SERVER["PATH_INFO"])) return array();
+        //末尾にスラッシュがない場合はスラッシュを付ける
+        $pathInfo = $_SERVER["PATH_INFO"];
+        if(strrpos($pathInfo, "/") !== strlen($pathInfo) - 1){
+            $pathInfo .= "/";
+        }
+        $argsRaw = rtrim(str_replace("/" . $_SERVER["SOYCMS_PAGE_URI"] . "/", "", $pathInfo), "/");
+        return explode("/", $argsRaw);
     }
 }

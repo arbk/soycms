@@ -11,7 +11,7 @@ class Cart04Page extends MainCartPageBase{
 
 	function doPost(){
 
-		if(soy2_check_token()){
+		if(soy2_check_token() && soy2_check_referer()){
 
 			$cart = CartLogic::getCart();
 			$cart->removeErrorMessage("order_confirm_error");
@@ -108,6 +108,7 @@ class Cart04Page extends MainCartPageBase{
 			if(isset($_POST["prev"]) || isset($_POST["prev_x"])){
 				$cart->setAttribute("prev_page", "Cart04");
 				$cart->setAttribute("page", "Cart03");
+				$cart->save();
 
 				soyshop_redirect_cart();
 			}
@@ -278,6 +279,10 @@ class Cart04Page extends MainCartPageBase{
 			"text" => $send["address2"]
 		));
 
+		$this->addLabel("send_address3", array(
+			"text" => $send["address3"]
+		));
+
 		$this->addLabel("send_tel", array(
 			"text" => $send["telephoneNumber"]
 		));
@@ -299,7 +304,7 @@ class Cart04Page extends MainCartPageBase{
 		 */
 		$memo = $cart->getOrderAttribute("memo");
 		$this->addLabel("memo", array(
-			"html" => nl2br(htmlspecialchars($memo["value"])),
+			"html" => (isset($memo["value"])) ? nl2br(htmlspecialchars($memo["value"])) : "",
 		));
 
 		/*

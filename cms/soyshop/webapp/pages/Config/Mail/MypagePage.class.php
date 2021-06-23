@@ -16,22 +16,24 @@ class MypagePage extends WebPage{
 			$logic = SOY2Logic::createInstance("logic.mail.MailLogic");
 			$logic->setMyPageMailConfig($mail,$type);
 		}
-		
+
 		SOYShopPlugin::load("soyshop.mail.config");
 		$delegate = SOYShopPlugin::invoke("soyshop.mail.config",array(
 			"mode" => "update",
 			"target" => "mypage",
 			"type" => $type
 		));
-		
+
 		SOY2PageController::jump("Config.Mail.Mypage?type=" . $type . "&updated");
 	}
 
 	function __construct(){
 		parent::__construct();
 
+		$this->addLabel("user_label", array("text" => SHOP_USER_LABEL));
+
 		//メール文面の初期化
-		if(isset($_GET["init"]))$this->initText();
+		if(isset($_GET["init"]))	self::_initText();
 
 		$type = (isset($_GET["type"])) ? $_GET["type"] : "remind";
 		$this->buildForm($type);
@@ -114,7 +116,7 @@ class MypagePage extends WebPage{
 	/**
 	 * 仮登録メール　文面の追加
 	 */
-	function initText(){
+	private function _initText(){
 
 		preg_match('/type=(.*)/', $_SERVER["HTTP_REFERER"], $types);
     	if(strpos($types[1], "&") != false){
@@ -141,10 +143,31 @@ class MypagePage extends WebPage{
 		$array = array(
 			"tmp_register" => "仮登録メール",
 			"register" => "登録完了メール",
-			"remind" => "パスワード再設定メール"
+			"remind" => "パスワード再設定メール",
+			"edit" => SHOP_USER_LABEL . "情報の変更の確認メール"
 		);
 
 		return (isset($array[$type])) ? $array[$type] : "パスワード再設定メール";
 	}
+
+	function getBreadcrumb(){
+		$type = (isset($_GET["type"])) ? $_GET["type"] : "order";
+		return BreadcrumbComponent::build($this->getMailText($type), array("Config" => "設定", "Config.Mail" => "メール設定"));
+	}
+
+	function getFooterMenu(){
+		try{
+			return SOY2HTMLFactory::createInstance("Config.FooterMenu.MailTemplateFooterMenuPage")->getObject();
+		}catch(Exception $e){
+			//
+			return null;
+		}
+	}
+
+	function getScripts(){
+		$root = SOY2PageController::createRelativeLink("./js/");
+		return array(
+			$root . "main.pack.js",
+		);
+	}
 }
-?>

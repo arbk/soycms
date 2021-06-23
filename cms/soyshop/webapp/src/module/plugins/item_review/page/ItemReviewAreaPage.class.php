@@ -2,14 +2,12 @@
 
 class ItemReviewAreaPage extends WebPage{
 
-	private $configObj;
-
 	function __construct(){}
 
 	function execute(){
 		parent::__construct();
 
-		SOY2::imports("module.plugins.item_review.domain.*");
+		SOY2::import("module.plugins.item_review.domain.SOYShop_ItemReviewDAO");
 		SOY2::imports("module.plugins.item_review.logic.*");
 
 		$reviewDao = SOY2DAOFactory::create("SOYShop_ItemReviewDAO");
@@ -29,11 +27,18 @@ class ItemReviewAreaPage extends WebPage{
 
 		$this->createAdd("reviews_list", "_common.Review.ReviewListComponent", array(
 			"list" => $reviews,
-			"itemDao" => SOY2DAOFactory::create("shop.SOYShop_ItemDAO")
+			"itemNameList" => SOY2Logic::createInstance("logic.shop.item.ItemLogic")->getItemNameListByIds(self::_getItemIds($reviews))
 		));
 	}
 
-	function setConfigObj($configObj){
-		$this->configObj = $configObj;
+	private function _getItemIds($reviews){
+		if(!is_array($reviews) || !count($reviews)) return array();
+
+		$ids = array();
+		foreach($reviews as $review){
+			if(is_numeric(array_search((int)$review->getItemId(), $ids))) continue;
+			$ids[] = (int)$review->getItemId();
+		}
+		return $ids;
 	}
 }

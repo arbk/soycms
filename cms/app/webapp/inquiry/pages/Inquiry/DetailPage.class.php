@@ -90,7 +90,8 @@ class DetailPage extends WebPage{
 	}
 
 	function __construct($args) {
-		$this->id = @$args[0];
+		if(!isset($args[0]) || !is_numeric($args[0])) CMSApplication::jump("Inquiry");
+		$this->id = (int)$args[0];
 
 		$dao = SOY2DAOFactory::create("SOYInquiry_InquiryDAO");
 		$formDao = SOY2DAOFactory::create("SOYInquiry_FormDAO");
@@ -139,7 +140,14 @@ class DetailPage extends WebPage{
 		));
 
 		$this->addLabel("content", array(
-			"html" => $inquiry->getContent()
+			"html" => SOYInquiryUtil::shapeInquiryContent($inquiry->getContent())
+		));
+
+		//記事のリンク
+		$blogEntryUrl = SOYInquiryUtil::getBlogEntryUrlByInquiryId($inquiry->getId());
+		DisplayPlugin::toggle("blog_entry_url", strlen($blogEntryUrl));
+		$this->addLink("blog_entry_link", array(
+			"link" => $blogEntryUrl
 		));
 
 		//コメントを取得
@@ -147,7 +155,7 @@ class DetailPage extends WebPage{
 		$comments = $commenDAO->getByInquiryId($this->id);
 
 		DisplayPlugin::toggle("comment", count($comments));
-		$this->createAdd("comment_list", "CommentList", array(
+		$this->createAdd("comment_list", "_common.CommentListComponent", array(
 			"list" => $comments
 		));
 
@@ -245,27 +253,5 @@ class DetailPage extends WebPage{
 		}
 
 		return array($from, $cc);
-	}
-}
-
-class CommentList extends HTMLList{
-
-	protected function populateItem($bean){
-
-		$this->addLabel("title", array(
-			"text" => $bean->getTitle()
-		));
-
-		$this->addLabel("author", array(
-			"text" => $bean->getAuthor()
-		));
-
-		$this->addLabel("content", array(
-			"html" => $bean->getContent()
-		));
-
-		$this->addLabel("create_date", array(
-			"text" => date("Y-m-d H:i:s", $bean->getCreateDate())
-		));
 	}
 }

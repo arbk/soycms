@@ -87,6 +87,12 @@ abstract class SOYShop_ItemDAO extends SOY2DAO{
    	 */
    	abstract function getByType($type);
 
+	/**
+	 * @index id
+	 * @query item_type = :type AND item_is_open = 1 AND is_disabled = 0
+	 */
+	abstract function getByTypeIsOpenNoDisabled($type);
+
    	/**
    	 * @index id
    	 * @query item_type = :type AND is_disabled = 0
@@ -121,6 +127,14 @@ abstract class SOYShop_ItemDAO extends SOY2DAO{
 	 */
 	abstract function newItems();
 
+	/**
+	 * @return object
+	 * @query item_is_open = 1 AND is_disabled != 1 AND open_period_start < :now AND open_period_end > :now
+	 * @order create_date DESC
+	 * @limit 1
+	 */
+	abstract function getLatestRegisteredItem($now);
+
    	/**
 	 * @trigger onInsert
 	 * @return id
@@ -134,16 +148,15 @@ abstract class SOYShop_ItemDAO extends SOY2DAO{
 
 		$binds[":alias"] = $binds[":code"] . ".html";
 
+		//価格系すべて
+		foreach(array("price", "purchasePrice", "salePrice", "sellingPrice", "stock") as $t){
+			if(!isset($binds[":" . $t]) || !is_numeric($binds[":" . $t])){
+				$binds[":" . $t] = 0;
+			}
+		}
+
 		if(!isset($binds[":category"]) || strlen($binds[":category"]) < 1){
 			$binds[":category"] = null;
-		}
-
-		if(isset($binds[":createDate"])){
-			$binds[":createDate"] = time();
-		}
-
-		if(isset($binds[":updateDate"])){
-			$binds[":updateDate"] = time();
 		}
 
 		if(!isset($binds[":orderPeriodStart"]) || strlen($binds[":orderPeriodStart"]) < 1){
@@ -160,13 +173,11 @@ abstract class SOYShop_ItemDAO extends SOY2DAO{
 			$binds[":openPeriodEnd"] = SOYSHOP_DATA_MAX;
 		}
 
-		if(!isset($binds[":isOpen"])){
-			$binds[":isOpen"] = 0;
-		}
+		if(!isset($binds[":isOpen"])) $binds[":isOpen"] = 0;
+		if(!isset($binds[":isDisabled"])) $binds[":isDisabled"] = 0;
 
-		if(!isset($binds[":isDisabled"])){
-			$binds[":isDisabled"] = 0;
-		}
+		if(!isset($binds[":createDate"])) $binds[":createDate"] = time();
+		if(!isset($binds[":updateDate"])) $binds[":updateDate"] = time();
 
    		return array($query, $binds);
    	}
@@ -175,11 +186,17 @@ abstract class SOYShop_ItemDAO extends SOY2DAO{
    	 * @final
    	 */
    	function onUpdate($query, $binds){
-		$binds[":updateDate"] = time();
-
 		if(!isset($binds[":alias"]) || strlen($binds[":alias"]) < 1){
 			$binds[":alias"] = $binds[":code"] . ".html";
 		}
+
+		//価格系すべて
+		foreach(array("price", "purchasePrice", "salePrice", "sellingPrice", "stock") as $t){
+			if(!isset($binds[":" . $t]) || !is_numeric($binds[":" . $t])){
+				$binds[":" . $t] = 0;
+			}
+		}
+
 		if(!isset($binds[":category"]) || strlen($binds[":category"]) < 1){
 			$binds[":category"] = null;
 		}
@@ -197,6 +214,8 @@ abstract class SOYShop_ItemDAO extends SOY2DAO{
 		if(!isset($binds[":openPeriodEnd"]) || strlen($binds[":openPeriodEnd"]) < 1){
 			$binds[":openPeriodEnd"] = SOYSHOP_DATA_MAX;
 		}
+
+		$binds[":updateDate"] = time();
 
 		return array($query, $binds);
    	}
@@ -328,6 +347,55 @@ abstract class SOYShop_ItemDAO extends SOY2DAO{
 		return 0;
 	}
 
+	/**
+	 * @final
+	 */
+	function getStockTotalListByItemIds($itemIds){
+		if(!is_array($itemIds) || !count($itemIds)) return array();
+
+		try{
+			$res = $this->executeQuery("SELECT id, item_stock FROM soyshop_item WHERE id IN (" . implode(",", $itemIds) . ") AND (item_type = '" . SOYShop_Item::TYPE_SINGLE . "' OR item_type = '" . SOYShop_Item::TYPE_DOWNLOAD . "')");
+		}catch(Exception $e){
+			$res = array();
+		}
+		if(!count($res)) return array();
+
+		$list = array();
+		foreach($res as $v){
+			$list[(int)$v["id"]] = (int)$v["item_stock"];
+		}
+
+		return $list;
+	}
+
+	/**
+     * @columns sum(item_stock) as item_stock
+     * @return column_item_stock
+     * @query item_type = :itemId and is_disabled != 1
+     */
+	abstract function getChildStockTotalByItemId($itemId);
+
+	/**
+	 * @final
+	 */
+	function getChildStockListByItemIds($itemIds){
+		if(!is_array($itemIds) || !count($itemIds)) return array();
+
+
+		try{
+			$res = $this->executeQuery("SELECT item_type, SUM(item_stock) AS item_stock FROM soyshop_item WHERE item_type IN (" . implode(",", $itemIds) . ") GROUP BY item_type");
+		}catch(Exception $e){
+			$res = array();
+		}
+		if(!count($res)) return array();
+
+		$list = array();
+		foreach($res as $v){
+			$list[(int)$v["item_type"]] = (int)$v["item_stock"];
+		}
+		return $list;
+	}
+
 	/* end サイト側で使用 */
 
 	/* 以下、ソート周り */
@@ -397,6 +465,25 @@ abstract class SOYShop_ItemDAO extends SOY2DAO{
 		}
 	 }
 
+	 /**
+	  * @final
+	  */
+	function getItemNameListByIds($ids){
+		if(!is_array($ids) || !count($ids)) return array();
+
+		try{
+			$res = $this->executeQuery("SELECT id, item_name FROM soyshop_item WHERE id IN (" . implode(",", $ids) . ")");
+		}catch(Exception $e){
+			$res = array();
+		}
+		if(!count($res)) return array();
+
+		$list = array();
+		foreach($res as $v){
+			$list[(int)$v["id"]] = $v["item_name"];
+		}
+		return $list;
+	}
 
 
 	 /* 以下、削除周り */

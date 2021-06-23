@@ -93,14 +93,17 @@ class CMSUtil {
 	public static function unlinkAllIn($dir, $recursive = false, $rmdir = false){
 		if(file_exists($dir) && is_dir($dir)){
 			if($dir[strlen($dir)-1] != "/") $dir .= "/";
-			foreach(scandir($dir) as $file){
-				if(!is_file($dir.$file) && !is_dir($dir.$file))continue;
-				if($file[0] == ".")continue;
-				if(is_dir($dir.$file) && $recursive){
-					self::unlinkAllIn($dir.$file, $recursive, $rmdir);
-					if($rmdir) @rmdir($dir.$file);
-				}else{
-					@unlink($dir.$file);
+			$files = @scandir($dir);
+			if(is_array($files) && count($files)){
+				foreach($files as $file){
+					if(!is_file($dir.$file) && !is_dir($dir.$file)) continue;
+					if($file[0] == ".") continue;
+					if(is_dir($dir.$file) && $recursive){
+						self::unlinkAllIn($dir.$file, $recursive, $rmdir);
+						if($rmdir) @rmdir($dir.$file);
+					}else{
+						@unlink($dir.$file);
+					}
 				}
 			}
 		}
@@ -169,7 +172,7 @@ class CMSUtil {
 			$list[] = $backup_filename_base;
 		}
 
-		for($i=1;$i<100;$i++){
+		for($i=1;$i<100;++$i){
 			$backup = sprintf("{$backup_filename_base}.%02d",$i);
 			if(file_exists($backup)){
 				$list[] = $backup;
@@ -183,6 +186,7 @@ class CMSUtil {
 	 * 12時間以内なら 時:分 を、半年以内なら 月/日 を、他は 年-月-日 を返す
 	 */
 	public static function getRecentDateTimeText($unixtime){
+		if(!is_numeric($unixtime)) $unixtime = 0;
 		$diff = abs(time() - $unixtime);
 		switch(true){
 			case $diff < 12*60*60:
@@ -229,18 +233,29 @@ class CMSUtil {
 				$logoDir = dirname(SOY2::RootDir()) . "/admin/image/logo/";
 				break;
 		}
+		if(strpos($logoDir, "/app/webapp/") && defined("APPLICATION_ID")){	// SOY Appから開いている場合
+			$logoDir = str_replace("/app/webapp/" . APPLICATION_ID, "", $logoDir);
+		}
 
 		if(file_exists($logoDir) && is_dir($logoDir)){
 			foreach(glob($logoDir . "*") as $f){
 				if(is_file($f) && !strpos($f, ".txt")){
 					$fileName = trim(substr($f, strrpos($f, "/") + 1), "/");
 					if(preg_match('/\.(jpg|jpeg|gif|png|bmp)/', $fileName, $tmp)){
-						return SOY2PageController::createRelativeLink("image/logo/" . $fileName);
+						$src = SOY2PageController::createRelativeLink("image/logo/" . $fileName);
+						if(strpos($src, "/app/image/logo/") && defined("APPLICATION_ID")) {
+							$src = str_replace("/app/image/logo/", "/admin/image/logo/", $src);
+						}
+						return $src;
 					}
 				}
 			}
 		}
-		return SOY2PageController::createRelativeLink("css/img/logo_big.gif");
+		$src = SOY2PageController::createRelativeLink("css/img/logo_big.gif");
+		if(strpos($src, "/app/css/") && defined("APPLICATION_ID")) {
+			$src = str_replace("/app/css/", "/admin/css/", $src);
+		}
+		return $src;
 	}
 
 	public static function getCMSName(){

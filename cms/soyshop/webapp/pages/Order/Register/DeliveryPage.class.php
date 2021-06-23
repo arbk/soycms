@@ -27,8 +27,7 @@ class DeliveryPage extends WebPage{
 			$moduleId = @$_POST["delivery_module"];
 			$cart->setAttribute("delivery_module", $moduleId);
 
-			$moduleDAO = SOY2DAOFactory::create("plugin.SOYShop_PluginConfigDAO");
-			$deliveryModule = $moduleDAO->getByPluginId($moduleId);
+			$deliveryModule = soyshop_get_plugin_object($moduleId);
 			SOYShopPlugin::load("soyshop.delivery", $deliveryModule);
 
 			SOYShopPlugin::invoke("soyshop.delivery", array(
@@ -66,6 +65,10 @@ class DeliveryPage extends WebPage{
 		));
    }
 
+	function getBreadcrumb(){
+		return BreadcrumbComponent::build("配送方法を選択する", array("Order" => "注文管理", "Order.Register" => "注文を追加する"));
+	}
+
 	function getCSS(){
 		return array(
 			"./css/admin/order_register.css"
@@ -95,10 +98,10 @@ class Delivery_methodList extends HTMLList{
 		$this->addLabel("delivery_description", array(
 			"html" => (isset($entity["description"])) ? $entity["description"] : ""
 		));
-		
+
 		$this->addLabel("delivery_charge", array(
-			"text" => (isset($entity["price"]) && strlen($entity["price"])) ? number_format($entity["price"]) . " 円" : ""
-		));		
+			"text" => (isset($entity["price"])) ? soy2_number_format($entity["price"]) . " 円" : ""
+		));
 	}
 
 	function getSelected() {

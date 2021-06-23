@@ -4,6 +4,7 @@ class PayJpUtil {
 
 	private static function _errorMessageList(){
 		return array(
+			"incorrect_card_data" => "カード番号が正しくありません",	//新設されたエラー
 			"invalid_number" => "不正なカード番号",
 			"invalid_cvc" => "不正なCVC",
 			"invalid_expiration_date" => "不正な有効期限年、または月",
@@ -86,6 +87,7 @@ class PayJpUtil {
 			"pg_wrong" => "決済代行会社のサーバー側でエラーが発生している",
 			"not_found" => "リクエスト先が存在しないことを示す",
 			"not_allowed_method" => "許可されていないHTTPメソッド",
+			"over_capacity" => "レートリミットに到達",
 			"other" => "その他のエラー"
 		);
 	}

@@ -30,6 +30,7 @@ function soyshop_admin_auth_level(){
 }
 
 function print_update_date($time){
+	if(!is_numeric($time)) $time = 0;
 	if(date("Ymd") == date("Ymd",$time)){
 		return date("H:i",$time);
 	}
@@ -116,7 +117,7 @@ function soyshop_get_category_objects(){
 }
 
 // array(categoryId => categoryName)
-function soyshop_get_category_list(){
+function soyshop_get_category_list($isOnlyOpen=false){
 	static $list;
 	if(is_null($list)){
 		$list = array();
@@ -124,10 +125,46 @@ function soyshop_get_category_list(){
 
 		if(count($categories)){
 			foreach($categories as $category){
+				if($isOnlyOpen && $category->getIsOpen() != SOYShop_Category::IS_OPEN) continue;
 				$list[$category->getId()] = $category->getName();
 			}
 		}
 	}
 
 	return $list;
+}
+
+// array(user_id...)
+function soyshop_get_user_ids_by_orders($orders){
+	if(!is_array($orders) || !count($orders)) return array();
+
+	$ids = array();
+	foreach($orders as $order){
+		if(count($ids) && is_numeric(array_search((int)$order->getUserId(), $ids))) continue;
+		$ids[] = (int)$order->getUserId();
+	}
+	return $ids;
+}
+
+// array(page_id => page_name...)
+function soyshop_get_page_list(){
+	static $list;
+	if(is_null($list)){
+		$list = array();
+		try{
+			$pages = SOY2DAOFactory::create("site.SOYShop_PageDAO")->get();
+		}catch(Exception $e){
+			$pages = array();
+		}
+
+		if(count($pages)){
+			foreach($pages as $page){
+				if(is_null($page->getId())) continue;
+				$list[(int)$page->getId()] = $page->getName();
+			}
+		}
+		unset($pages);
+	}
+	return $list;
+
 }

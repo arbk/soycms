@@ -1,4 +1,6 @@
 <?php
+if(!class_exists("SOYShopPluginUtil")) SOY2::import("util.SOYShopPluginUtil");
+
 /**
  * @table soyshop_item
  */
@@ -49,6 +51,11 @@ class SOYShop_Item {
      */
     private $name;
 
+	/**
+	 * @column item_subtitle
+	 */
+	private $subtitle;
+
     /**
      * @column item_alias
      */
@@ -69,6 +76,12 @@ class SOYShop_Item {
      * @column item_price
      */
     private $price;
+
+	/**
+	 * 仕入値
+	 * @column item_purchase_price
+	 */
+	private $purchasePrice = 0;
 
     /**
      * セール価格
@@ -169,6 +182,12 @@ class SOYShop_Item {
     function setName($name) {
         $this->name = $name;
     }
+	function getSubtitle(){
+		return $this->subtitle;
+	}
+	function setSubtitle($subtitle){
+		$this->subtitle = $subtitle;
+	}
     function getCode() {
 		if(is_null($this->code)) $this->code = soyshop_dummy_item_code();
 		return $this->code;
@@ -182,8 +201,18 @@ class SOYShop_Item {
     function setPrice($price) {
         $this->price = $price;
     }
+	function getPurchasePrice(){
+		return (int)$this->purchasePrice;
+	}
+	function setPurchasePrice($purchasePrice){
+		$this->purchasePrice = $purchasePrice;
+	}
     function getStock() {
-        return (int)$this->stock;
+		if(!SOYShopPluginUtil::checkIsActive("reserve_calendar")) return (int)$this->stock;
+
+		//予約カレンダーモード
+		$unseat = self::_scheduleDao()->getScheduleUnseatCountByItemId($this->getId()) - $this->getOrderCount();
+		return ($unseat >= 0) ? $unseat : 0;
     }
     function setStock($stock) {
         $this->stock = $stock;
@@ -228,7 +257,6 @@ class SOYShop_Item {
 
         $this->setConfig($array);
     }
-
 
     function getCategory() {
         return $this->category;
@@ -322,6 +350,39 @@ class SOYShop_Item {
         return $this->name;
     }
 
+	//注文数
+	function getOrderCount(){
+		//予約カレンダーの場合
+		if(SOYShopPluginUtil::checkIsActive("reserve_calendar")){
+			return self::_reserveDao()->getReservedCountByItemId($this->getId());
+		//通常
+		}else{
+			try{
+				return self::_itemOrderDao()->countByItemId($this->getId());
+			}catch(Exception $e){
+				return 0;
+			}
+		}
+	}
+
+	function getCodeOnAdmin(){
+		if(!self::_isConvertParentNameConfig()) return $this->code;
+
+		$parentId = soyshop_get_item_object($this->id)->getType();
+		if(!is_numeric($parentId)) return $this->code;
+
+		return soyshop_get_item_object($parentId)->getCode();
+	}
+
+	private function _isConvertParentNameConfig(){
+		static $cnf;
+		if(is_null($cnf)) {
+			SOY2::import("domain.config.SOYShop_ShopConfig");
+			$cnf = ((int)SOYShop_ShopConfig::load()->getChangeParentItemNameOnAdmin() === 1);
+		}
+		return $cnf;
+	}
+
     function getAttachmentsPath(){
         $dir = SOYSHOP_SITE_DIRECTORY . "files/" . $this->getCode() . "/";
         if(!file_exists($dir)){
@@ -372,7 +433,7 @@ class SOYShop_Item {
             $this->getOpenPeriodStart() <= SOY2_NOW &&
             $this->getOpenPeriodEnd() >= SOY2_NOW
         ){
-        return true;
+        	return true;
         }
 
         return false;
@@ -462,4 +523,30 @@ class SOYShop_Item {
 
         return true;
     }
+
+	/** DAO **/
+
+	private function _itemOrderDao(){
+		static $dao;
+		if(is_null($dao)) $dao = SOY2DAOFactory::create("order.SOYShop_ItemOrderDAO");
+		return $dao;
+	}
+
+	private function _reserveDao(){
+		static $dao;
+		if(is_null($dao)){
+			SOY2::import("module.plugins.reserve_calendar.domain.SOYShopReserveCalendar_ReserveDAO");
+			$dao = SOY2DAOFactory::create("SOYShopReserveCalendar_ReserveDAO");
+		}
+		return $dao;
+	}
+
+	private function _scheduleDao(){
+		static $dao;
+		if(is_null($dao)){
+			SOY2::import("module.plugins.reserve_calendar.domain.SOYShopReserveCalendar_ScheduleDAO");
+			$dao = SOY2DAOFactory::create("SOYShopReserveCalendar_ScheduleDAO");
+		}
+		return $dao;
+	}
 }

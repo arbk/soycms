@@ -18,14 +18,18 @@ function soyshop_parts_mypage_navi($html, $page){
 		$pages = array(
 			"profile" => "プロフィール",
 			"order" => "注文履歴",
+			"board" => "掲示板",
 			//"reserve" => "予約の変更",	//隠しモード 仕様が決まるまで
 			"mail" => "メールボックス",
 			"edit" => "登録情報の変更",
+			"mailaddress" => "メールアドレスの変更",
 			"password" => "パスワードの変更",
 			"review" => "レビュー",
 			"point" => "ポイント履歴",
 			"inquiry" => "お問い合わせ",
 			"payjp" => "クレジットカード",
+			"card" => "カード",
+			"bank" => "振込先",
 			"withdraw" => "退会",
 			"logout" => "ログアウト"
 		);
@@ -37,6 +41,15 @@ function soyshop_parts_mypage_navi($html, $page){
 			switch($type){
 				case "profile":
 					if($user->getIsProfileDisplay() != SOYShop_User::PROFILE_IS_DISPLAY || !strlen($user->getProfileId())) $isThrow = true;
+					break;
+				case "order":
+				case "mail":
+				case "mailaddress":
+				case "withdraw":
+					if(SOYShopPluginUtil::checkIsActive("bulletin_board")) $isThrow = true;
+					break;
+				case "board":
+					if(!SOYShopPluginUtil::checkIsActive("bulletin_board")) $isThrow = true;
 					break;
 				case "review":
 					if(!SOYShopPluginUtil::checkIsActive("item_review")) $isThrow = true;
@@ -50,6 +63,13 @@ function soyshop_parts_mypage_navi($html, $page){
 				case "payjp":
 					if(!SOYShopPluginUtil::checkIsActive("payment_pay_jp")) $isThrow = true;
 					break;
+				case "card":
+					SOYShopPlugin::load("soyshop.mypage.card");
+					if(!SOYShopPlugin::invoke("soyshop.mypage.card")->hasOptionPage()) $isThrow = true;
+					break;
+				case "bank":
+					if(!SOYShopPluginUtil::checkIsActive("transfer_information")) $isThrow = true;
+					break;
 				case "reserve":
 					//if(!SOYShopPluginUtil::checkIsActive("reserve_calendar") || soyshop_get_mypage_id() != "bootstrap") $isThrow = true;
 					break;
@@ -59,13 +79,19 @@ function soyshop_parts_mypage_navi($html, $page){
 			if($isThrow) continue;
 
 			$html[] = " <li class=\"nav-item\">";
-			$cls = (strpos($currentUri, $type) === 0) ? "nav-link active" : "nav-link";
+			switch($type){
+				case "mail":
+					$cls = ($currentUri == $type) ? "nav-link active" : "nav-link";
+					break;
+				default:
+					$cls = (strpos($currentUri, $type) === 0) ? "nav-link active" : "nav-link";
+			}
 			switch($type){
 				case "profile":
 					$html[] = "		<a class=\"" . $cls . "\" href=\"" . soyshop_get_mypage_url() . "/" . $type . "/" . $user->getProfileId() . "\">" . $label . "</a>";
 					break;
-				case "logout":
-					$html[] = "		<a class=\"" . $cls . "\" href=\"" . soyshop_get_mypage_url() . "/" . $type . "\" onclick=\"return confirm('ログアウトしますか？');\">" . $label . "</a>";
+				case "logout":	//soy2_check_tokenを追加
+					$html[] = "		<a class=\"" . $cls . "\" href=\"" . soyshop_get_mypage_url() . "/" . $type . "\?soy2_token=" . soy2_get_token() . "\" onclick=\"return confirm('ログアウトしますか？');\">" . $label . "</a>";
 					break;
 				case "payjp":
 				$html[] = "		<a class=\"" . $cls . "\" href=\"" . soyshop_get_mypage_url() . "/credit/payJp\">" . $label . "</a>";
@@ -273,7 +299,7 @@ function soyshop_parts_mypage_navi($html, $page){
 	// 	$logoutLink .= "?r=" . soyshop_remove_get_value(rawurldecode($_SERVER["REQUEST_URI"]));
 	// }
 	//
-	// $obj->addLink("logout_link", array(
+	// $obj->addActionLink("logout_link", array(
 	// 	"link" => $logoutLink,
 	// 	"soy2prefix" => SOYSHOP_SITE_PREFIX
 	// ));

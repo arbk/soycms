@@ -11,7 +11,7 @@ class GoogleSignInDownload extends SOYShopDownload{
 			$user = $logic->getUserByMailAddress($_POST["mail"]);
 			if(is_null($user->getId())){
 				$user->setName($_POST["name"]);
-				$user->setUserType(SOYShop_User::USERTYPE_TMP);
+				$user->setUserType(SOYShop_User::USERTYPE_REGISTER);	//身元がわかっているので、仮登録の期間を飛ばすことにする
 
 				$userId = $logic->registUser($user);
 
@@ -27,6 +27,8 @@ class GoogleSignInDownload extends SOYShopDownload{
 			if($user->getUserType() == SOYShop_User::USERTYPE_REGISTER){
 				$mypage = MyPageLogic::getMyPage();
 				$mypage->noPasswordLogin($user->getId());
+				$mypage->autoLogin();
+				$mypage->save();
 
 				//成功
 				self::sendResult(1);

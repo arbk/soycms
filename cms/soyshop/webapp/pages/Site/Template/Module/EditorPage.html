@@ -1,56 +1,48 @@
-<h1>
-	<!-- soy:id="module_name_text" /--> - モジュール編集
-	<span class="navi">
-		<a soy:link="Site">サイト管理</a> &gt; <a soy:link="Site.Template#module_list">テンプレート管理</a> &gt; モジュール編集</span>
-</h1>
+<div class="row">
+	<div class="col-lg-12">
+		<div class="panel panel-default">
+			<div class="panel-heading">編集</div>
+			<div class="panel-body">
+				<div class="alert alert-success" soy:display="updated">更新しました</div>
+				<div class="alert alert-danger" soy:display="invalid">モジュール名に?{}|&amp;~!()^"を含めることができません。</div>
+				<form soy:id="update_form">
+					<div class="form-group">
+						<label for="">モジュール名</label>
+						<input type="text" class="form-control" soy:id="module_name" />
+						<small>モジュール名で?{}|&amp;~!()^"は使用できません</small>
+					</div>
 
+					<div class="table-responsive">
+						<table class="table table-striped">
+							<caption soy:id="module_id">モジュール</caption>
+							<tr>
+								<td>
+									<div id="editor" style="height: 400px" soy:id="module_content_ace"></div>
+									<textarea name="config[content]" style="display:none;"></textarea>
+								</td>
+							</tr>
+						</table>
+					</div>
 
-<div class="block">
-	<div class="block_title">
-		<h2>編集</h2>
-	</div>
+					<div class="text-center">
+						<button class="btn btn-primary btn-lg" id="save_btn">保存</button>
+					</div>
+				</form>
 
-	<div class="block_body">
-
-		<p class="notice" soy:display="updated">更新しました</p>
-		<p class="error" soy:display="invalid">モジュール名に?{}|&amp;~!()^"を含めることができません。</p>
-
-		<form soy:id="update_form">
-
-		<dl>
-			<dt>モジュール名</dt>
-			<dd>
-				<input type="text" class="title" soy:id="module_name" /><br>
-				※モジュール名で?{}|&amp;~!()^"は使用できません
-			</dd>
-		</dl>
-
-		<table class="form_list">
-			<caption soy:id="module_id">モジュール</caption>
-			<tr>
-				<td>
-					<textarea id="module_editor" class="editor" soy:id="module_content"></textarea>
-				</td>
-			</tr>
-		</table>
-
-		<p class="pageBtn">
-			<input type="submit" value="保存" />
-		</p>
-
-		</form soy:id="update_form">
-		<table class="form_list">
-			<caption style="cursor:pointer;" onclick="$('#example').toggle();">テンプレート記述例を表示</caption>
-			<tr id="example" style="display:none;">
-				<td>
-					<textarea id="module_example" soy:id="module_example"></textarea>
-				</td>
-			</tr>
-		</table>
-
+				<div class="table-responsive">
+					<table class="table table-striped">
+						<caption style="cursor:pointer;" onclick="$('#example').toggle();">テンプレート記述例を表示</caption>
+						<tr id="example" style="display:none;">
+							<td>
+								<textarea id="module_example" soy:id="module_example" class="form-control"></textarea>
+							</td>
+						</tr>
+					</table>
+				</div>
+			</div>
+		</div>
 	</div>
 </div>
-
 <style type="text/css">
 #module_editor{
 	height:400px;
@@ -59,3 +51,36 @@
 	height:100px;
 }
 </style>
+<script soy:id="ace_editor"></script>
+<script>
+var editor = ace.edit("editor");
+editor.setFontSize(16);
+editor.session.setUseSoftTabs(false);
+editor.getSession().setMode("ace/mode/php");
+
+$("#save_btn").on("click", function(){
+	save();
+});
+
+// ctrl + sで保存
+(function(){
+	$(window).on("keydown", function(ele){
+		var code = (ele.keyCode ? ele.keyCode : ele.which);
+	    // 上記コードはブラウザによってキーコードを取得するプロパティが異なる問題をかいけつするものです。
+
+	    if (!(code == 83 && ele.ctrlKey)) return true;
+	    // code 83 は　Sです。
+	　　
+	    ele.preventDefault();
+	    // ctrl+S に割り当てられているデフォルトの機能を無効化します。
+
+		save();
+	    return false;
+	});
+})();
+
+function save(){
+	$('textarea[name="config[content]"]').val(editor.getValue());
+	$("#form").submit();
+}
+</script>

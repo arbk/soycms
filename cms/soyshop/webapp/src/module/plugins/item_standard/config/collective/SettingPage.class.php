@@ -83,19 +83,10 @@ class SettingPage extends WebPage{
 				}
 
 				foreach($_POST["items"] as $itemId){
-					try{
-						$parent = $itemDao->getById($itemId);
-					}catch(Exception $e){
-						continue;
-					}
+					$parent = soyshop_get_item_object($itemId);
 
 					//小商品のリセット
-					try{
-						$children = $itemDao->getByType($parent->getId());
-					}catch(Exception $e){
-						return;
-					}
-
+					$children = soyshop_get_item_children($parent->getId());
 					if(!count($children)) return;
 
 					//データベース高速化のために完全削除
@@ -152,15 +143,9 @@ class SettingPage extends WebPage{
 
 		$this->addForm("form");
 
-		SOY2::import("domain.config.SOYShop_ShopConfig");
 		$this->createAdd("item_list", "_common.Item.ItemListComponent", array(
 			"list" => self::getItems(),
-			"itemOrderDAO" => SOY2DAOFactory::create("order.SOYShop_ItemOrderDAO"),
-			"categoriesDAO" => SOY2DAOFactory::create("shop.SOYShop_CategoriesDAO"),
 			"detailLink" => SOY2PageController::createLink("Item.Detail."),
-			"categories" => soyshop_get_category_objects(),
-			"config" => SOYShop_ShopConfig::load(),
-			"appLimit" => true
 		));
 
 		$this->addLabel("standard_form_area", array(
@@ -208,7 +193,7 @@ class SettingPage extends WebPage{
 		$this->addSelect("search_item_category", array(
 			"name" => "search_condition[item_category]",
 			"options" => soyshop_get_category_list(),
-			"selected" => $cnd["item_category"]
+			"selected" => (isset($cnd["item_category"])) ? $cnd["item_category"] : null
 		));
 
 		$this->addCheckBox("search_item_is_open", array(

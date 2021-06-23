@@ -9,6 +9,8 @@ class DetailPage extends WebPage{
 	private $id;
 
 	function doPost(){
+		if(!AUTH_OPERATE) return;	//操作権限がないアカウントの場合は以後のすべての動作を封じる
+
 		if(soy2_check_token()){
 			$dao = SOY2DAOFactory::create("order.SOYShop_OrderDAO");
 			$historyDAO = SOY2DAOFactory::create("order.SOYShop_OrderStateHistoryDAO");
@@ -34,6 +36,14 @@ class DetailPage extends WebPage{
 				}
 			}
 
+			//フラグ
+			if(isset($_POST["Flag"]) && is_array($_POST["Flag"]) && count($_POST["Flag"])){
+				$hists = $orderLogic->changeItemOrdersFlag($order->getId(), $_POST["Flag"]);
+				if(is_array($hists) && count($hists)){
+					$historyContents = array_merge($historyContents, $hists);
+				}
+			}
+
 			if (isset($_POST["Comment"]) && strlen($_POST["Comment"])) {
 				$historyContents[] = $_POST["Comment"];
 			}
@@ -42,39 +52,10 @@ class DetailPage extends WebPage{
 				$post = (object)$_POST["State"];
 
 				if (isset($_POST["State"]["orderStatus"]) && $order->getStatus() != $post->orderStatus) {
-					$oldStatus = $order->getStatus();
-
-					$order->setStatus($post->orderStatus);
-					$historyContents[] = "注文状態を<strong>「" . $order->getOrderStatusText() . "」</strong>に変更しました。";
-
-					//キャンセルの場合に注文番号を壊す設定をしている場合
-					if($post->orderStatus == SOYShop_Order::ORDER_STATUS_CANCELED){
-						SOY2::import("domain.config.SOYShop_ShopConfig");
-						if(SOYShop_ShopConfig::load()->getDestroyTrackingNumberOnCancelOrder()){
-							$order->setTrackingNumber($orderLogic->destroyTrackingNumber($order));
-						}
-					}
-
-					//発送済みにした時に自動で送信メール
-					if($post->orderStatus == SOYShop_Order::ORDER_STATUS_SENDED){
-						if($orderLogic->sendMailOnChangeDeliveryStatus($order, $post->orderStatus, $oldStatus)) {
-							$order->setMailStatusByType(SOYShop_Order::SENDMAIL_TYPE_DELIVERY, time());
-						}
-					}
-
-					//キャンセルの場合は紐付いた商品分だけ在庫数を戻したい
-					if($orderLogic->compareStatus($_POST["State"]["orderStatus"], $oldStatus, self::CHANGE_STOCK_MODE_CANCEL)){
-						$orderLogic->changeItemStock($order->getId(), self::CHANGE_STOCK_MODE_CANCEL);
-					}
-
-					//キャンセルから他のステータスに戻した場合は在庫数を減らしたい
-					if($orderLogic->compareStatus($_POST["State"]["orderStatus"], $oldStatus, self::CHANGE_STOCK_MODE_RETURN)){
-						$orderLogic->changeItemStock($order->getId(), self::CHANGE_STOCK_MODE_RETURN);
-					}
+					$orderLogic->changeOrderStatus(array($order->getId()), $post->orderStatus);
 				}
 				if (isset($_POST["State"]["paymentStatus"]) && $order->getPaymentStatus() != $post->paymentStatus) {
-					$order->setPaymentStatus($post->paymentStatus);
-					$historyContents[] = "支払い状態を<strong>「" . $order->getPaymentStatusText() . "」</strong>に変更しました。";
+					$orderLogic->changePaymentStatus(array($order->getId()), $post->paymentStatus);
 				}
 
 				SOYShopPlugin::load("soyshop.order.status.update");
@@ -143,9 +124,10 @@ class DetailPage extends WebPage{
 		DisplayPlugin::toggle("sended", isset($_GET["sended"]));
 		DisplayPlugin::toggle("copy", isset($_GET["copy"]));
 
-		$logic = SOY2Logic::createInstance("logic.order.OrderLogic");
-		$order = $logic->getById($this->id);
+		$order = soyshop_get_order_object($this->id);
 		if(!$order) SOY2PageController::jump("Order");
+
+		$user = soyshop_get_user_object($order->getUserId());
 
     	$this->addLabel("order_name_text", array(
 			"text" => $order->getTrackingNumber()
@@ -187,7 +169,8 @@ class DetailPage extends WebPage{
 		));
 
 		$this->addLink("edit_link", array(
-			"link" => SOY2PageController::createLink("Order.Edit." . $order->getId())
+			"link" => (AUTH_ADMINORDER) ? SOY2PageController::createLink("Order.Edit." . $order->getId()) : "",
+			"visible" => (AUTH_ADMINORDER)
 		));
 
 		$this->addLabel("order_status", array(
@@ -199,7 +182,7 @@ class DetailPage extends WebPage{
 		));
 
     	$this->addLabel("order_price", array(
-    		"text" => number_format($order->getPrice()) . " 円"
+    		"text" => soy2_number_format($order->getPrice()) . " 円"
     	));
 
        	$this->createAdd("attribute_list", "_common.Order.AttributeListComponent", array(
@@ -233,12 +216,9 @@ class DetailPage extends WebPage{
         SOY2DAOFactory::importEntity("user.SOYShop_User");
         SOY2DAOFactory::importEntity("config.SOYShop_Area");
 
-		try{
-    		$customer = SOY2DAOFactory::create("user.SOYShop_UserDAO")->getById($order->getUserId());
-		}catch(Exception $e){
-			$customer = new SOYShop_User();
-			$customer->setName("[deleted]");
-		}
+		$customer = SOY2DAOFactory::create("user.SOYShop_UserDAO")->getById($order->getUserId());
+		if(is_null($customer->getId())) $customer->setName("[deleted]");
+
     	$this->addLink("customer", array(
     		"text" => $customer->getName(),
     		"link" => SOY2PageController::createLink("User.Detail." . $customer->getId())
@@ -272,13 +252,17 @@ class DetailPage extends WebPage{
     	}
     	$customerHTML.= "\n";
     	$customerHTML.= $claimedAddress["zipCode"]. "\n";
-    	$customerHTML.= SOYShop_Area::getAreaText($claimedAddress["area"]) . $claimedAddress["address1"] . $claimedAddress["address2"] . "\n";
+		$addr = "";
+		for($i = 1; $i <= 3; $i++){
+			if(isset($claimedAddress["address" . $i])) $addr .= $claimedAddress["address" . $i];
+		}
+    	$customerHTML.= SOYShop_Area::getAreaText($claimedAddress["area"]) . $addr . "\n";
     	if(isset($claimedAddress["telephoneNumber"])){
     		$customerHTML.= $claimedAddress["telephoneNumber"] . "\n";
     	}
 
     	$this->addLabel("claimed_customerinfo", array(
-    		"html" => nl2br(htmlspecialchars($customerHTML, ENT_QUOTES, "UTF-8"))
+    		"html" => nl2br(htmlspecialchars(trim($customerHTML), ENT_QUOTES, "UTF-8"))
     	));
 
     	$address = $order->getAddressArray();
@@ -293,13 +277,17 @@ class DetailPage extends WebPage{
     	}
     	$customerHTML.= "\n";
     	$customerHTML.= $address["zipCode"] . "\n";
-    	$customerHTML.= SOYShop_Area::getAreaText($address["area"]) . $address["address1"] . $address["address2"] . "\n";
+		$addr = "";
+		for($i = 1; $i <= 3; $i++){
+			if(isset($address["address" . $i])) $addr .= $address["address" . $i];
+		}
+    	$customerHTML.= SOYShop_Area::getAreaText($address["area"]) . $addr . "\n";
     	if(isset($address["telephoneNumber"])){
     		$customerHTML.= $address["telephoneNumber"] . "\n";
     	}
 
     	$this->addLabel("order_customerinfo", array(
-    		"html" => nl2br(htmlspecialchars($customerHTML, ENT_QUOTES, "UTF-8"))
+    		"html" => nl2br(htmlspecialchars(trim($customerHTML), ENT_QUOTES, "UTF-8"))
     	));
 
 		$this->addLink("order_link", array(
@@ -307,28 +295,26 @@ class DetailPage extends WebPage{
 			"style" => "font-weight:normal !important;"
 		));
 
-		$itemOrders = $logic->getItemsByOrderId($this->id);
+		$itemOrders = SOY2Logic::createInstance("logic.order.OrderLogic")->getItemsByOrderId($this->id);
 
         /*** 注文商品 ***/
 		$this->addForm("confirm_form");
+
+		//仕入値を出力するか？
+		$this->addModel("is_purchase_price", array(
+			"visible" => (SOYShop_ShopConfig::load()->getDisplayPurchasePriceOnAdmin())
+		));
 
     	$this->createAdd("item_list", "_common.Order.ItemOrderListComponent", array(
     		"list" => $itemOrders,
     	));
 
     	$this->addLabel("order_total_price", array(
-    		"text" => number_format($order->getPrice())
+    		"text" => soy2_number_format($order->getPrice())
     	));
 
 
     	/** 注文状況の変更に関して **/
-    	$session = SOY2ActionSession::getUserSession();
-		$appLimit = $session->getAttribute("app_shop_auth_limit");
-
-    	//管理制限の権限を取得し、権限がない場合は表示しない
-		$this->addModel("app_limit_function", array(
-			"visible" => $appLimit
-		));
 
     	$this->createAdd("module_list", "_common.Order.ModuleListComponent", array(
     		"list" => $order->getModuleList()
@@ -344,28 +330,6 @@ class DetailPage extends WebPage{
 		if($activedDownloadPlugin){
 			$this->buildFileList($itemOrders, $order);
 		}
-
-		/*** 注文状態変更の履歴 ***/
-		try{
-			$histories = $logic->getOrderHistories($order->getId());
-		}catch(Exception $e){
-			$histories = array();
-		}
-
-    	$this->createAdd("history_list", "_common.Order.HistoryListComponent", array(
-    		"list" => $histories
-    	));
-
-    	/*** メールの送信履歴 ***/
-		try{
-			$mailLogs = SOY2DAOFactory::create("logging.SOYShop_MailLogDAO")->getByOrderId($order->getId());
-		}catch(Exception $e){
-			$mailLogs = array();
-		}
-
-		$this->createAdd("mail_history_list", "_common.Order.MailHistoryListComponent", array(
-    		"list" => $mailLogs
-    	));
 
 		/*** 状態変更フォームの生成 ***/
     	$this->addForm("update_form");
@@ -396,46 +360,23 @@ class DetailPage extends WebPage{
 			"html" => SOYShopPlugin::display("soyshop.comment.form", array("order" => $order))
 		));
 
-    	/*** メール送信フォームの生成 ***/
-    	$mailStatus = $order->getMailStatusList();
-    	$mailTypes = SOYShop_Order::getMailTypes();
-    	foreach($mailTypes as $type){
-	    	$this->addLabel($type . "_mail_status", array(
-	    		"text" => (isset($mailStatus[$type])) ? date("Y-m-d H:i:s", $mailStatus[$type]) : "未送信"
-	    	));
-
-	    	$this->addLink($type . "_mail_link", array(
-	    		"link" => SOY2PageController::createLink("Order.Mail." . $order->getId() . "?type=" . $type)
-	    	));
-    	}
-
-    	$this->createAdd("mail_plugin_list", "_common.Plugin.MailPluginListComponent", array(
-    		"list" => self::getMailPluginList(),
-    		"status" => $mailStatus,
-    		"orderId" => $order->getId()
-    	));
-
     	/*** Output Action　***/
-    	$this->outputActions();
+    	self::_outputActions();
 
-		/*** カード決済操作 ***/
-		SOYShopPlugin::load("soyshop.operate.credit");
-		$delegate = SOYShopPlugin::invoke("soyshop.operate.credit", array(
-			"order" => $order,
-			"mode" => "order_detail",
-		));
-		$list = $delegate->getList();
-		DisplayPlugin::toggle("operate_credit_menu", (is_array($list) && count($list) > 0));
-
-		$this->createAdd("operate_list", "_common.Order.OperateListComponent", array(
-			"list" => $list
+		//HTMLの自由記述
+		SOYShopPlugin::load("soyshop.order.edit");
+		$this->addLabel("extension_html", array(
+			"html" => SOYShopPlugin::invoke("soyshop.order.edit", array(
+				"mode" => "html_on_detail",
+				"orderId" => $order->getId()
+			))->getHTML()
 		));
     }
 
     /**
      * Action
      */
-    function outputActions(){
+    private function _outputActions(){
     	SOYShopPlugin::load("soyshop.order.function");
     	$delegate = SOYShopPlugin::invoke("soyshop.order.function", array(
     		"orderId" => $this->id
@@ -490,21 +431,6 @@ class DetailPage extends WebPage{
     	return $list;
     }
 
-    private function getMailPluginList(){
-    	SOYShopPlugin::load("soyshop.order.detail.mail");
-    	$mailList = SOYShopPlugin::invoke("soyshop.order.detail.mail", array())->getList();
-		if(!count($mailList)) return array();
-
-    	$list = array();
-    	foreach($mailList as $values){
-    		if(!is_array($values)) continue;
-   			foreach($values as $value){
-   				$list[] = $value;
-   			}
-    	}
-    	return $list;
-    }
-
     //ダウンロードファイルリストを取得
     function buildFileList($itemOrders, SOYShop_Order $order){
     	$files = array();
@@ -544,4 +470,20 @@ class DetailPage extends WebPage{
 			"order" => $order
 		));
     }
+
+	function getBreadcrumb(){
+		return BreadcrumbComponent::build("注文詳細", array("Order" => "注文管理"));
+	}
+
+	function getFooterMenu(){
+		try{
+			return SOY2HTMLFactory::createInstance("Order.FooterMenu.DetailFooterMenuPage", array(
+				"arguments" => array($this->id)
+			))->getObject();
+		}catch(Exception $e){
+			var_dump($e);
+			//
+			return null;
+		}
+	}
 }

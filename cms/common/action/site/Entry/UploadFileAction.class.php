@@ -53,6 +53,21 @@ class UploadFileAction extends SOY2Action{
 				$this->setAttribute("result", $responseObject);
 				return;
 			}
+
+			//MIMETYPE
+			if(file_exists(SOY2::RootDir() . "/config/upload.config.php")){
+				include_once(SOY2::RootDir() . "/config/upload.config.php");
+			}
+			if(!isset($mimetypes) || !is_array($mimetypes)){
+				$mimetypes = array('image/x-ms-bmp', 'image/gif', 'image/jpeg', 'image/png', 'image/x-icon', 'text/plain', "text/css", "application/pdf");
+			}
+			if(is_bool(array_search($_FILES['file']["type"], $mimetypes))){
+				$responseObject->result = false;
+				$responseObject->message = "許可されていないMIMETYPEです。";
+				$responseObject->errorCode = 101;
+				$this->setAttribute("result", $responseObject);
+				return;
+			}
 		}
 
 		//エラー POSTされてこなかった状態 post_max_sizeなど
@@ -117,7 +132,6 @@ class UploadFileAction extends SOY2Action{
     		$responseObject->message = "すでにファイルが存在します";
     		$responseObject->errorCode = 1;
     	}else{
-
 	    	$file = CMSFileManager::get(UserInfoUtil::getSiteDirectory(),dirname($filepath));
 
 	    	//サイトの情報を設定
@@ -145,6 +159,24 @@ class UploadFileAction extends SOY2Action{
 							}
 		   				}
 		   			}
+
+					//jpegoptim
+					switch(strtolower($file->getExtension())){
+						case "jpg":
+						case "jpeg":
+							exec("jpegoptim -V", $out);
+							if(isset($out) && count($out)){
+								exec("jpegoptim --strip-all " . $file->getPath());
+							}
+
+							//guetzli	廃止
+							// if(defined("GUETZLI_AUTO_OPTIMIZE") && GUETZLI_AUTO_OPTIMIZE){
+							// 	exec("guetzli " . $file->getPath() . " " . $file->getPath());
+							// }
+							break;
+						default:
+					}
+
 				}else{
 		   			$responseObject->type = $_FILES['file']['type'];
 		   		}

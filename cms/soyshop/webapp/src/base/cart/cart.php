@@ -34,25 +34,34 @@ if(isset($_REQUEST["a"])) {
 		}
 	}
 
+	//隠しモード 差し替え用index カートのフォームのactionで?a=add&replace_index=idx&item=intのように指定すると使える
+	$replaceIdx = (isset($_REQUEST["replace_index"]) && is_numeric($_REQUEST["replace_index"])) ? $_REQUEST["replace_index"] : null;
+
 	//カートに入っている商品に変更がある場合は、選択されているモジュールをクリアする
 	$cart->clearModules();
 
 	switch($_REQUEST["a"]) {
 		case "add":
+			$lastInsertedItemId = null;
 			foreach($_item as $key => $item){
 				$count = isset($_count[$key]) ? $_count[$key] : 1 ;
 				//個数は-1以上の整数
 				$count = max(-1, (int)$count);
 
-				$res = $cart->addItem($item, $count);
+				$res = $cart->addItem($item, $count, $replaceIdx);
 				if($res){
 					SOYShopPlugin::invoke("soyshop.item.option", array(
 						"mode" => "post",
-						"index" => max(array_keys($cart->getItems())),
+						"index" => (is_numeric($replaceIdx)) ? $replaceIdx : max(array_keys($cart->getItems())),
 						"cart" => $cart
 					));
 				}
+
+				$lastInsertedItemId = $item;
 			}
+
+			//最後にカートに入れた商品の情報を保持する
+			if(is_numeric($lastInsertedItemId)) $cart->setAttribute("last_insert_item", $lastInsertedItemId);
 			break;
 
 		case "remove":
@@ -64,6 +73,7 @@ if(isset($_REQUEST["a"])) {
 					"cart" => $cart
 				));
 			}
+			$cart->setAttribute("last_insert_item", null);
 			break;
 
 		case "update":

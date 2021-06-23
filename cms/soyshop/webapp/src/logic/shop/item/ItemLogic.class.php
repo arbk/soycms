@@ -133,10 +133,8 @@ class ItemLogic extends SOY2LogicBase{
     function create(SOYShop_Item $obj){
 		$dao = self::getItemDAO();
 
-		$siteUrl = soyshop_get_site_url();
-		$obj->setAttribute("image_small", $siteUrl . "themes/sample/sample1_thumb.jpg");
-		$obj->setAttribute("image_large", $siteUrl . "themes/sample/sample1.jpg");
-
+		$obj->setAttribute("image_small", soyshop_get_item_sample_image());
+		$obj->setAttribute("image_large", soyshop_get_item_sample_image());
 
 		return $dao->insert($obj);
     }
@@ -167,18 +165,14 @@ class ItemLogic extends SOY2LogicBase{
 
     function getItemAttributeDAO(){
     	static $dao;
-    	if(!$dao){
-    		$dao = SOY2DAOFactory::create("shop.SOYShop_ItemAttributeDAO");
-    	}
+    	if(!$dao) $dao = SOY2DAOFactory::create("shop.SOYShop_ItemAttributeDAO");
     	return $dao;
     }
 
     private function getItemDAO(){
-    	static $itemDAO;
-    	if(!$itemDAO){
-    		$itemDAO = SOY2DAOFactory::create("shop.SOYShop_ItemDAO");
-    	}
-    	return$itemDAO;
+    	static $dao;
+    	if(is_null($dao)) $dao = SOY2DAOFactory::create("shop.SOYShop_ItemDAO");
+    	return $dao;
     }
 
     //マルチカテゴリモード
@@ -271,5 +265,55 @@ class ItemLogic extends SOY2LogicBase{
 
 		$list[$itemId] = $prices;
 		return $list[$itemId];
+	}
+
+	function getStockListByItemIds($itemIds){
+		if(!count($itemIds)) return array();
+
+		$stocks = array();
+
+		$res = self::getItemDAO()->getStockTotalListByItemIds($itemIds);
+		if(count($res)){
+			foreach($res as $itemId => $stock){
+				$stocks[$itemId] = $stock;
+			}
+		}
+
+		if(count($stocks) === count($itemIds)) return $stocks;
+
+		foreach($stocks as $itemId => $stock){
+			$idx = array_search($itemId, $itemIds);
+			unset($itemIds[$idx]);
+			$itemIds = array_values($itemIds);
+		}
+
+		//商品グループの場合
+		$res = self::getItemDAO()->getChildStockListByItemIds($itemIds);
+		if(count($res)){
+			foreach($res as $itemId => $stock){
+				$stocks[$itemId] = $stock;
+			}
+		}
+
+		//高速化の為に最後に0で埋めておく
+		foreach($itemIds as $itemId){
+			if(!isset($stocks[$itemId])) $stocks[$itemId] = 0;
+		}
+
+		return $stocks;
+	}
+
+	function getItemNameListByIds($ids){
+		if(!is_array($ids) || !count($ids)) return array();
+
+		return SOY2DAOFactory::create("shop.SOYShop_ItemDAO")->getItemNameListByIds($ids);
+	}
+
+	function getLatestRegisteredItem(){
+		try{
+			return self::getItemDAO()->getLatestRegisteredItem(time());
+		}catch(Exception $e){
+			return new SOYShop_Item();
+		}
 	}
 }

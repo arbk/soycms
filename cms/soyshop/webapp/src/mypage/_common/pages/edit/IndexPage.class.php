@@ -11,14 +11,14 @@ class IndexPage extends MainMyPagePageBase{
 		$mypage = $this->getMyPage();
 
 		//ユーザカスタムフィールドの値をセッションに入れる
-		if(isset($_POST["user_customfield"])){
-			SOYShopPlugin::load("soyshop.user.customfield");
-			SOYShopPlugin::invoke("soyshop.user.customfield", array(
-				"mode" => "post",
-				"app" => $mypage,
-				"param" => $_POST["user_customfield"]
-			));
-		}
+		// if(isset($_POST["user_customfield"])){
+		// 	SOYShopPlugin::load("soyshop.user.customfield");
+		// 	SOYShopPlugin::invoke("soyshop.user.customfield", array(
+		// 		"mode" => "post",
+		// 		"app" => $mypage,
+		// 		"param" => $_POST["user_customfield"]
+		// 	));
+		// }
 
 		//郵便番号での住所検索
 		if(isset($_POST["user_zip_search"]) || isset($_POST["user_zip_search_x"])){
@@ -35,6 +35,7 @@ class IndexPage extends MainMyPagePageBase{
 			$user->setArea(SOYShop_Area::getAreaByText($res["prefecture"]));
 			$user->setAddress1($res["address1"]);
 			$user->setAddress2($res["address2"]);
+			$user->setAddress3($res["address3"]);
 			$anchor = "zipcode1";
 
 			$mypage->setUserInfo($user);
@@ -45,7 +46,7 @@ class IndexPage extends MainMyPagePageBase{
 		}
 
 		//保存
-		if(soy2_check_token()){
+		if(soy2_check_token() && soy2_check_referer()){
 
 			if(isset($_POST["confirm"]) || isset($_POST["confirm_x"])){
 

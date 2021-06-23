@@ -67,8 +67,10 @@ class MultiLabelBlockComponent implements BlockComponent{
 
 		$array = array();
 		$urlMapping = array();
+		$blogIdMapping = array();
 		$blogTitleMapping = array();
 		$blogUrlMapping = array();
+		$blogCategoryUrlMapping = array();
 
 		try{
 			//DSNを切り替える、ついでにサイトのURLを取得
@@ -102,6 +104,7 @@ class MultiLabelBlockComponent implements BlockComponent{
 			}
 
 			$logic = SOY2Logic::createInstance("logic.site.Entry.EntryLogic");
+			$logic->setBlockClass(get_class($this));
 
 			$this->displayCountFrom = max($this->displayCountFrom, 1);//0件目は認めない→１件目に変更
 
@@ -137,9 +140,10 @@ class MultiLabelBlockComponent implements BlockComponent{
 						$url = $siteUrl . $blogPage->getEntryPageURL();
 						$urlMapping[$entry->getId()] = $url;
 						$blogTitle = $blogPage->getTitle();
+						$blogIdMapping[$entry->getId()] = $blogId;
 						$blogTitleMapping[$entry->getId()] = $blogTitle;
-						$blogUrl = $siteUrl . $blogPage->getTopPageURL();
-						$blogUrlMapping[$entry->getId()] = $blogUrl;
+						$blogUrlMapping[$entry->getId()] = $siteUrl . $blogPage->getTopPageURL();
+						$blogCategoryUrlMapping[$entry->getId()] = $siteUrl . $blogPage->getCategoryPageURL();
 						continue;
 					}catch(Exception $e){
 
@@ -154,11 +158,14 @@ class MultiLabelBlockComponent implements BlockComponent{
 		}
 
 		SOY2::import("site_include.block._common.MultiEntryListComponent");
+		SOY2::import("site_include.blog.component.CategoryListComponent");
 		$inst = SOY2HTMLFactory::createInstance("MultiEntryListComponent",array(
 			"list" => $array,
 			"url" => $urlMapping,
+			"blogId" => $blogIdMapping,
 			"blogTitle" => $blogTitleMapping,
 			"blogUrl" => $blogUrlMapping,
+			"blogCategoryUrl" => $blogCategoryUrlMapping,
 			"soy2prefix"=>"block",
 			"dsn" => $dsn
 		));
@@ -257,8 +264,8 @@ class MultiLabelBlockComponent_FormPage extends HTMLPage{
 	public function execute(){
 
 		//サイト変更機能
-		$this->createAdd("sites_form","HTMLForm");
-		$this->createAdd("site","HTMLSelect",array(
+		$this->addForm("sites_form");
+		$this->addSelect("site", array(
 			"options" => $this->sites,
 			"property" => "siteName",
 			"name" => "object[siteId]",
@@ -267,33 +274,33 @@ class MultiLabelBlockComponent_FormPage extends HTMLPage{
 
 		/* 以下、通常フォーム */
 
-		$this->createAdd("label_select","HTMLSelect",array(
+		$this->addSelect("label_select", array(
 			"options"=>$this->getLabelList(),
 			"property" => "displayCaption"
 		));
 
-		$this->createAdd("blog_select","HTMLSelect",array(
+		$this->addSelect("blog_select", array(
 			"options"=>$this->blogPages,
 			"property" => "title"
 		));
 
-		$this->createAdd("display_number_start","HTMLInput",array(
+		$this->addInput("display_number_start", array(
 			"value"=>$this->entity->getDisplayCountFrom(),
 			"name"=>"object[displayCountFrom]"
 		));
-		$this->createAdd("display_number_end","HTMLInput",array(
+		$this->addInput("display_number_end", array(
 			"value"=>$this->entity->getDisplayCountTo(),
 			"name"=>"object[displayCountTo]"
 		));
 
-		$this->createAdd("display_order_asc","HTMLCheckBox",array(
+		$this->addCheckBox("display_order_asc", array(
 			"type"	  => "radio",
 			"name"	  => "object[order]",
 			"value"	 => BlockComponent::ORDER_ASC,
 			"selected"  => $this->entity->getOrder() == BlockComponent::ORDER_ASC,
 			"elementId" => "display_order_asc",
 		));
-		$this->createAdd("display_order_desc","HTMLCheckBox",array(
+		$this->addCheckBox("display_order_desc", array(
 			"type"	  => "radio",
 			"name"	  => "object[order]",
 			"value"	 => BlockComponent::ORDER_DESC,
@@ -312,12 +319,12 @@ class MultiLabelBlockComponent_FormPage extends HTMLPage{
 		));
 
 		//現在保存されているサイトID
-		$this->createAdd("old_site_id","HTMLInput",array(
+		$this->addInput("old_site_id", array(
 			"name" => "object[oldSiteId]",
 			"value" => $this->siteId
 		));
 
-		$this->createAdd("main_form","HTMLForm",array());
+		$this->addForm("main_form");
 
 	}
 
@@ -375,24 +382,24 @@ class MultiLabelList_LabelList extends HTMLList{
 	protected function populateItem($entity,$key){
 
 		$labelId = $key;
-		$blogId = $entity;
+		$blogId = (is_numeric($entity)) ? (int)$entity : 0;
 
-		$this->createAdd("label","HTMLLabel",array(
+		$this->addLabel("label", array(
 			"text"=> (isset($this->labels[$labelId])) ? $this->labels[$labelId]->getCaption() : ""
 		));
 
-		$this->createAdd("title","HTMLLabel",array(
+		$this->addLabel("title", array(
 			"text"=> (isset($this->blogs[$blogId])) ? $this->blogs[$blogId] : ""
 		));
 
-		$this->createAdd("delete_button","HTMLInput",array(
+		$this->addInput("delete_button", array(
 			"name" => "delete",
 			"type" => "submit",
 			"value" => CMSMessageManager::get("SOYCMS_DELETE"),
 			"onclick" => 'add_reload_input(this);delete_mapping($(\'#mapping_'.$labelId.'\'));'
 		));
 
-		$this->createAdd("mapping","HTMLInput",array(
+		$this->addInput("mapping", array(
 			"id" => "mapping_".$labelId,
 			"class" => "mapping_input",
 			"name" => "object[mapping][".$labelId."]",

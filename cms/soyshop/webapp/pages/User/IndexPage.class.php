@@ -4,7 +4,20 @@ class IndexPage extends WebPage{
 	function __construct($args) {
 		parent::__construct();
 
+		//一覧ページを開いた時に何らかの処理をする
+		SOYShopPlugin::load("soyshop.user");
+		SOYShopPlugin::invoke("soyshop.user", array(
+			"mode" => "list"
+		));
+
+		$this->addLabel("user_label", array("text" => SHOP_USER_LABEL));
+
     	DisplayPlugin::toggle("registered", (isset($_GET["registered"])));
+
+		//一覧でログインIDを表示するか？
+		$cnf = SOYShop_ShopConfig::load();
+		$adminCnf = $cnf->getCustomerAdminConfig();
+		define("SHOW_ACCOUNT_ID_ITEM", ($adminCnf["accountId"] && $cnf->getAllowLoginIdLogin()));
 
 		/*引数など取得*/
 		//表示件数
@@ -30,8 +43,8 @@ class IndexPage extends WebPage{
 		$searchLogic->setSearchCondition($search);
 
 		//データ取得
-		$total = $searchLogic->getTotalCount();
-		$users = $searchLogic->getUsers();
+		$total = (int)$searchLogic->getTotalCount();
+		$users = ($total > 0) ? $searchLogic->getUsers() : array();
 
 		/*表示*/
 
@@ -43,6 +56,19 @@ class IndexPage extends WebPage{
 		$this->addForm("reset_form");
 		$this->addModel("reset_button", array(
 			"visible" => (!empty($search))
+		));
+
+		$this->addModel("show_account_id", array(
+			"visible" => SHOW_ACCOUNT_ID_ITEM
+		));
+
+		$this->addModel("colspan", array(
+			"attr:colspan" => (SHOW_ACCOUNT_ID_ITEM) ? 8 : 7
+		));
+
+		//ログインIDの名称変更
+		$this->addLabel("account_id_item_name", array(
+			"text" => (SHOW_ACCOUNT_ID_ITEM) ? $cnf->getAccountIdItemName() : ""
 		));
 
 		//ユーザ一覧
@@ -63,40 +89,7 @@ class IndexPage extends WebPage{
 		$pager->setEnd($end);
 		$pager->setTotal($total);
 		$pager->setLimit($limit);
-
-		$this->buildPager($pager);
-
-
-		//管理制限の権限を取得し、権限がない場合は表示しない
-		$session = SOY2ActionSession::getUserSession();
-		DisplayPlugin::toggle("app_limit_function", $session->getAttribute("app_shop_auth_limit"));
-		DisplayPlugin::toggle("custom_plugin", (class_exists("SOYShopPluginUtil") && (SOYShopPluginUtil::checkIsActive("common_user_customfield"))));
-
-		//user.function
-		$this->createAdd("function_list", "_common.User.FunctionListComponent", array(
-			"list" => $this->getFunctionList()
-		));
-
-		//user.info
-		$this->createAdd("info_list", "_common.User.InfoListComponent", array(
-			"list" => $this->getInfoList()
-		));
-
-	}
-
-	function getFunctionList(){
-		SOYShopPlugin::load("soyshop.user.function");
-		$delegate = SOYShopPlugin::invoke("soyshop.user.function", array(
-			"mode" => "list"
-		));
-
-		return $delegate->getList();
-	}
-
-	function getInfoList(){
-		SOYShopPlugin::load("soyshop.user.info");
-		$delegate = SOYShopPlugin::invoke("soyshop.user.info");
-		return $delegate->getList();
+		$pager->buildPager($this);
 	}
 
 	function doPost(){
@@ -153,63 +146,32 @@ class IndexPage extends WebPage{
 		$this->addInput("search_name", array(
 			"name" => "search[name]",
 			"value" => (isset($search["name"])) ? $search["name"] : "",
-			"style" => "width:90%;",
 			"onclick" => "this.select()"
 		));
 		$this->addInput("search_mail_address", array(
 			"name" => "search[mail_address]",
 			"value" => (isset($search["mail_address"])) ? $search["mail_address"] : "",
-			"style" => "width:90%;",
+			"onclick" => "this.select()"
+		));
+		$this->addInput("search_account_id", array(
+			"name" => "search[account_id]",
+			"value" => (isset($search["account_id"])) ? $search["account_id"] : "",
 			"onclick" => "this.select()"
 		));
 		$this->addInput("search_attribute1", array(
 			"name" => "search[attribute1]",
 			"value" => (isset($search["attribute1"])) ? $search["attribute1"] : "",
-			"style" => "width:90%;",
 			"onclick" => "this.select()"
 		));
 		$this->addInput("search_attribute2", array(
 			"name" => "search[attribute2]",
 			"value" => (isset($search["attribute2"])) ? $search["attribute2"] : "",
-			"style" => "width:90%;",
 			"onclick" => "this.select()"
 		));
 		$this->addInput("search_attribute3", array(
 			"name" => "search[attribute3]",
 			"value" => (isset($search["attribute3"])) ? $search["attribute3"] : "",
-			"style" => "width:90%;",
 			"onclick" => "this.select()"
-		));
-	}
-
-	function buildPager(PagerLogic $pager){
-
-		//件数情報表示
-		$this->addLabel("count_start", array(
-			"text" => $pager->getStart()
-		));
-		$this->addLabel("count_end", array(
-			"text" => $pager->getEnd()
-		));
-		$this->addLabel("count_max", array(
-			"text" => $pager->getTotal()
-		));
-
-		//ページへのリンク
-		$this->addLink("next_pager", $pager->getNextParam());
-		$this->addLink("prev_pager", $pager->getPrevParam());
-		$this->createAdd("pager_list","SimplePager",$pager->getPagerParam());
-
-		//ページへジャンプ
-		$this->addForm("pager_jump", array(
-			"method" => "get",
-			"action" => $pager->getPageURL()
-		));
-		$this->addSelect("pager_select", array(
-			"name" => "page",
-			"options" => $pager->getSelectArray(),
-			"selected" => $pager->getPage(),
-			"onchange" => "location.href=this.parentNode.action+this.options[this.selectedIndex].value"
 		));
 	}
 
@@ -225,5 +187,17 @@ class IndexPage extends WebPage{
 			return null;
 		}
 	}*/
+
+	function getBreadcrumb(){
+		return BreadcrumbComponent::build(SHOP_USER_LABEL . "管理");
+	}
+
+	function getFooterMenu(){
+		try{
+			return SOY2HTMLFactory::createInstance("User.FooterMenu.UserFooterMenuPage")->getObject();
+		}catch(Exception $e){
+			//
+			return null;
+		}
+	}
 }
-?>

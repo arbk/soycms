@@ -1,4 +1,5 @@
 <?php
+SOY2::import("module.plugins.discount_free_coupon.domain.SOYShop_Coupon");
 /**
  * @entity SOYShop_Coupon
  */
@@ -31,6 +32,26 @@ abstract class SOYShop_CouponDAO extends SOY2DAO{
 	 * @return object
 	 */
    	abstract function getById($id);
+
+	/**
+	 * @final
+	 */
+	function getByIds($ids){
+		if(!is_array($ids) || !count($ids)) return array();
+
+		try{
+			$res = $this->executeQuery("SELECT id, name FROM soyshop_coupon WHERE id IN (" . implode(",", $ids) . ")");
+		}catch(Exception $e){
+			$res = array();
+		}
+		if(!count($res)) return array();
+
+		$list = array();
+		foreach($res as $v){
+			$list[(int)$v["id"]] = $v["name"];
+		}
+		return $list;
+	}
 
 	/**
 	 * @return object

@@ -66,11 +66,11 @@
 					<a soy:id="item_name">ナノブロック（フレンチブルドッグ）</a><br>
 					<!-- soy:id="item_option" /-->
 				</td>
-				<td class="price"><span soy:id="item_price">2,100</span>円</td>
+				<td class="price"><span soy:id="item_price_on_cart">2,100</span>円</td>
 				<td class="alC">
 					<p class="error" soy:id="item_stock_error"></p>
 					<p class="error" soy:id="item_order_error"></p>
-					<input name="" type="text" class="alR" size="2" soy:id="order_number">
+					<input type="text" class="alR" size="2" soy:id="order_number">
 				</td>
 				<td class="price subsum"><span soy:id="item_total">2,100</span>円</td>
 				<td nowrap class="alC"><a soy:id="item_delete">削除</a></td>
@@ -96,7 +96,7 @@
 
 
 	<p class="resum">数量を変更された場合はボタンを押して合計金額の再計算をしてください。<input type="image" name="modify" soy:src="themes/common/images/cart/btn_resum_off.png" width="164" height="30" alt="合計料金の再計算"></p>
-	<p class="another_btn"><img soy:src="themes/common/images/cart/btn_continue_shop_off.png" width="152" height="37" onclick="history.back()" alt="お買い物を続ける"></p>
+	<p class="another_btn"><a soy:id="back_link"><img soy:src="themes/common/images/cart/btn_continue_shop_off.png" width="152" height="37" alt="お買い物を続ける"></a></p>
 </section>
 
 <section id="cart_procedure">
@@ -123,7 +123,7 @@
 					<table class="soycart_form shop_login">
 						<tr>
 							<th scope="row">メールアドレス</th>
-							<td><input name="" type="email" class="w200" soy:id="login_user_mail_address"><br><span class="exmpl">（例）info＠int_lbd.com</span></td>
+							<td><input type="email" class="w200" soy:id="login_user_mail_address"><br><span class="exmpl">（例）info＠int_lbd.com</span></td>
 						</tr>
 						<tr>
 							<th scope="row">パスワード</th>

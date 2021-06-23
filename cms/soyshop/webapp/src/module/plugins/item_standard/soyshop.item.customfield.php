@@ -9,7 +9,6 @@ class ItemStandardField extends SOYShopItemCustomFieldBase{
 	private $itemDao;
 
 	function doPost(SOYShop_Item $item){
-
 		$itemDao = SOY2DAOFactory::create("shop.SOYShop_ItemDAO");
 
 		if(isset($_POST["Standard"])){
@@ -76,14 +75,9 @@ class ItemStandardField extends SOYShopItemCustomFieldBase{
 					//
 				}
 
-				//SINGLE(またはDOWNLOAD)に戻すとき、小商品をすべて削除したい
+				//SINGLE(またはDOWNLOAD)に戻すとき、子商品をすべて削除したい
 				if($item->getType() == SOYShop_Item::TYPE_SINGLE || $item->getType() == SOYShop_Item::TYPE_DOWNLOAD){
-					try{
-						$children = $itemDao->getByType($item->getId());
-					}catch(Exception $e){
-						return;
-					}
-
+					$children = soyshop_get_item_children($item->getId());
 					if(!count($children)) return;
 
 					//データベース高速化のために完全削除
@@ -98,11 +92,7 @@ class ItemStandardField extends SOYShopItemCustomFieldBase{
 			}
 
 			//セールの一括設定と公開設定
-			try{
-				$children = $itemDao->getByType($item->getId());
-			}catch(Exception $e){
-				return;
-			}
+			$children = soyshop_get_item_children($item->getId());
 
 			//名前の候補
 			$cands = SOY2Logic::createInstance("module.plugins.item_standard.logic.BuildFormLogic", array("parentId" => $item->getId()))->getCandidate();
@@ -116,7 +106,7 @@ class ItemStandardField extends SOYShopItemCustomFieldBase{
 				foreach($cands as $cand){
 					if(strpos($child->getName(), $cand)) $hit = true;
 				}
-
+				
 				if($hit){
 					$child->setIsOpen(SOYShop_Item::IS_OPEN);
 				}else{
@@ -205,17 +195,17 @@ class ItemStandardField extends SOYShopItemCustomFieldBase{
 		list($sellingMax, $normalMax, $saleMax) = self::getItemStandardPrice($item, "max");
 		$htmlObj->addLabel("standard_price_max", array(
 			"soy2prefix" => SOYSHOP_SITE_PREFIX,
-			"text" => ($sellingMax > $sellingMin) ? number_format($sellingMax) : ""
+			"text" => ($sellingMax > $sellingMin) ? soy2_number_format($sellingMax) : ""
 		));
 
 		$htmlObj->addLabel("standard_normal_price_max", array(
 			"soy2prefix" => SOYSHOP_SITE_PREFIX,
-			"text" => ($normalMax > $normalMin) ? number_format($normalMax) : ""
+			"text" => ($normalMax > $normalMin) ? soy2_number_format($normalMax) : ""
 		));
 
 		$htmlObj->addLabel("standard_sale_price_max", array(
 			"soy2prefix" => SOYSHOP_SITE_PREFIX,
-			"text" => ($saleMax > $saleMin) ? number_format($saleMax) : ""
+			"text" => ($saleMax > $saleMin) ? soy2_number_format($saleMax) : ""
 		));
 
 

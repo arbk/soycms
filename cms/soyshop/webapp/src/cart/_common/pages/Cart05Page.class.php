@@ -9,11 +9,18 @@ class Cart05Page extends MainCartPageBase{
 	function doPost(){
 
 		$cart = CartLogic::getCart();
-		$paymentModuleId = $cart->getAttribute("payment_module");
 
-		$paymentModule = SOY2DAOFactory::create("plugin.SOYShop_PluginConfigDAO")->getByPluginId($paymentModuleId);
+		//在庫の確認←廃止
+		// if(!self::_checkStock($cart)){
+		// 	$cart->clearAttribute("order_id");
+		// 	$cart->setAttribute("page", "Cart01");
+		// 	$cart->save();
+		// 	soyshop_redirect_cart();
+		// 	exit;
+		// }
+
+		$paymentModule = soyshop_get_plugin_object($cart->getAttribute("payment_module"));
 		SOYShopPlugin::load("soyshop.payment", $paymentModule);
-
 		SOYShopPlugin::invoke("soyshop.payment.option", array(
 			"cart" => $cart,
 			"mode" => "post"
@@ -28,6 +35,16 @@ class Cart05Page extends MainCartPageBase{
 
 		//completeはCompletaPage.class.phpに移動
 		$cart = CartLogic::getCart();
+
+		//在庫の確認←廃止
+		// if(!self::_checkStock($cart)){
+		// 	$cart->clearAttribute("order_id");
+		// 	$cart->setAttribute("page", "Cart01");
+		// 	$cart->save();
+		// 	soyshop_redirect_cart();
+		// 	exit;
+		// }
+
 		$paymentModule = $cart->getAttribute("payment_module");
 
 		//Cart05Pageを開いた回数を調べる。指定の回数以上表示したら閲覧を禁止する
@@ -37,9 +54,7 @@ class Cart05Page extends MainCartPageBase{
 			exit;
 		}
 
-		$moduleDAO = SOY2DAOFactory::create("plugin.SOYShop_PluginConfigDAO");
-		$paymentModule = $moduleDAO->getByPluginId($paymentModule);
-
+		$paymentModule = soyshop_get_plugin_object($paymentModule);
 		SOYShopPlugin::load("soyshop.payment", $paymentModule);
 
 		$this->addLabel("option_page", array(
@@ -64,5 +79,18 @@ class Cart05Page extends MainCartPageBase{
 		$this->createAdd("cart_plugin_list", "_common.CartPluginListComponent", array(
 			"list" => $html
 		));
+	}
+
+	//在庫を確認して、必要であればCart01ページにリダイレクトする
+	private function _checkStock(CartLogic $cart){
+		try{
+			$cart->checkOrderable(false);
+			$cart->checkItemCountInCart();
+		}catch(SOYShop_StockException $e){
+			return false;
+		}catch(Exception $e){
+			//DB error?
+		}
+		return true;
 	}
 }

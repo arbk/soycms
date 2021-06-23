@@ -25,6 +25,7 @@ class UserComponent {
 	}
 
 	/**
+	 * @final
 	 * @param any $page 各部のページクラス
 	 * @param SOYShop_User $user
 	 * @param any $app CartLogic、もしくはMyPageLogic
@@ -32,7 +33,6 @@ class UserComponent {
 	 * @param boolean $isAdmin SOY Shop管理画面かどうか
 	 */
 	public function buildForm($page, SOYShop_User $user, $app ,$mode = self::MODE_CUSTOM_FORM){
-
 		$page->addForm("form", array(
 			"enctype" => "multipart/form-data"
 		));
@@ -52,7 +52,7 @@ class UserComponent {
 		//必須項目に関して
 		foreach($requiredConfig as $key => $boolean){
 			$page->addLabel($key . "_required", array(
-				"text" => ($boolean) ? $this->config->getRequireText() : "",
+				"html" => ($boolean) ? $this->config->getRequireText() : "",
 				"attr:class" => ($boolean) ? "require" : ""
 			));
 		}
@@ -81,6 +81,8 @@ class UserComponent {
 		$page->addInput("mail_address", array(
 			"name" => "Customer[mailAddress]",
 			"value" => $mailAddress,
+			"readonly" => ($app instanceof CartLogic && $app->getAttribute("logined")),
+			"attr:autocomplete" => "false"
 		));
 
 		$confirmMailAddress = null;
@@ -105,44 +107,75 @@ class UserComponent {
 			"value" => $confirmMailAddress
 		));
 
+		$page->addLabel("account_id_item_name", array(
+			"text" => $this->config->getAccountIdItemName()
+		));
+
+		$page->addInput("account_id", array(
+			"name" => "Customer[accountId]",
+			"value" => $user->getAccountId(),
+			"attr:autocomplete" => "false"
+		));
+
 		//顧客コード
 		DisplayPlugin::toggle("userCode", $this->config->getUseUserCode());
 		$page->addInput("user_code", array(
 			"name" => "Customer[userCode]",
 			"value" => $user->getUserCode(),
-			"attr:required" => "required"
+			"attr:required" => "required",
+			"attr:autocomplete" => "false"
 		));
+
+		SOY2::import("util.SOYShopPluginUtil");
+		DisplayPlugin::toggle("password", !SOYShopPluginUtil::checkIsActive("generate_password"));
 
 		//パスワード
 		$page->addInput("password", array(
 			"name" => "Customer[password]",
 			"value" => $user->getPassword(),
+			"attr:autocomplete" => "false"
 		));
 
 		$passText = "";
-		for($i = 0; $i < strlen($user->getPassword()); $i++){
+		$pwlen = strlen($user->getPassword());
+		for($i = 0; $i < $pwlen; ++$i){
 			$passText .= "*";
 		}
 		$page->addLabel("password_text", array(
 			"text" => $passText
 		));
 
+		//パスワードの文字数
+		$page->addLabel("password_count", array(
+			"text" => $this->config->getPasswordCount()
+		));
+
 		//氏名
 		$page->addInput("name", array(
 			"name" => "Customer[name]",
 			"value" => $user->getName(),
+			"attr:autocomplete" => "false"
 		));
 
 		//フリガナ
 		$page->addInput("reading", array(
 			"name" => "Customer[reading]",
 			"value" => $user->getReading(),
+			"attr:autocomplete" => "false"
+		));
+
+		$page->addInput("honorific", array(
+			"name" => "Customer[honorific]",
+			"value" => $user->getHonorific(),
+			"attr:placeholder" => "様",
+			"attr:autocomplete" => "false"
 		));
 
 		//ニックネーム
 		$page->addInput("nickname", array(
 			"name" => "Customer[nickname]",
 			"value" => $user->getNickname(),
+			"attr:autocomplete" => "false"
 		));
 
 		//性別 男
@@ -163,28 +196,41 @@ class UserComponent {
 			"selected" => ($user->getGender() === 1 || $user->getGender() === "1")
 		));
 
-		$gender = $user->getGender();
 		$page->addLabel("gender_text", array(
-			"text" => ($gender == SOYShop_User::USER_SEX_MALE) ? MessageManager::get("SEX_MALE") :
-					( ($gender == SOYShop_User::USER_SEX_FEMALE) ? MessageManager::get("SEX_FEMALE") : "" )
+			"text" => self::_genderText($user->getGender())
 		));
 
 		//生年月日 年
 		$page->addInput("birth_year", array(
+			"type" => "number",
 			"name" => "Customer[birthday][]",
 			"value" => $user->getBirthdayYear(),
+			"size" => 5,
+			"attr:min" => 1900,
+			"attr:max" => date("Y") + 10,
+			"attr:autocomplete" => "false"
 		));
 
 		//生年月日 月
 		$page->addInput("birth_month", array(
+			"type" => "number",
 			"name" => "Customer[birthday][]",
 			"value" => $user->getBirthdayMonth(),
+			"size" => 3,
+			"attr:min" => 1,
+			"attr:max" => 12,
+			"attr:autocomplete" => "false"
 		));
 
 		//生年月日 日
 		$page->addInput("birth_day", array(
+			"type" => "number",
 			"name" => "Customer[birthday][]",
 			"value" => $user->getBirthdayDay(),
+			"size" => 3,
+			"attr:min" => 1,
+			"attr:max" => 31,
+			"attr:autocomplete" => "false"
 		));
 
 		$page->addLabel("birthday_text", array(
@@ -194,19 +240,22 @@ class UserComponent {
 		//郵便番号
 		$page->addInput("zip_code", array(
 			"name" => "Customer[zipCode]",
-			"value" => $user->getZipCode()
+			"value" => $user->getZipCode(),
+			"attr:autocomplete" => "false"
 		));
 
 		//郵便番号をバラして使う
 		$zip = explode("-", $user->getZipCode());
 		$page->addInput("zip_code1", array(
 			"name" => "Customer[zipCode1]",
-			"value" => (isset($zip[0])) ? $zip[0] : null
+			"value" => (isset($zip[0])) ? $zip[0] : null,
+			"attr:autocomplete" => "false"
 		));
 
 		$page->addInput("zip_code2", array(
 			"name" => "Customer[zipCode2]",
-			"value" => (isset($zip[1])) ? $zip[1] : null
+			"value" => (isset($zip[1])) ? $zip[1] : null,
+			"attr:autocomplete" => "false"
 		));
 
 		//都道府県
@@ -224,39 +273,51 @@ class UserComponent {
 		$page->addInput("address1", array(
 			"name" => "Customer[address1]",
 			"value" => $user->getAddress1(),
+			"attr:autocomplete" => "false"
 		));
 
 		//住所入力2
 		$page->addInput("address2", array(
 			"name" => "Customer[address2]",
 			"value" => $user->getAddress2(),
+			"attr:autocomplete" => "false"
+		));
+
+		//住所入力2
+		$page->addInput("address3", array(
+			"name" => "Customer[address3]",
+			"value" => $user->getAddress3(),
+			"attr:autocomplete" => "false"
 		));
 
 		//電話番号
 		$page->addInput("telephone_number", array(
 			"name" => "Customer[telephoneNumber]",
 			"value" => $user->getTelephoneNumber(),
+			"attr:autocomplete" => "false"
 		));
 
 		//FAX番号
 		$page->addInput("fax_number", array(
 			"name" => "Customer[faxNumber]",
 			"value" => $user->getFaxNumber(),
+			"attr:autocomplete" => "false"
 		));
 
 		//携帯電話番号
 		$page->addInput("cellphone_number", array(
 			"name" => "Customer[cellphoneNumber]",
 			"value" => $user->getCellphoneNumber(),
+			"attr:autocomplete" => "false"
 		));
 
 		//URL
 		$page->addInput("url", array(
 			"name" => "Customer[url]",
 			"value" => $user->getUrl(),
+			"attr:autocomplete" => "false"
 		));
 
-		SOY2::import("util.SOYShopPluginUtil");
 		$activeSOYMail = (SOYShopPluginUtil::checkIsActive("soymail_connector"));
 		//メールマガジン(ユーザカスタムフィールド内で登録の処理を行う)
 		$page->addModel("active_soymail_connector", array(
@@ -267,7 +328,8 @@ class UserComponent {
 
 		$page->addInput("mail_magazine_hidden", array(
 			"name" => "Customer[notSend]",
-			"value" => SOYShop_User::USER_NOT_SEND
+			"value" => SOYShop_User::USER_NOT_SEND,
+			"attr:autocomplete" => "false"
 		));
 		$page->addCheckBox("mail_magazine", array(
 			"name" => "Customer[notSend]",
@@ -298,13 +360,13 @@ class UserComponent {
 		$page->addInput("job_name", array(
 			"name" => "Customer[jobName]",
 			"value" => $user->getJobName(),
+			"attr:autocomplete" => "false"
 		));
-
 
 		/* ユーザカスタムフィールド */
 		SOYShopPlugin::load("soyshop.user.customfield");
 		$delegate = SOYShopPlugin::invoke("soyshop.user.customfield", array(
-			"mode" => $mode,
+			"mode" => (!(defined("SOYSHOP_ADMIN_PAGE") && SOYSHOP_ADMIN_PAGE && strpos($_SERVER["PATH_INFO"], "User/Detail"))) ? $mode : "none",	//管理画面を開いている時は二重読み込みを防止する意味でnoneモードを渡す
 			"app" => $app,
 			"userId" => $user->getId()
 		));
@@ -373,8 +435,6 @@ class UserComponent {
 			"pageObj" => $page,
 			"userId" => $user->getId()
 		));
-
-
 	}
 
 	/**
@@ -565,82 +625,86 @@ class UserComponent {
 		}
 
 		/* パスワード */
+		SOY2::import("util.SOYShopPluginUtil");
+		if(!SOYShopPluginUtil::checkIsActive("generate_password")){	//パスワード自動生成プラグインがアンインストールの時のみパスワードチェック
+			$passCnt = $this->config->getPasswordCount();
+			switch($mode){
+				/* カート 登録 */
+				case self::MODE_CART_REGISTER;
+				default:
 
-		switch($mode){
-			/* カート 登録 */
-			case self::MODE_CART_REGISTER;
-			default:
+					if( $app->getAttribute("logined") ){
+						//ログイン時：パスワード変更
+						if(isset($_POST["new_password"]) && is_array($_POST["new_password"]) &&
+							(strlen($_POST["new_password"]["old"]) > 0 || strlen($_POST["new_password"]["new"]) > 0)
+						){
+							$old = (isset($_POST["new_password"]["old"])) ? $_POST["new_password"]["old"] : "";
+							$new = (isset($_POST["new_password"]["new"])) ? $_POST["new_password"]["new"] : "";
 
-				if( $app->getAttribute("logined") ){
-					//ログイン時：パスワード変更
-					if(isset($_POST["new_password"]) && is_array($_POST["new_password"]) &&
-						(strlen($_POST["new_password"]["old"]) > 0 || strlen($_POST["new_password"]["new"]) > 0)
-					){
-						$old = (isset($_POST["new_password"]["old"])) ? $_POST["new_password"]["old"] : "";
-						$new = (isset($_POST["new_password"]["new"])) ? $_POST["new_password"]["new"] : "";
+							try{
+								$userDAO = SOY2DAOFactory::create("user.SOYShop_UserDAO");
+								$oldUser = $userDAO->getById($app->getAttribute("logined_userid"));
 
-						try{
-							$userDAO = SOY2DAOFactory::create("user.SOYShop_UserDAO");
-							$oldUser = $userDAO->getById($app->getAttribute("logined_userid"));
-
-							if( $user->checkPassword($oldUser) ){
-								if( strlen($new) < 8 ){
-									//新しいパスワード設定で文字数が足りない場合
-									$app->addErrorMessage("password_error", MessageManager::get("NEW_PASSWORD_COUNT_NOT_ENOUGH"));
-									$res = false;
+								if( $user->checkPassword($oldUser) ){
+									if( strlen($new) < $passCnt ){
+										//新しいパスワード設定で文字数が足りない場合
+										$app->addErrorMessage("password_error", MessageManager::get("NEW_PASSWORD_COUNT_NOT_ENOUGH", array("password_count" => $passCnt)));
+										$res = false;
+									}else{
+										$app->setAttribute("new_password", $new);
+									}
 								}else{
-									$app->setAttribute("new_password", $new);
+									//新しいパスワード設定で古いパスワードに誤りがある場合
+									$app->addErrorMessage("password_error", MessageManager::get("OLD_PASSWORD_DIFFERENT"));
+									$res = false;
 								}
-							}else{
-								//新しいパスワード設定で古いパスワードに誤りがある場合
-								$app->addErrorMessage("password_error", MessageManager::get("OLD_PASSWORD_DIFFERENT"));
+							}catch(Exception $e){
+								//DB error?
+							}
+						}
+					}else{
+						//未ログイン時
+						if( tstrlen($user->getPassword()) ){
+							if(tstrlen($user->getPassword()) < $passCnt){
+								//パスワード設定で文字数が足りない場合
+								$app->addErrorMessage("password_error", MessageManager::get("PASSWORD_COUNT_NOT_ENOUGH", array("password_count" => $passCnt)));
 								$res = false;
 							}
-						}catch(Exception $e){
-							//DB error?
 						}
 					}
-				}else{
-					//未ログイン時
-					if( tstrlen($user->getPassword()) ){
-						if(tstrlen($user->getPassword()) < 8){
-							//パスワード設定で文字数が足りない場合
-							$app->addErrorMessage("password_error", MessageManager::get("PASSWORD_COUNT_NOT_ENOUGH"));
-							$res = false;
-						}
+
+					break;
+
+				/* カート 編集 */
+				case self::MODE_CART_EDIT;
+
+					break;
+
+				/* マイページ 登録 */
+				case self::MODE_MYPAGE_REGISTER;
+
+					if(tstrlen($user->getPassword()) < 1){
+						//パスワードが入力されていない場合
+						$app->addErrorMessage("password", MessageManager::get("PASSWORD_EMPTY"));
+						$res = false;
+					}elseif(tstrlen($user->getPassword()) < $passCnt){
+						//パスワード設定で文字数が足りない場合
+						$app->addErrorMessage("password", MessageManager::get("PASSWORD_COUNT_NOT_ENOUGH", array("password_count" => $passCnt)));
+						$res = false;
+					}elseif(!preg_match("/^[a-zA-Z0-9]+$/", $user->getPassword())){
+						//パスワードの書式に誤りがある場合
+						$app->addErrorMessage("password", MessageManager::get("PASSWORD_FALSE"));
 					}
-				}
 
-				break;
+					break;
 
-			/* カート 編集 */
-			case self::MODE_CART_EDIT;
-
-				break;
-
-			/* マイページ 登録 */
-			case self::MODE_MYPAGE_REGISTER;
-
-				if(tstrlen($user->getPassword()) < 1){
-					//パスワードが入力されていない場合
-					$app->addErrorMessage("password", MessageManager::get("PASSWORD_EMPTY"));
-					$res = false;
-				}elseif(tstrlen($user->getPassword()) < 8){
-					//パスワード設定で文字数が足りない場合
-					$app->addErrorMessage("password", MessageManager::get("PASSWORD_COUNT_NOT_ENOUGH"));
-					$res = false;
-				}elseif(!preg_match("/^[a-zA-Z0-9]+$/", $user->getPassword())){
-					//パスワードの書式に誤りがある場合
-					$app->addErrorMessage("password", MessageManager::get("PASSWORD_FALSE"));
-				}
-
-				break;
-
-			/* マイページ 編集 */
-			case self::MODE_MYPAGE_EDIT;
-				//パスワード変更なし
-				break;
+				/* マイページ 編集 */
+				case self::MODE_MYPAGE_EDIT;
+					//パスワード変更なし
+					break;
+			}
 		}
+
 
 		/* メールアドレスの重複チェック */
 		switch($mode){
@@ -750,6 +814,13 @@ class UserComponent {
 		}
 
 		return $res;
+	}
+
+	private function _genderText($gender){
+		if(is_null($gender)) return "";
+		if($gender == SOYShop_User::USER_SEX_MALE) return MessageManager::get("SEX_MALE");
+		if($gender == SOYShop_User::USER_SEX_FEMALE) return MessageManager::get("SEX_FEMALE");
+		return "";
 	}
 
 	/**
@@ -936,4 +1007,3 @@ class UserComponent {
 		return $isCheck = ($user->getNotSend() == SOYShop_User::USER_SEND);
 	}
 }
-?>

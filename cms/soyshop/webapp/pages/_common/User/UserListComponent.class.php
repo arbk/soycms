@@ -2,15 +2,13 @@
 
 class UserListComponent extends HTMLList{
 
-	private $appLimit;
-
 	protected function populateItem($bean){
 
 		$this->addInput("user_check", array(
 			"name" => "users[]",
 			"value" => $bean->getId(),
 			"onchange" => '$(\'#users_operation\').show();',
-			"visible" => $this->appLimit
+			"visible" => AUTH_OPERATE
 		));
 
 		$this->addLabel("id", array(
@@ -29,6 +27,14 @@ class UserListComponent extends HTMLList{
 			"text" => $bean->getMailAddress(),
 			"title" => $bean->getMailAddress(),
 			"style" => (strpos($bean->getMailAddress(), DUMMY_MAIL_ADDRESS_DOMAIN) !== false) ? "color:#ABABAB !important" : null
+		));
+
+		$this->addLabel("account_id", array(
+			"text" => $bean->getAccountId()
+		));
+
+		$this->addModel("show_account_id_item", array(
+			"visible" => (defined("SHOW_ACCOUNT_ID_ITEM") && SHOW_ACCOUNT_ID_ITEM)
 		));
 
 		$this->addLabel("attribute1", array(
@@ -51,9 +57,5 @@ class UserListComponent extends HTMLList{
 			"link" => SOY2PageController::createLink("User.Remove") . "/" . $bean->getId(),
 			"onclick" => "return confirm('削除してよろしいですか？')"
 		));
-	}
-
-	function setAppLimit($appLimit){
-		$this->appLimit = $appLimit;
 	}
 }

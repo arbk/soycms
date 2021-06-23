@@ -28,42 +28,48 @@ class MyPageLogic extends SOY2LogicBase{
 			$myPage = soy2_unserialize($myPage);
 		}
 
-		if(is_null($myPage) || $myPage === false) $myPage = new MyPageLogic($myPageId);
-
+		if(!$myPage instanceof MyPageLogic) $myPage = new MyPageLogic($myPageId);
 
 		/* auto login */
-		if(!$myPage->getIsLoggedin() && @$_COOKIE["soyshop_mypage_" . SOYSHOP_ID . $myPageId . "_auto_login"]){
-			$token = $_COOKIE["soyshop_mypage_" . SOYSHOP_ID . $myPageId . "_auto_login"];
-			$autoLoginDAO = SOY2DAOFactory::create("user.SOYShop_AutoLoginSessionDAO");
+		if(!$myPage->getIsLoggedin() && isset($_COOKIE["soyshop_mypage_" . SOYSHOP_ID . $myPageId . "_auto_login"])){
+			$cookieKey = "soyshop_mypage_" . SOYSHOP_ID . $myPageId . "_auto_login";
+			$token = $_COOKIE[$cookieKey];
+			soy2_setcookie($cookieKey);	//同じIDでcookieを作成してしまう問題を解決する
+			unset($_COOKIE[$cookieKey]);
 
+			$autoLoginDao = SOY2DAOFactory::create("user.SOYShop_AutoLoginSessionDAO");
 			try{
-
-				$autoLogin = $autoLoginDAO->getByToken($token);
-
-				//time limit
-				if($autoLogin->getLimit() > time()){
-					$myPage->setAttribute("loggedin", true);
-					$myPage->setAttribute("userId", $autoLogin->getUserId());
-					$myPage->setAttribute("autoLoginId", $autoLogin->getId());
-
-					/* change key */
-					$token = md5(time() . $autoLogin->getUserId() . rand(0, 65535));
-
-					$expire = $autoLogin->getLimit();
-
-					//SOY CMS側でMyPageLogicを利用する場合に必要な時がある
-					if(!function_exists("soyshop_get_site_url")) SOY2::import("base.func.common",".php");
-					setcookie("soyshop_mypage_" . SOYSHOP_ID . $myPage->getId() . "_auto_login", $token, $expire, soyshop_get_site_url());
-					$autoLogin->setToken($token);
-					$autoLogin->save();
-
-				}else{
-					$autoLogin->delete();
-					setcookie("soyshop_mypage_" . SOYSHOP_ID . $myPage->getId() . "_auto_login", null);
-				}
-
+				$autoLogin = $autoLoginDao->getByToken($token);
 			}catch(Exception $e){
-				setcookie("soyshop_mypage_" . SOYSHOP_ID . $myPage->getId() . "_auto_login", null);
+				$autoLogin = new SOYShop_AutoLoginSession();
+			}
+
+			//事前に同じUserIdのデータを削除
+			try{
+				$autoLoginDao->deleteByUserId($autoLogin->getUserId());
+				$autoLoginDao->deleteOldObjects();	//古いトークンを削除
+			}catch(Exception $e){
+				//
+			}
+
+			//time limit
+			if(is_numeric($autoLogin->getUserId()) && $autoLogin->getLimit() > time()){
+				/* change key */
+				$token = md5(time() . $autoLogin->getUserId() . rand(0, 65535));
+				$myPage->setAttribute("loggedin", true);
+				$myPage->setAttribute("userId", $autoLogin->getUserId());
+				$myPage->setAttribute("autoLoginToken", $token);
+
+				//SOY CMS側でMyPageLogicを利用する場合に必要な時がある
+				if(!function_exists("soyshop_get_site_url")) SOY2::import("base.func.common",".php");
+
+				$autoLogin->setToken($token);
+				try{
+					$autoLoginDao->insert($autoLogin);
+					soy2_setcookie($cookieKey, $token, array("path" => soyshop_get_site_url(), "expires" => $autoLogin->getLimit()));
+				}catch(Exception $e){
+					//
+				}
 			}
 		}
 
@@ -74,8 +80,7 @@ class MyPageLogic extends SOY2LogicBase{
 	 * マイページを保存
 	 */
 	public static function saveMyPage(MyPageLogic $myPage){
-		$userSession = SOY2ActionSession::getUserSession();
-		$userSession->setAttribute("soyshop_mypage_" . SOYSHOP_ID . $myPage->getId(), soy2_serialize($myPage));
+		SOY2ActionSession::getUserSession()->setAttribute("soyshop_mypage_" . SOYSHOP_ID . $myPage->getId(), soy2_serialize($myPage));
 	}
 	function save(){
 		MypageLogic::saveMyPage($this);
@@ -85,12 +90,16 @@ class MyPageLogic extends SOY2LogicBase{
 	 * マイページを削除
 	 */
 	public static function clearMyPage($myPageId){
-		$userSession = SOY2ActionSession::getUserSession();
-		$userSession->setAttribute("soyshop_mypage_" . SOYSHOP_ID . $myPageId, null);
+		SOY2ActionSession::getUserSession()->setAttribute("soyshop_mypage_" . SOYSHOP_ID . $myPageId, null);
 	}
 	function clear(){
 		MyPageLogic::clearMyPage($this->getId());
 		CartLogic::clearCart();
+	}
+
+	/** cookie **/
+	private static function _setCookie(){
+
 	}
 
 	/**
@@ -254,8 +263,41 @@ class MyPageLogic extends SOY2LogicBase{
 	}
 
 	function getIsLoggedin(){
-		$res = $this->getAttribute("loggedin");
-		return (isset($res) && $res);
+		static $isLoggedIn, $try;
+		if(is_null($try)) $try = 0;
+		if(is_null($isLoggedIn)){
+			//最低3回確認する
+			if(++$try > 2) {
+				$isLoggedIn = false;
+				return $isLoggedIn;
+			}
+
+			//一度もログイン関係の動作をしていない時は調べる前にfalseを返す→様々なマイページの処理を止めることができる
+			//ログインするとuser_idとloggedinの値を持つので、配列の値が2未満であればログインのフローは通過していないことになる
+			$attrs = $this->getAttributes();
+			if(!is_array($attrs) || count($attrs) < 2) return false;
+
+			//拡張機能を介してログインしているか？
+			SOYShopPlugin::load("soyshop.mypage.login");
+			$extendIsLoggedIn = SOYShopPlugin::invoke("soyshop.mypage.login", array(
+				"mode" => "isLoggedIn"
+			))->getResult();
+
+			if(is_bool($extendIsLoggedIn)){
+				$isLoggedIn = $extendIsLoggedIn;
+			}else{
+				$res = $this->getAttribute("loggedin");
+				$isLoggedIn = (is_bool($res) && $res);
+			}
+
+			//ログインしているユーザが削除されている場合はログアウトにする
+			if($isLoggedIn && !$this->getUser()->isPublished()){
+				$this->logout();
+				$isLoggedIn = false;
+			}
+		}
+
+		return $isLoggedIn;
 	}
 
 	/**
@@ -264,31 +306,42 @@ class MyPageLogic extends SOY2LogicBase{
 	 * @return titleFormat
 	 */
 	function getTitleFormat($args){
-		if(!isset($args[0])) return SOYShop_DataSets::get("config.mypage.title", "マイページ");
-		if($args[0] === "profile"){
-			if(isset($args[1]) && strlen($args[1]) > 0){
-				$user = $this->getProfileUser($args[1]);
-				if(strlen($user->getDisplayName()) > 0){
-					$titleFormat = $user->getDisplayName() . "さんのプロフィール";
+		SOYShopPlugin::load("soyshop.mypage");
+		$titleFormat = SOYShopPlugin::invoke("soyshop.mypage", array(
+			"mode" => "title"
+		))->getTitleFormat();
+
+		if(is_null($titleFormat)){
+			if(isset($args[0])){
+				switch($args[0]){
+					case "profile":
+						if(isset($args[1]) && strlen($args[1]) > 0){
+							$user = $this->getProfileUser($args[1]);
+							if(strlen($user->getDisplayName()) > 0) $titleFormat = $user->getDisplayName() . "さんのプロフィール";
+						}
+						if(is_null($titleFormat)) $titleFormat = "プロフィール";
+						break;
+					//ログインしていない時の表示
+					case "login":
+					case "logout":
+					case "remind":
+					case "register":
+						$titleFormat = SOYShop_DataSets::get("config.mypage.title.no_logged_in", "マイページ");
+						break;
+					//マイページにお客様の名前を挿入する
+					default:
+						$titleFormat = SOYShop_DataSets::get("config.mypage.title", "マイページ");
+						if(strpos($titleFormat, "#") !== false){
+							if(strpos($titleFormat, "#USERNAME#") !== false){
+								$titleFormat = str_replace("#USERNAME#", $this->getUser()->getName(), $titleFormat);
+							}elseif(strpos($titleFormat, "#NICKNAME#") !== false){
+								$titleFormat = str_replace("#NICKNAME#", $this->getUser()->getDisplayName(), $titleFormat);
+							}
+						}
+						break;
 				}
-			}
-
-			if(!isset($titleFormat)) $titleFormat = "プロフィール";
-
-		//ログインしていない時の表示
-		}elseif($args[0] === "login" || $args[0] === "logout" || $args[0] === "remind" || $args[0] === "register"){
-
-			$titleFormat = "マイページ";
-
-		//マイページにお客様の名前を挿入する
-		}else{
-			$titleFormat = SOYShop_DataSets::get("config.mypage.title", "マイページ");
-			if(strpos($titleFormat, "#") !== false){
-				if(strpos($titleFormat, "#USERNAME#") !== false){
-					$titleFormat = str_replace("#USERNAME#", $this->getUser()->getName(), $titleFormat);
-				}elseif(strpos($titleFormat, "#NICKNAME#") !== false){
-					$titleFormat = str_replace("#NICKNAME#", $this->getUser()->getDisplayName(), $titleFormat);
-				}
+			}else{
+				$titleFormat = SOYShop_DataSets::get("config.mypage.title", "マイページ");
 			}
 		}
 
@@ -296,7 +349,21 @@ class MyPageLogic extends SOY2LogicBase{
 	}
 
 	function getUserId(){
-		return $this->getAttribute("userId");
+		static $userId;
+		if($this->getIsLoggedin() && is_null($userId)){
+			SOYShopPlugin::load("soyshop.mypage.login");
+			$userId = SOYShopPlugin::invoke("soyshop.mypage.login", array(
+				"mode" => "user_id"
+			))->getUserId();
+
+			if(!is_numeric($userId)){
+				$userId = $this->getAttribute("userId");
+			}
+
+			if(is_null($userId)) $userId = 0;
+		}
+
+		return $userId;
 	}
 
 	/**
@@ -316,15 +383,7 @@ class MyPageLogic extends SOY2LogicBase{
 	 * @return Object SOYShop_User
 	 */
 	function getUser(){
-		static $user;
-		if(is_null($user)){
-			try{
-				$user = SOY2DAOFactory::create("user.SOYShop_UserDAO")->getById($this->getUserId());
-			}catch(Exception $e){
-				$user = new SOYShop_User();
-			}
-		}
-		return $user;
+		return soyshop_get_user_object($this->getUserId());
 	}
 
 	//ダミーの値を表示したりといろいろできる
@@ -343,7 +402,7 @@ class MyPageLogic extends SOY2LogicBase{
 	 * @param string profileId
 	 * @return object SOYShop_User
 	 */
-	function getProfileUser($profileId){
+	private function getProfileUser($profileId){
 		try{
 			return SOY2DAOFactory::create("user.SOYShop_UserDAO")->getByProfileId($profileId);
 		}catch(Exception $e){
@@ -357,11 +416,8 @@ class MyPageLogic extends SOY2LogicBase{
 	 * @return string url
 	 */
 	function getProfileUserLink($userId){
-		try{
-			$user = SOY2DAOFactory::create("user.SOYShop_UserDAO")->getById($userId);
-		}catch(Exception $e){
-			return null;
-		}
+		$user = soyshop_get_user_object($userId);
+		if(is_null($user->getId())) return null;
 
 		if($user->getIsProfileDisplay() != SOYShop_User::PROFILE_IS_DISPLAY) return null;
 		if(is_null($user->getProfileId())) return null;
@@ -373,10 +429,14 @@ class MyPageLogic extends SOY2LogicBase{
 	 * ログアウト
 	 */
 	function logout(){
+		SOYShopPlugin::load("soyshop.mypage.login");
+		SOYShopPlugin::invoke("soyshop.mypage.login", array(
+			"mode" => "loguot"
+		));
 
 		/* auto login */
-		$autoLoginSessionId = $this->getAttribute("autoLoginId");
-		if($autoLoginSessionId) $this->autoLogout($autoLoginSessionId);
+		if(!is_null($this->getAttribute("autoLoginToken"))) $this->autoLogout();
+		soy2_setcookie("soyshop_mypage_" . SOYSHOP_ID . $this->getId() . "_auto_login");
 
 		$this->clear();
 	}
@@ -388,57 +448,68 @@ class MyPageLogic extends SOY2LogicBase{
 	 * #error login_error
 	 */
 	function login($loginId, $password){
+		//プラグインのログイン周りの拡張ポイントを持つプラグインがあるか？
+		SOYShopPlugin::load("soyshop.mypage.login");
+		$isExtendLogin = SOYShopPlugin::invoke("soyshop.mypage.login")->getResult();
 
-		$userDAO = SOY2DAOFactory::create("user.SOYShop_UserDAO");
-		$hasRegister = true;
+		if(isset($isExtendLogin) && is_bool($isExtendLogin) && $isExtendLogin){	//ログインの拡張
+			$res = SOYShopPlugin::invoke("soyshop.mypage.login", array(
+				"mode" => "login"
+			))->getResult();
+		}else{	//通常ログイン
+			$userDAO = SOY2DAOFactory::create("user.SOYShop_UserDAO");
+			$hasRegister = true;
 
-		SOY2::import("domain.config.SOYShop_ShopConfig");
-		$config = SOYShop_ShopConfig::load();
+			SOY2::import("domain.config.SOYShop_ShopConfig");
+			$config = SOYShop_ShopConfig::load();
 
-
-		//ログインIDでログインを試みる
-		if($config->getAllowLoginIdLogin() && !soyshop_valid_email($loginId)){
-			try{
-				$user = $userDAO->getByAccountId($loginId);
-			}catch(Exception $e){
+			//ログインIDでログインを試みる
+			if($config->getAllowLoginIdLogin() && !soyshop_valid_email($loginId)){
+				try{
+					$user = $userDAO->getByAccountId($loginId);
+				}catch(Exception $e){
+					$user = new SOYShop_User();
+				}
+			//メールアドレスでログインにを試みる
+			}elseif($config->getAllowMailAddressLogin()){
+				try{
+					$user = $userDAO->getByMailAddress($loginId);
+				}catch(Exception $e){
+					$user = new SOYShop_User();
+				}
+			//ログインを許可していない
+			}else{
 				$user = new SOYShop_User();
 			}
-		//メールアドレスでログインにを試みる
-		}elseif($config->getAllowMailAddressLogin()){
-			try{
-				$user = $userDAO->getByMailAddress($loginId);
-			}catch(Exception $e){
-				$user = new SOYShop_User();
+
+			//仮登録状態もしくは退会しているか調べる。パスワードが正しいかも調べる
+			if(
+				is_null($user->getUserType()) ||
+				$user->getUserType() != SOYShop_User::USERTYPE_REGISTER ||
+				$user->getIsDisabled() == SOYShop_User::USER_IS_DISABLED ||
+				!$user->checkPassword($password)
+			){
+				$hasRegister = false;
 			}
-		//ログインを許可していない
-		}else{
-			$user = new SOYShop_User();
-		}
 
-		//仮登録状態もしくは退会しているか調べる。パスワードが正しいかも調べる
-		if(
-			is_null($user->getUserType()) ||
-			$user->getUserType() != SOYShop_User::USERTYPE_REGISTER ||
-			$user->getIsDisabled() == SOYShop_User::USER_IS_DISABLED ||
-			!$user->checkPassword($password)
-		){
-			$hasRegister = false;
-		}
+			//登録されていないログインIDのエラー通知
+			if(!$hasRegister){
+				$this->addErrorMessage("login_error", MessageManager::get("LOGIN_NOT_REGISTER"));
+				$this->save();
+				return false;
+			}
 
-		//登録されていないログインIDのエラー通知
-		if(!$hasRegister){
-			$this->addErrorMessage("login_error", MessageManager::get("LOGIN_NOT_REGISTER"));
+			//セッションに追加
+			$this->setAttribute("userId", $user->getId());
+			$this->setAttribute("loggedin", true);
 			$this->save();
-			return false;
+
+			$res = true;
 		}
 
+		if($res) self::_logMypageLogin();
 
-		//セッションに追加
-		$this->setAttribute("loggedin", true);
-		$this->setAttribute("userId", $user->getId());
-
-		$this->save();
-		return true;
+		return $res;
 	}
 
 	function noPasswordLogin($userId){
@@ -449,8 +520,10 @@ class MyPageLogic extends SOY2LogicBase{
 		//セッションに追加
 		$this->setAttribute("loggedin", true);
 		$this->setAttribute("userId", $userId);
-
 		$this->save();
+
+		self::_logMypageLogin();
+
 		return true;
 	}
 
@@ -462,7 +535,8 @@ class MyPageLogic extends SOY2LogicBase{
 	 * @param str defult documentRoot
 	 */
 	function autoLogin($expire = SOYSHOP_AUTOLOGIN_EXPIRE, $url = null){
-		$token = md5(time() . $this->getUserId() . mt_rand(0, 65535));
+		$userId = $this->getAttribute("userId");	//このコードを読む時に$this->getUserId()が使えない事がある
+		$token = md5(time() . $userId . mt_rand(0, 65535));
 		$expire += time();
 
 		if(is_null($url)) $url = soyshop_get_site_url(true);
@@ -471,7 +545,6 @@ class MyPageLogic extends SOY2LogicBase{
 			preg_match("/^https?:\\/\\/([^:\\/]+)(?::[0-9]+)?(?:(\\/[^\\?#]*))?/", $url, $matches);
 			$domain = isset($matches[1]) ? $matches[1] : "" ;
 			$path   = isset($matches[2]) ? $matches[2] : "/" ;
-			$secure = (strpos($url, "https://") === 0);
 		}else{
 			$path = $url;
 		}
@@ -482,30 +555,45 @@ class MyPageLogic extends SOY2LogicBase{
 			$path .= "/";
 		}
 
+		//if(isset($domain)) $opts["domain"] = $domain;
+
 		//Cookie
-		if(isset($domain)){
-			setcookie("soyshop_mypage_" . SOYSHOP_ID . $this->getId() . "_auto_login", $token, $expire, $path, $domain, $secure);
-		}else{
-			setcookie("soyshop_mypage_" . SOYSHOP_ID . $this->getId() . "_auto_login", $token, $expire, $path);
+		soy2_setcookie("soyshop_mypage_" . SOYSHOP_ID . $this->getId() . "_auto_login", $token, array("expires" => $expire, "path" => $path));
+
+		$autoLoginDao = SOY2DAOFactory::create("user.SOYShop_AutoLoginSessionDAO");
+		try{
+			$autoLoginDao->deleteByUserId($userId);
+			$autoLoginDao->deleteOldObjects();
+		}catch(Exception $e){
+			//
 		}
-
-		SOY2::import("domain.user.SOYShop_AutoLoginSession");
-		$login = new SOYShop_AutoLoginSession();
-		$login->setUserId($this->getUserId());
-		$login->setToken($token);
-		$login->setLimit($expire);
-
-		$login->save();
-
-		$this->setAttribute("autoLoginId", $login->getId());
+		$autoLogin = new SOYShop_AutoLoginSession();
+		$autoLogin->setUserId($userId);
+		$autoLogin->setToken($token);
+		$autoLogin->setLimit($expire);
+		try{
+			$autoLoginDao->insert($autoLogin);
+			$this->setAttribute("autoLoginToken", $autoLogin->getToken());
+		}catch(Exception $e){
+			//
+		}
 	}
 
-	function autoLogout($autoLoginSessionId){
-
+	function autoLogout(){
 		try{
-			$dao = SOY2DAOFactory::create("user.SOYShop_AutoLoginSessionDAO");
-			$session = $dao->getById($autoLoginSessionId);
-			$session->delete();
+			SOY2DAOFactory::create("user.SOYShop_AutoLoginSessionDAO")->deleteByUserId($this->getUserId());
+		}catch(Exception $e){
+			//
+		}
+		soy2_setcookie("soyshop_mypage_" . SOYSHOP_ID . $this->getId() . "_auto_login");
+	}
+
+	private function _logMypageLogin(){
+		$dao = SOY2DAOFactory::create("logging.SOYShop_MypageLoginLogDAO");
+		$obj = new SOYShop_MypageLoginLog();
+		$obj->setUserId($this->getAttribute("userId"));
+		try{
+			$dao->insert($obj);
 		}catch(Exception $e){
 			//
 		}
@@ -516,8 +604,7 @@ class MyPageLogic extends SOY2LogicBase{
 	 * @return boolean
 	 */
 	function getIsAutoLogin(){
-		$res = $this->getAttribute("autoLoginId");
-		return (!is_null($res));	//値が存在している場合はtrueを返す
+		return (!is_null($this->getAttribute("autoLoginToken")));	//値が存在している場合はtrueを返す
 	}
 
 	/**
@@ -536,7 +623,6 @@ class MyPageLogic extends SOY2LogicBase{
 	 */
 	function createToken($mail){
 
-		$userDAO = SOY2DAOFactory::create("user.SOYShop_UserDAO");
 		$tokenDAO = SOY2DAOFactory::create("user.SOYShop_UserTokenDAO");
 
 		//翌日の00:00まで
@@ -549,7 +635,7 @@ class MyPageLogic extends SOY2LogicBase{
 		$limit = $limit + 60 * 60 * 24 -1;
 
 		try{
-			$user = $userDAO->getByMailAddress($mail);
+			$user = SOY2DAOFactory::create("user.SOYShop_UserDAO")->getByMailAddress($mail);
 			$query = $this->createQuery($user->getMailAddress());
 
 		}catch(Exception $e){
@@ -562,7 +648,7 @@ class MyPageLogic extends SOY2LogicBase{
 			$token = $tokenDAO->getByUserId($user->getId());
 			$token->setToken($query);
 			$token->setLimit($limit);
-			$token->save();
+			$tokenDAO->update($token);
 
 		}catch(Exception $e){
 			$token = new SOYShop_UserToken();
@@ -570,7 +656,7 @@ class MyPageLogic extends SOY2LogicBase{
 			$token->setToken($query);
 			$token->setLimit($limit);
 
-			$token->save();
+			$tokenDAO->insert($token);
 		}
 
 		return array($query, $limit);

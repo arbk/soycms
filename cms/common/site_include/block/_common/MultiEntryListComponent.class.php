@@ -3,13 +3,19 @@
 class MultiEntryListComponent extends HTMLList{
 
 	private $url = array();
+	private $blogId = array();
 	private $blogTitle = array();
 	private $blogUrl = array();
+	private $blogCategoryUrl = array();
 
 	private $dsn;
 
 	public function setUrl($url){
 		$this->url = $url;
+	}
+
+	public function setBlogId($blogId){
+		$this->blogId = $blogId;
 	}
 
 	public function setBlogTitle($blogTitle){
@@ -18,6 +24,10 @@ class MultiEntryListComponent extends HTMLList{
 
 	public function setBlogUrl($blogUrl){
 		$this->blogUrl = $blogUrl;
+	}
+
+	public function setBlogCategoryUrl($blogCategoryUrl){
+		$this->blogCategoryUrl = $blogCategoryUrl;
 	}
 
 	public function getStartTag(){
@@ -39,7 +49,8 @@ class MultiEntryListComponent extends HTMLList{
 
 	protected function populateItem($entity){
 		//entry title
-		$url = (isset($this->url[$entity->getId()])) ? $this->url[$entity->getId()] : "" ;
+		$id = (is_numeric($entity->getId())) ? (int)$entity->getId() : 0;
+		$url = (isset($this->url[$id])) ? $this->url[$id] : "" ;
 
 		$hTitle = htmlspecialchars($entity->getTitle(), ENT_QUOTES, "UTF-8");
 		$entryUrl = ( strlen($url) > 0 ) ? $url.rawurlencode($entity->getAlias()) : "" ;
@@ -49,8 +60,10 @@ class MultiEntryListComponent extends HTMLList{
 		}
 
 		//blog title
-		$blogUrl = (isset($this->blogUrl[$entity->getId()])) ? $this->blogUrl[$entity->getId()] : "";
-		$blogTitle = (isset($this->blogTitle[$entity->getId()])) ? $this->blogTitle[$entity->getId()] : "";
+		$blogId = (isset($this->blogId[$id])) ? (int)$this->blogId[$id] : 0;
+		$blogUrl = (isset($this->blogUrl[$id])) ? $this->blogUrl[$id] : "";
+		$blogCategoryUrl = (isset($this->blogCategoryUrl[$id])) ? $this->blogCategoryUrl[$id] : "";
+		$blogTitle = (isset($this->blogTitle[$id])) ? $this->blogTitle[$id] : "";
 		$hBlogTitle = htmlspecialchars($blogTitle, ENT_QUOTES, "UTF-8");
 
 		if(strlen($blogUrl) > 0){
@@ -58,7 +71,7 @@ class MultiEntryListComponent extends HTMLList{
 		}
 
 		$this->createAdd("entry_id","CMSLabel",array(
-			"text" => $entity->getId(),
+			"text" => $id,
 			"soy2prefix" => "cms"
 		));
 
@@ -146,7 +159,21 @@ class MultiEntryListComponent extends HTMLList{
 			"soy2prefix" => "cms",
 		));
 
-		CMSPlugin::callEventFunc('onEntryOutput', array("entryId" => $entity->getId(), "SOY2HTMLObject" => $this, "entry" => $entity));
+		//カテゴリ
+		$this->createAdd("category_list","CategoryListComponent",array(
+			"list" => (is_numeric($blogId) && $blogId > 0 && strlen($blogCategoryUrl)) ? self::_labelLogic()->getLabelsByBlogPageIdAndEntryId($blogId, $id) : array(),
+			"categoryUrl" => $blogCategoryUrl,
+			"entryCount" => array(),
+			"soy2prefix" => "cms"
+		));
+
+		CMSPlugin::callEventFunc('onEntryOutput', array("entryId" => $id, "SOY2HTMLObject" => $this, "entry" => $entity));
+	}
+
+	private function _labelLogic(){
+		static $logic;
+		if(is_null($logic)) $logic = SOY2Logic::createInstance("logic.site.Label.LabelLogic");
+		return $logic;
 	}
 
 

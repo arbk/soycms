@@ -8,7 +8,7 @@ class EditPage extends MainMyPagePageBase{
 		$mypage = $this->getMyPage();
 
 		//保存
-		if(soy2_check_token()){
+		if(soy2_check_token() && soy2_check_referer()){
 			if(isset($_POST["confirm"]) || isset($_POST["confirm_x"])){
 
 				/*
@@ -132,6 +132,11 @@ class EditPage extends MainMyPagePageBase{
     	$this->addInput("send_address2", array(
     		"name" => "Address[address2]",
     		"value" => (isset($address["address2"])) ? $address["address2"] : "",
+    	));
+
+		$this->addInput("send_address3", array(
+    		"name" => "Address[address3]",
+    		"value" => (isset($address["address3"])) ? $address["address3"] : "",
     	));
 
 		//電話番号

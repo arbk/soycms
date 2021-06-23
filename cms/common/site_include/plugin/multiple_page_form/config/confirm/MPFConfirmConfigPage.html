@@ -1,0 +1,50 @@
+<div class="text-left">
+	<a soy:link="Plugin.Config?multiple_page_form" class="btn btn-primary">一覧ページに戻る</a>
+</div>
+
+<br>
+
+<h4 soy:id="page_name_text">最初のページ</h4>
+
+<form soy:id="form">
+	<div class="table-responsive">
+		<table class="table table-striped">
+			<tr>
+				<th class="col-lg-1">ページ名</th>
+				<td>
+					<input type="text" soy:id="page_name" class="form-control">
+				</td>
+			</tr>
+			<tr>
+				<th>ページ種別</th>
+				<td soy:id="page_type"></td>
+			</tr>
+			<tr>
+				<th>説明</th>
+				<td><textarea soy:id="page_description" class="form-control"></textarea></td>
+			</tr>
+			<tr>
+				<th>次のページ</th>
+				<td>
+					<select soy:id="next_page_type">
+						<option></option>
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<th>テンプレート</th>
+				<td>
+					<select soy:id="page_template"></select><br>
+					<div class="alert alert-info">
+						新たにテンプレートを追加する場合は、<strong soy:id="template_dir"></strong>以下にPHPファイルを配置してください。<br>
+						PHPファイルでの書き方は、<strong soy:id="default_template_file_path"></strong>を参考にしてください。
+					</div>
+				</td>
+			</tr>
+		</table>
+	</div>
+
+	<div class="text-center">
+		<input type="submit" name="update" class="btn btn-primary btn-lg" value="更新">
+	</div>
+</form>

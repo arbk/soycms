@@ -47,12 +47,12 @@ class UserPage extends WebPage{
 					$next = true;
 				}else{
 					//NG
-					$this->session->setAttribute("order_register.error.user_code", "入力された顧客コードに該当するユーザーが見つかりません。");
+					$this->session->setAttribute("order_register.error.user_code", "入力された" . SHOP_USER_LABEL . "コードに該当するユーザーが見つかりません。");
 					$this->session->setAttribute("order_register.input.user_code", $_POST["search_by_user_code"]);
 				}
 			}else{
 				//NG
-				$this->session->setAttribute("order_register.error.user_code", "顧客コードを入力してください。");
+				$this->session->setAttribute("order_register.error.user_code", SHOP_USER_LABEL . "コードを入力してください。");
 				$this->session->setAttribute("order_register.input.user_code", $_POST["search_by_user_code"]);
 			}
 		}else if(isset($_POST["search_by_email"])){
@@ -98,12 +98,12 @@ class UserPage extends WebPage{
 					$next = true;
 				}else{
 					//NG
-					$this->session->setAttribute("order_register.error.name", "入力された顧客名に該当するユーザーが見つかりません。");
+					$this->session->setAttribute("order_register.error.name", "入力された" . SHOP_USER_LABEL . "名に該当するユーザーが見つかりません。");
 					$this->session->setAttribute("order_register.input.name", $_POST["search_by_name"]);
 				}
 			}else{
 				//NG
-				$this->session->setAttribute("order_register.error.name", "顧客名を入力してください。");
+				$this->session->setAttribute("order_register.error.name", SHOP_USER_LABEL . "名を入力してください。");
 				$this->session->setAttribute("order_register.input.name", $_POST["search_by_name"]);
 			}
 		}else if(isset($_POST["search_by_reading"])){
@@ -128,10 +128,11 @@ class UserPage extends WebPage{
 
 			$error = array();
 			if(strlen($user->getName()) < 1) $error[] = "氏名を入力してください。";
-			if(strlen($user->getReading()) < 1) $error[] = "氏名（フリガナ）を入力してください。";
-			if(strlen($user->getArea()) < 1) $error[] = "住所の都道府県を選択してください。";
-			if(strlen($user->getAddress1()) < 1) $error[] = "住所を入力してください。";
-			if(strlen($user->getTelephoneNumber()) < 1) $error[] = "電話番号を入力してください。";
+			/** 必須は氏名だけでいい **/
+			// if(strlen($user->getReading()) < 1) $error[] = "氏名（フリガナ）を入力してください。";
+			// if(strlen($user->getArea()) < 1) $error[] = "住所の都道府県を選択してください。";
+			// if(strlen($user->getAddress1()) < 1) $error[] = "住所を入力してください。";
+			// if(strlen($user->getTelephoneNumber()) < 1) $error[] = "電話番号を入力してください。";
 
 			if(count($error)){
 				$this->session->setAttribute("order_register.error.user", implode("\n", $error));
@@ -227,7 +228,7 @@ class UserPage extends WebPage{
 		$this->session->setAttribute("order_register.error.user", null);
 
 		$this->addModel("zip2address_js", array(
-			"src" => soyshop_get_site_url() . "themes/common/js/zip2address.js"
+			"src" => soyshop_get_zip_2_address_js_filepath()
 		));
    }
 
@@ -266,6 +267,15 @@ class UserPage extends WebPage{
 
 		//共通フォーム
 		$this->component->buildForm($this, $user, $this->cart, UserComponent::MODE_CUSTOM_FORM);
+
+		//項目の非表示用タグ
+		foreach(SOYShop_ShopConfig::load()->getCustomerAdminConfig() as $key => $bool){
+			if($key == "accountId" && $bool){
+				//ログインIDのみ、マイページでログインIDを使用する時だけtrueにする
+				$bool = (SOYShop_ShopConfig::load()->getAllowLoginIdLogin() != 0);
+			}
+			DisplayPlugin::toggle($key, $bool);
+		}
 
 		//法人名(勤務先など)
 		SOY2::import("domain.config.SOYShop_ShopConfig");
@@ -389,5 +399,9 @@ class UserPage extends WebPage{
 	private function str2array($str){
 		//全角スペースを半角スペースにする
 		return explode(" ", str_replace("　", " ", $str));
+	}
+
+	function getBreadcrumb(){
+		return BreadcrumbComponent::build("注文社を指定する", array("Order" => "注文管理", "Order.Register" => "注文を追加する"));
 	}
 }

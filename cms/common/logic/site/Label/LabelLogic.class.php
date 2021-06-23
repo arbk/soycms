@@ -181,15 +181,26 @@ class LabelLogic extends SOY2LogicBase{
     }
 
     function getBlogCategoryLabelsByPageId($pageId){
-    	$dao = SOY2DAOFactory::create("cms.BlogPageDAO");
-		$labelDAO = SOY2DAOFactory::create("cms.LabelDAO");
-    	$page = $dao->getById($pageId);
+		try{
+			$list = SOY2DAOFactory::create("cms.BlogPageDAO")->getById($pageId)->getCategoryLabelList();
+		}catch(Exception $e){
+			$list = array();
+		}
+    	if(!count($list)) return array();
 
-    	$list = $page->getCategoryLabelList();
-    	$ret_val = array();
-    	foreach($list as $key => $labelid){
-    		$ret_val[$labelid] = $labelDAO->getById($labelid);
-    	}
+		//SQLを一回で済ませる
+		$labelDAO = SOY2DAOFactory::create("cms.LabelDAO");
+		try{
+			$res = $labelDAO->executeQuery("SELECT * FROM Label WHERE id IN (" . implode(",", $list) . ")");
+		}catch(Exception $e){
+			$res = array();
+		}
+		if(!count($res)) return array();
+
+		$ret_val = array();
+		foreach($res as $v){
+			$ret_val[$v["id"]] = $labelDAO->getObject($v);
+		}
 
     	//並べ替え
     	uasort($ret_val,function($a,$b) { return $b->compare($a); });
@@ -207,9 +218,7 @@ class LabelLogic extends SOY2LogicBase{
 
     private static function &getLabelDAO(){
     	static $_dao;
-
-    	if(!$_dao)$_dao = SOY2DAOFactory::create("cms.LabelDAO");
-
+    	if(is_null($_dao)) $_dao = SOY2DAOFactory::create("cms.LabelDAO");
     	return $_dao;
     }
 
@@ -228,6 +237,31 @@ class LabelLogic extends SOY2LogicBase{
 		}
 
 		return $result;
+	}
+
+	/**
+	 * ブロック内で記事に紐付いているラベルを取得する
+	 */
+	function getLabelsByBlogPageIdAndEntryId($blogPageId, $entryId){
+		static $blogPageLabels, $entryLogic;
+		if(is_null($blogPageLabels)) {
+			$blogPageLabels = array();
+			$entryLogic = SOY2Logic::createInstance("logic.site.Entry.EntryLogic");
+		}
+		if(!isset($blogPageLabels[$blogPageId])){
+			$blogPageLabels[$blogPageId] = self::getBlogCategoryLabelsByPageId($blogPageId);
+		}
+
+		//記事IDに紐付いているラベルを調べる
+		$labelIds = $entryLogic->getLabelIdsByEntryId($entryId);
+		if(!count($labelIds)) return array();
+
+		$labelList = array();
+		foreach($labelIds as $labelId){
+			if(isset($blogPageLabels[$blogPageId][$labelId])) $labelList[] = $blogPageLabels[$blogPageId][$labelId];
+		}
+
+		return $labelList;
 	}
 
 }

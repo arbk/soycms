@@ -1,11 +1,6 @@
 <?php
 SOY2HTMLFactory::importWebPage("Item.DetailPage");
 
-/**
- * @class Item.AttachmentPage
- * @date 2009-12-21T00:09:51+09:00
- * @author SOY2HTMLFactory
- */
 class AttachmentPage extends DetailPage{
 
 	function doPost(){
@@ -26,9 +21,9 @@ class AttachmentPage extends DetailPage{
 			$filepath = str_replace(soyshop_get_site_url(), SOYSHOP_SITE_DIRECTORY, $url);
 			$width = $_POST["thumbnail"]["width"];
 			$height = $_POST["thumbnail"]["height"];
-			
+
 			$savepath = dirname($filepath)."/thumb-".basename($filepath);
-			
+
 			if(file_exists($filepath)){
 				copy($filepath, $savepath);
 				//soy2_resize_image($filepath, $savepath,$width, $height);
@@ -60,9 +55,9 @@ class AttachmentPage extends DetailPage{
 		));
 
 		$this->addForm("remove_form");
-		
+
 		$this->addForm("thumbnail_form");
-		
+
 	}
 
 	/**
@@ -83,5 +78,8 @@ class AttachmentPage extends DetailPage{
 		//filemtimeが使用出来ないサーバ対策
     	return (@filemtime($file1) <= @filemtime($file2));
     }
+
+	function getBreadcrumb(){
+		return BreadcrumbComponent::build("商品画像の管理", array("Item" => "商品管理", "Item.Detail." . $this->id => "商品詳細"));
+	}
 }
-?>

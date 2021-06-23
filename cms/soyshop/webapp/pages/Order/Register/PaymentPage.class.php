@@ -30,8 +30,7 @@ class PaymentPage extends WebPage{
 			$cart->setAttribute("payment_module",$moduleId);
 
 			//特定のプラグインのみを読み込む：plugins/$moduleId/soyshop.payment.php
-			$moduleDAO = SOY2DAOFactory::create("plugin.SOYShop_PluginConfigDAO");
-			$paymentModule = $moduleDAO->getByPluginId($moduleId);
+			$paymentModule = soyshop_get_plugin_object($moduleId);
 			SOYShopPlugin::load("soyshop.payment",$paymentModule);
 
 			//実行
@@ -72,6 +71,10 @@ class PaymentPage extends WebPage{
 
     }
 
+	function getBreadcrumb(){
+		return BreadcrumbComponent::build("支払方法を選択する", array("Order" => "注文管理", "Order.Register" => "注文を追加する"));
+	}
+
 	function getCSS(){
 		return array(
 			"./css/admin/order_register.css"
@@ -107,7 +110,7 @@ class Payment_methodList extends HTMLList{
 		));
 
 		$this->createAdd("payment_charge","HTMLLabel", array(
-			"text" => strlen($entity["price"]) ? number_format($entity["price"])." 円" : "",
+			"text" => (isset($entity["price"])) ? soy2_number_format($entity["price"])." 円" : "",
 		));
 	}
 

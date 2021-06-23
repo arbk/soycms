@@ -93,12 +93,15 @@ class MailLogic extends SOY2LogicBase{
 
     /**
 	 * 一通送信する
+	 * @隠しモード sendToにadminを指定すると管理者のみにメールを送信する
 	 */
-	function sendMail($sendTo, $title, $body, $sendToName = "", $order = null, $orderFlag = false){
+	function sendMail($sendTo="admin", $title="", $body="", $sendToName = "", $order = null, $orderFlag = false){
 
 		if(is_null($this->send)){
 			$this->prepareSend();
 		}
+
+		if($sendTo == "admin") $sendTo = $this->serverConfig->getAdministratorMailAddress();
 
 		//リセット
 		$this->reset();
@@ -420,6 +423,9 @@ class MailLogic extends SOY2LogicBase{
     	foreach($company as $key => $value){
     		$content = str_replace(strtoupper("#COMPANY_" . $key ."#"), $value, $content);
     	}
+
+		//マイページログイン
+		$content = str_replace("#MYPAGE_LOGIN#", soyshop_get_mypage_url(true) . "/login", $content);
 
 		$adminUrl = $config->getAdminUrl();
 		if(false === strpos($adminUrl, "http")){

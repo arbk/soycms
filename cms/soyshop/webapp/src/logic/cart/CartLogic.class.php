@@ -42,28 +42,33 @@ class CartLogic extends SOY2LogicBase{
 	protected $errorMessage = array();
 	protected $noticeMessage = array();
 
+	protected $db;	//CartLogic内の値を格納するためのdbファイル名
+
+	/**
+	 * construct
+	 */
+	function __construct($cartId = null){
+		$this->id = $cartId;
+		if(!defined("SOYSHOP_USE_CART_TABLE_MODE")) define("SOYSHOP_USE_CART_TABLE_MODE", false);
+	}
+
 	/**
 	 * カートを取得
 	 */
 	public static function getCart($cartId = null){
-
-		if(!$cartId) $cartId = (defined("SOYSHOP_CURRENT_CART_ID")) ? SOYSHOP_CURRENT_CART_ID : "bryon";
-		$userSession = SOY2ActionSession::getUserSession();
-		$cart = $userSession->getAttribute("soyshop_" . SOYSHOP_ID . $cartId);
-		if(is_string($cart) && strlen($cart)){
-			$cart = soy2_unserialize($cart);
-		}
-
-		return (!is_null($cart)) ? $cart : new CartLogic($cartId);
+		if(is_null($cartId)) $cartId = (defined("SOYSHOP_CURRENT_CART_ID")) ? SOYSHOP_CURRENT_CART_ID : soyshop_get_cart_id();
+		$cart = SOY2ActionSession::getUserSession()->getAttribute("soyshop_" . SOYSHOP_ID . $cartId);
+		if(is_string($cart) && strlen($cart)) $cart = soy2_unserialize($cart);
+		return ($cart instanceof CartLogic) ? $cart : new CartLogic($cartId);
 	}
 
 	/**
 	 * カートを保存
 	 */
 	public static function saveCart(CartLogic $cart){
-		$userSession = SOY2ActionSession::getUserSession();
-		$userSession->setAttribute("soyshop_" . SOYSHOP_ID . $cart->getId(), soy2_serialize($cart));
+		SOY2ActionSession::getUserSession()->setAttribute("soyshop_" . SOYSHOP_ID . $cart->getId(), soy2_serialize($cart));
 	}
+
 	function save(){
 		CartLogic::saveCart($this);
 	}
@@ -72,125 +77,128 @@ class CartLogic extends SOY2LogicBase{
 	 * カートを削除
 	 */
 	public static function clearCart($cartId = null){
-		if(!$cartId)$cartId = soyshop_get_cart_id();
-		$userSession = SOY2ActionSession::getUserSession();
-		$userSession->setAttribute("soyshop_" . SOYSHOP_ID . $cartId, null);
+		if(is_null($cartId)) $cartId = soyshop_get_cart_id();
+		SOY2ActionSession::getUserSession()->setAttribute("soyshop_" . SOYSHOP_ID . $cartId, null);
 	}
 	function clear(){
 		CartLogic::clearCart($this->getId());
 	}
 
 	/**
-	 * construct
+	 * カートに商品を追加 replaceIdxに値がある場合は商品の差し替え
 	 */
-	function __construct($cartId = null){
-		$this->id = $cartId;
+	function addItem($itemId, $count = 1, $replaceIdx=null){
+		$item = soyshop_get_item_object($itemId);
+
+		//追加不可能
+		if(is_null($item->getId()) || false == $item->isOrderable()){
+			throw new Exception("Can not orderable");
+		}
+
+		//個数は-1以上の整数
+		$count = max(-1, (int)$count);
+		$items = self::getItems();
+
+		//商品の差し替え
+		if(is_numeric($replaceIdx) && isset($items[$replaceIdx])){
+			$items[$replaceIdx] = $this->setItemOrder($item, $count);
+			self::setItems($items);
+			return true;
+		}
+
+		//在庫以上は入らない
+		//$count = min($item->getOpenStock(),$count);
+
+		//商品オプションの値がポストされている場合。商品オプションプラグインに対応するため、管理画面での挙動を追加する
+		$resOpts = (isset($_REQUEST["item_option"]) && is_array($_REQUEST["item_option"])) ? $_REQUEST["item_option"] : array();
+		if(!count($resOpts) && (defined("SOYSHOP_ADMIN_PAGE") && SOYSHOP_ADMIN_PAGE)){
+			//@ToDo soyshop.item.option拡張ポイントを利用しているものであればすべて対象にしたい
+			SOY2::import("util.SOYShopPluginUtil");
+			if(SOYShopPluginUtil::checkIsActive("common_item_option")) $resOpts = array("dummy" => null);
+		}
+
+		if(count($resOpts)){
+
+			//商品オプションの配列を比較する
+			$result = null;
+
+			//すでにカートの中に商品が入っていないかチェック。商品差替モードの場合はカート内に既に同じ商品があっても別商品として扱う
+			$res = (is_null($replaceIdx)) ? is_numeric(self::_checkExistedIndex($items, $itemId)) : false;
+
+			//商品があればオプションも同じかどうかを調べる
+			if($res){
+				//すでにある商品と配列が一致したらtrueを返す
+				SOYShopPlugin::load("soyshop.item.option");
+				$result = SOYShopPlugin::invoke("soyshop.item.option", array(
+					"mode" => "compare",
+					"cart" => $this->getCart(),
+					"option" => $resOpts
+				))->getCartOrderId();
+
+				if(!isset($items[$result]) || $items[$result]->getItemId() != $itemId) $result = null;
+			}
+
+			//配列が一致しなかった場合は新しい商品として追加
+			if(is_null($result)){
+				$items[] = $this->setItemOrder($item, $count);
+				self::setItems($items);
+				return true;
+			}else{
+				self::updateItem($result, $count + $items[$result]->getItemCount());
+				return false;
+			}
+
+		//商品オプションの値がポストされていない場合
+		}else{
+			//商品差替モードの場合はカート内に既に同じ商品があっても別商品として扱う
+			$index = (is_null($replaceIdx)) ? self::_checkExistedIndex($items, $itemId) : null;
+
+			if(isset($index)){
+				self::updateItem($index, $count + $items[$index]->getItemCount());
+			}else{
+				//1個以上ならカートに入れる
+				if($count > 0){
+					$items[] = $this->setItemOrder($item, $count);
+					self::setItems($items);
+				}
+			}
+
+			//商品オプションがないから必ずfalseを返す
+		}
+
+		return false;
 	}
 
-	/**
-	 * カートに商品を追加
-	 */
-	function addItem($itemId, $count = 1){
+	//カートに同じ商品があるか？
+	private function _checkExistedIndex($itemOrders, $itemId){
+		if(!count($itemOrders)) return null;
 
-		try{
-			$itemDAO = SOY2DAOFactory::create("shop.SOYShop_ItemDAO");
-			$item = $itemDAO->getById($itemId);
-
-			//追加不可能
-			if(false == $item->isOrderable()){
-				throw new Exception("Can not orderable");
+		foreach($itemOrders as $index => $itemOrder){
+			if((int)$itemOrder->getItemId() === (int)$itemId){
+				return $index;
 			}
-
-			//個数は-1以上の整数
-			$count = max(-1, (int)$count);
-
-			//在庫以上は入らない
-			//$count = min($item->getOpenStock(),$count);
-
-			//商品オプションの値がポストされている場合。商品オプションプラグインに対応するため、管理画面での挙動を追加する
-			$resOpts = (isset($_REQUEST["item_option"]) && is_array($_REQUEST["item_option"])) ? $_REQUEST["item_option"] : array();
-			if(!count($resOpts) && (defined("SOYSHOP_ADMIN_PAGE") && SOYSHOP_ADMIN_PAGE)){
-				//@ToDo soyshop.item.option拡張ポイントを利用しているものであればすべて対象にしたい
-				SOY2::import("util.SOYShopPluginUtil");
-				if(SOYShopPluginUtil::checkIsActive("common_item_option")) $resOpts = array("dummy" => null);
-			}
-
-			if(count($resOpts)){
-				$cart = $this->getCart();
-
-				//商品オプションの配列を比較する
-				$result = null;
-
-				//すでにカートの中に商品が入っていないかチェック
-				$res = false;
-				foreach($this->items as $key => $obj){
-					if($itemId == $obj->getItemId()){
-						$res = true;
-						break;
-					}
-				}
-
-				//商品があればオプションも同じかどうかを調べる
-				if($res){
-					//すでにある商品と配列が一致したらtrueを返す
-					SOYShopPlugin::load("soyshop.item.option");
-					$result = SOYShopPlugin::invoke("soyshop.item.option", array(
-						"mode" => "compare",
-						"cart" => $cart,
-						"option" => $resOpts
-					))->getCartOrderId();
-
-					if(isset($this->items[$result]) && $this->items[$result]->getItemId() == $itemId){
-						//
-					}else{
-						$result = null;
-					}
-				}
-
-				//配列が一致しなかった場合は新しい商品として追加
-				if(is_null($result)){
-					$this->items[] = $this->setItemOrder($item, $count);
-					return true;
-				}else{
-					$this->updateItem($result, $count + $this->items[$result]->getItemCount());
-					return false;
-				}
-
-			//商品オプションの値がポストされていない場合
-			}else{
-				$index = null;
-				foreach($this->items as $key => $obj){
-					if($obj->getItemId() == $item->getId()){
-						$index = $key;
-						break;
-					}
-				}
-
-				if(isset($index)){
-					$this->updateItem($index, $count + $this->items[$index]->getItemCount());
-				}else{
-					//1個以上ならカートに入れる
-					if($count > 0){
-						$this->items[] = $this->setItemOrder($item, $count);
-					}
-			   	}
-
-			   	//商品オプションがないから必ずfalseを返す
-			   	return false;
-			}
-		}catch(Exception $e){
-			return false;
 		}
+		return null;
+	}
+
+	function countItems(){
+		$items = self::getItems();
+		if(!count($items)) return 0;
+
+		$count = 0;
+		foreach($items as $item){
+			$count += (int)$item->getItemCount();
+		}
+		return $count;
 	}
 
 	function setItemOrder(SOYShop_Item $item, $count){
 		SOYShopPlugin::load("soyshop.cart.set.itemorder");
-		$delegate = SOYShopPlugin::invoke("soyshop.cart.set.itemorder", array(
+		$obj = SOYShopPlugin::invoke("soyshop.cart.set.itemorder", array(
 			"item" => $item,
 			"count" => $count
-		));
+		))->getObject();
 
-		$obj = $delegate->getObject();
 		if(!is_null($obj) && $obj instanceof SOYShop_ItemOrder){
 			return $obj;
 		}
@@ -209,9 +217,11 @@ class CartLogic extends SOY2LogicBase{
 	 * カートから商品を削除
 	 */
 	function removeItem($index){
-		if(isset($this->items[$index])){
-			$this->items[$index] = null;
-			unset($this->items[$index]);
+		$items = self::getItems();
+		if(isset($items[$index])){
+			$items[$index] = null;
+			unset($items[$index]);
+			self::setItems($items);
 		}
 	}
 
@@ -219,20 +229,34 @@ class CartLogic extends SOY2LogicBase{
 	 * カートでアイテム数の個数を更新
 	 */
 	function updateItem($index, $count){
-		if($count > 0){
-			if(isset($this->items[$index])){
-				$item = $this->items[$index];
-				$item->setItemCount($count);
-				$item->setTotalPrice($item->getItemPrice() * $count);
-
-				SOYShopPlugin::load("soyshop.item.order");
-				SOYShopPlugin::invoke("soyshop.item.order", array(
-					"mode" => "update",
-					"itemOrder" => $item
-				));
+		if($count === 0){
+			$isRemove = true;
+			//管理画面で注文の場合はカートに0個を許可する設定がある
+			if(defined("SOYSHOP_ADMIN_PAGE") && SOYSHOP_ADMIN_PAGE){
+				SOY2::import("domain.config.SOYShop_ShopConfig");
+				$cnf = SOYShop_ShopConfig::load();
+				if($cnf->getAllowRegistrationZeroQuantityProducts()) $isRemove = false;
 			}
-		}else{
-			$this->removeItem($index);
+
+			if($isRemove){
+				self::removeItem($index);
+				return;
+			}
+
+		}
+
+		$items = self::getItems();
+		if(isset($items[$index])){
+			$items[$index]->setItemCount($count);
+			$items[$index]->setTotalPrice($items[$index]->getItemPrice() * $count);
+
+			SOYShopPlugin::load("soyshop.item.order");
+			SOYShopPlugin::invoke("soyshop.item.order", array(
+				"mode" => "update",
+				"itemOrder" => $items[$index]
+			));
+
+			self::setItems($items);
 		}
 	}
 
@@ -241,31 +265,45 @@ class CartLogic extends SOY2LogicBase{
 	 * @return number
 	 */
 	function getItemPrice(){
-		$total = 0;
-		foreach($this->items as $item){
-			$total += $item->getTotalPrice();
-		}
+		if(SOYSHOP_USE_CART_TABLE_MODE){
+			return soyshop_cart_get_item_price($this->db);
+		}else{
+			$items = self::getItems();
+			if(!count($items)) return 0;
 
-		return $total;
+			$total = 0;
+			foreach($items as $item){
+				$total += $item->getTotalPrice();
+			}
+
+			return $total;
+		}
 	}
 
 	/**
 	 * @return integer 商品数を取得
 	 */
-	function getItemCount(){
-		return count($this->items);
-	}
+	// function getItemCount(){
+	// 	return count(self::getItems());
+	// }
 
 	/**
 	 * @return integer 商品の個数の合計
 	 */
 	function getOrderItemCount(){
-		$total = 0;
-		foreach($this->items as $item){
-			$total += $item->getItemCount();
-		}
+		if(SOYSHOP_USE_CART_TABLE_MODE){
+			return soyshop_cart_get_item_count($this->db);
+		}else{
+			$items = self::getItems();
+			if(!count($items)) return 0;
 
-		return $total;
+			$total = 0;
+			foreach($items as $item){
+				$total += $item->getItemCount();
+			}
+
+			return $total;
+		}
 	}
 
 	/**
@@ -336,15 +374,8 @@ class CartLogic extends SOY2LogicBase{
 
 		if(!isset($pluginId)) return false;
 
-   		$pluginDao = SOY2DAOFactory::create("plugin.SOYShop_PluginConfigDAO");
-
-   		try{
-   			$plugin = $pluginDao->getByPluginId($pluginId);
-   		}catch(Exception $e){
-   			return false;
-   		}
-
-   		if($plugin->getIsActive() == SOYShop_PluginConfig::PLUGIN_INACTIVE) return false;
+		$plugin = soyshop_get_plugin_object($pluginId);
+   		if(is_null($plugin->getId()) || $plugin->getIsActive() == SOYShop_PluginConfig::PLUGIN_INACTIVE) return false;
 
    		SOYShopPlugin::load("soyshop.tax.calculation", $plugin);
 		SOYShopPlugin::invoke("soyshop.tax.calculation", array(
@@ -359,7 +390,7 @@ class CartLogic extends SOY2LogicBase{
 	function setConsumptionTaxInclusivePricing(){
 		$this->removeModule("consumption_tax");
 
-		$items = $this->getItems();
+		$items = self::getItems();
 		if(count($items) === 0) return;
 
 		$totalPrice = 0;
@@ -498,10 +529,15 @@ class CartLogic extends SOY2LogicBase{
 		$this->id = $id;
 	}
 	function getItems() {
-		return $this->items;
+		return (SOYSHOP_USE_CART_TABLE_MODE) ? soyshop_cart_get_items($this->db) : $this->items;
 	}
 	function setItems($items) {
-		$this->items = $items;
+		if(SOYSHOP_USE_CART_TABLE_MODE){
+			// @ToDo データベースインサートモード
+			$this->db = soyshop_cart_set_items($this->db, $items);
+		}else{
+			$this->items = $items;
+		}
 	}
 	function getOrder(){
 		return $this->order;
@@ -511,7 +547,18 @@ class CartLogic extends SOY2LogicBase{
 	}
 	function getCustomerInformation() {
 		if(is_null($this->customerInformation)){
-			$this->customerInformation = new SOYShop_User();
+			//マイページのログインも試す 管理画面から注文の場合は試さない
+			if(!defined("SOYSHOP_ADMIN_PAGE") || !SOYSHOP_ADMIN_PAGE){
+				if(class_exists("MyPageLogic")){
+					$mypage = MyPageLogic::getMyPage();
+					if($mypage->getIsLoggedin()){
+						$this->customerInformation = $mypage->getUser();
+						$this->save();
+					}
+				}
+			}
+
+			if(is_null($this->customerInformation)) $this->customerInformation = new SOYShop_User();
 	   	}
 		return $this->customerInformation;
 	}
@@ -537,6 +584,7 @@ class CartLogic extends SOY2LogicBase{
 			"area" => $user->getArea(),
 			"address1" => $user->getAddress1(),
 			"address2" => $user->getAddress2(),
+			"address3" => $user->getAddress3(),
 			"telephoneNumber" => $user->getTelephoneNumber(),
 			"office" => $user->getJobName(),
 		);
@@ -690,7 +738,7 @@ class CartLogic extends SOY2LogicBase{
 			$module->setIsVisible(false);
 			$module->setIsInclude(false);
 			$this->addModule($module);
-		}else if(SOYShopPluginUtil::checkIsActive("payment_admin_dummy")){
+		}else if(SOYShopPluginUtil::checkIsActive("delivery_admin_dummy")){
 			$module = new SOYShop_ItemModule();
 			$module->setId("delivery_admin_dummy");
 			$module->setName("送料ダミー");
@@ -731,10 +779,8 @@ class CartLogic extends SOY2LogicBase{
 	function _orderComplete($sendMail = true){
 
 		$orderLogic = SOY2Logic::createInstance("logic.order.OrderLogic");
-
 		try{
-			$orderDAO = SOY2DAOFactory::create("order.SOYShop_OrderDAO");
-			$order = $orderDAO->getById($this->getAttribute("order_id"));
+			$order = soyshop_get_order_object($this->getAttribute("order_id"));
 		}catch(Exception $e){
 			$orderLogic->addHistory($this->getAttribute("order_id"), "注文を完了することができませんでした。メールは送信されません。");
 			return false;
@@ -746,7 +792,7 @@ class CartLogic extends SOY2LogicBase{
 		}else{
 			$order->setStatus(SOYShop_Order::ORDER_STATUS_REGISTERED);
 			try{
-				$orderDAO->updateStatus($order);
+				SOY2DAOFactory::create("order.SOYShop_OrderDAO")->updateStatus($order);
 			}catch(Exception $e){
 				$orderLogic->addHistory($this->getAttribute("order_id"), "注文を完了することができませんでした。メールは送信されません。");
 				return false;
@@ -774,6 +820,12 @@ class CartLogic extends SOY2LogicBase{
 			$orderLogic->addHistory($this->getAttribute("order_id"), "注文受付メールの送信はスキップされました。");
 		}
 
+		//CartLogicの内容の一部をSQLite DBに移行するモードの場合はデータベースを削除する
+		if(SOYSHOP_USE_CART_TABLE_MODE){
+			soyshop_cart_delete_db($this->db);
+			soyshop_cart_routine_delete_db();
+		}
+
 		return true;
 	}
 
@@ -791,8 +843,7 @@ class CartLogic extends SOY2LogicBase{
 		$orderLogic = SOY2Logic::createInstance("logic.order.OrderLogic");
 
 		try{
-			$orderDAO = SOY2DAOFactory::create("order.SOYShop_OrderDAO");
-			$order = $orderDAO->getById($this->getAttribute("order_id"));
+			$order = soyshop_get_order_object($this->getAttribute("order_id"));
 
 			//既に完了していた場合はtrueを返す
 			if($order->getPaymentStatus() == SOYShop_Order::PAYMENT_STATUS_CONFIRMED){
@@ -806,7 +857,7 @@ class CartLogic extends SOY2LogicBase{
 					$orderLogic->addHistory($this->getAttribute("order_id"), "支払を確認したので、注文状態を仮登録から新規受付に変更しました。");
 				}
 
-				$orderDAO->updateStatus($order);
+				SOY2DAOFactory::create("order.SOYShop_OrderDAO")->updateStatus($order);
 				$orderLogic->addHistory($this->getAttribute("order_id"), "支払いを確認しました。");
 			}
 		}catch(Exception $e){
@@ -839,8 +890,9 @@ class CartLogic extends SOY2LogicBase{
 
 	/**
 	 * 注文可能かチェック
+	 * $allがfalseの場合(クレジットカード支払関係)は予約カレンダーの残席チェックは行わない
 	 */
-	function checkOrderable(){
+	function checkOrderable($all=true){
 		$itemDAO = SOY2DAOFactory::create("shop.SOYShop_ItemDAO");
 		$config = SOYShop_ShopConfig::load();
 		$ignoreStock = $config->getIgnoreStock();
@@ -852,18 +904,17 @@ class CartLogic extends SOY2LogicBase{
 
 		SOY2::import("util.SOYShopPluginUtil");
 		$reserveCalendarMode = SOYShopPluginUtil::checkIsActive("reserve_calendar");
-		if($reserveCalendarMode){
-			SOY2::import("module.plugins.reserve_calendar.util.ReserveCalendarUtil");
-		}
+		if($reserveCalendarMode) SOY2::import("module.plugins.reserve_calendar.util.ReserveCalendarUtil");
+
+		//合算　予約で使う
+		$itemCountTotalList = array();
 		foreach($items as $index => $itemOrder){
 			$itemId = $itemOrder->getItemId();
 
 			//管理画面から購入時の未登録商品の購入
-			if($itemId < 1){
-				continue;
-			}
+			if($itemId < 1) continue;
 
-			$item = $itemDAO->getById($itemId);
+			$item = soyshop_get_item_object($itemId);
 
 			//非公開
 			if(false == $item->isPublished()){
@@ -888,7 +939,7 @@ class CartLogic extends SOY2LogicBase{
 				$childItemStock = $config->getChildItemStock();
 				if($childItemStock && is_numeric($item->getType())){
 					//親商品の残り在庫数を取得
-					$parent = $this->getParentOpenStock($item->getType());
+					$parent = soyshop_get_item_object($item->getType());
 					$openStock = $parent->getStock();
 
 					//子商品の注文数の合計を取得
@@ -899,9 +950,14 @@ class CartLogic extends SOY2LogicBase{
 				if($openStock < $itemCount){
 					throw new SOYShop_OverStockException($item->getName()." (".$item->getId().") is fewer (" . $openStock . ") than order (" . $itemCount . ").");
 				}
-			}else{	//予約カレンダーモード
-				$schedule = ReserveCalendarUtil::getScheduleByItemIndexAndItemId($this, $index, $itemOrder->getItemId());
-				if(!is_null($schedule->getId())){
+			}else{	//予約カレンダーモード $allがfalseの場合は調べない
+				if($all){
+					$schedule = ReserveCalendarUtil::getScheduleByItemIndexAndItemId($this, $index, $itemOrder->getItemId());
+
+					//予約可のスケジュールがなくなった
+					if(is_null($schedule->getId())){
+						throw new SOYShop_EmptyStockException($item->getName()." (".$item->getId().") is none.");
+					}
 
 					//定員数0
 					if(!ReserveCalendarUtil::checkIsUnsoldSeatByScheduleId($schedule->getId())){
@@ -910,8 +966,10 @@ class CartLogic extends SOY2LogicBase{
 
 					//定員数オーバー @ToDo 仮登録を含めるか？
 					$unsoldSeat = ReserveCalendarUtil::getCountUnsoldSeat($schedule);
-					if($unsoldSeat < $itemCount){
-						throw new SOYShop_OverStockException($item->getName()." (".$item->getId().") is fewer (" . $unsoldSeat . ") than order (" . $itemCount . ").");
+					if(!isset($itemCountTotalList[$schedule->getId()])) $itemCountTotalList[$schedule->getId()] = 0;
+					$itemCountTotalList[$schedule->getId()] += $itemCount;
+					if($unsoldSeat < $itemCountTotalList[$schedule->getId()]){
+						throw new SOYShop_OverStockException($item->getName()." (".$item->getId().") is fewer (" . $unsoldSeat . ") than order (" . $itemCountTotalList[$schedule->getId()] . ").");
 					}
 				}
 			}
@@ -930,18 +988,6 @@ class CartLogic extends SOY2LogicBase{
 		if(count($items) === 0){
 			throw new SOYShop_EmptyCartException("");
 		}
-	}
-
-	//親商品の在庫数
-	function getParentOpenStock($itemId){
-		$itemDAO = SOY2DAOFactory::create("shop.SOYShop_ItemDAO");
-		try{
-			$parent = $itemDAO->getById($itemId);
-		}catch(Exception $e){
-			$parent = new SOYShop_Item();
-		}
-
-		return $parent;
 	}
 
 	//子商品の注文数の合計
@@ -996,7 +1042,8 @@ class CartLogic extends SOY2LogicBase{
 		//二回目以降のユーザ
 		if($tmpUser instanceof SOYShop_User){
 
-			if( $this->getAttribute("logined") ){
+			//ログインしていてもuser_idを持っていないことがある。→ soyshop.mypage.loginの拡張機能の影響
+			if( $this->getAttribute("logined") && !is_null($this->getAttribute("logined_userid"))){
 				$id = $this->getAttribute("logined_userid");
 				$newPassword = $this->getAttribute("new_password");
 
@@ -1041,6 +1088,12 @@ class CartLogic extends SOY2LogicBase{
 						$user->setPassword($user->hashPassword($user->getPassword()));
 					}else{
 						$user->setPassword($tmpUser->getPassword());
+					}
+
+					//本登録にしておく
+					if($user->getUserType() != SOYShop_User::USERTYPE_REGISTER){
+						$user->setRealRegisterDate(time());
+						$user->setUserType(SOYShop_User::USERTYPE_REGISTER);
 					}
 
 					//update
@@ -1135,17 +1188,15 @@ class CartLogic extends SOY2LogicBase{
 			if($item->getItemId() > 0){
 				//子商品の在庫管理設定をオン(子商品購入時に在庫を減らさない)
 				$noChildItemStock = $config->getNoChildItemStock();
-				if(!$noChildItemStock){
-					$itemDAO->orderItem($item->getItemId(), $item->getItemCount());
-				}
+				if(!$noChildItemStock) $itemDAO->orderItem($item->getItemId(), $item->getItemCount());
 
 				//子商品の在庫管理設定をオン(子商品購入時に親商品の在庫も減らす)
 				$childItemStock = $config->getChildItemStock();
 				if($childItemStock){
 					//SOYShop_Item
-					$itemObj = $itemDAO->getById($item->getItemId());
+					$itemObj = soyshop_get_item_object($item->getItemId());
 					if(is_numeric($itemObj->getType())){
-						$parent = $itemDAO->getById($itemObj->getType());
+						$parent = soyshop_get_item_object($itemObj->getType());
 						$itemDAO->orderItem($parent->getId(), $item->getItemCount());
 					}
 				}
@@ -1167,6 +1218,8 @@ class CartLogic extends SOY2LogicBase{
 			))->getAddition();
 			$item->setIsAddition($add);
 
+			//どこかで商品名がnullになる場合があるのでその対処
+			if(is_null($item->getItemName())) $item->setItemName(soyshop_get_item_object($item->getItemId())->getName());
 			$itemOrderId = $itemOrderDAO->insert($item);
 
 			// SOYShop_ItemOrderに関することなら何でもできる
@@ -1375,6 +1428,14 @@ class CartLogic extends SOY2LogicBase{
 	 */
 	function clearNoticeMessage(){
 		$this->noticeMessage = array();
+	}
+
+	function getDb(){
+		return $this->db;
+	}
+
+	function setDb($db){
+		$this->db = $db;
 	}
 
 	/** カートをIPアドレスで制限 **/

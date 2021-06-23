@@ -95,8 +95,9 @@ class RegisterPage extends WebPage{
     	DisplayPlugin::toggle("used_email",($this->errorType == "used_email"));
 		DisplayPlugin::toggle("used_user_code",($this->errorType == "used_user_code"));
 
+
 		$this->addModel("zip2address_js", array(
-			"src" => soyshop_get_site_url() . "themes/common/js/zip2address.js"
+			"src" => soyshop_get_zip_2_address_js_filepath()
 		));
     }
 
@@ -128,6 +129,10 @@ class RegisterPage extends WebPage{
 
 		//項目の非表示用タグ
 		foreach(SOYShop_ShopConfig::load()->getCustomerAdminConfig() as $key => $bool){
+			if($key == "accountId" && $bool){
+				//ログインIDのみ、マイページでログインIDを使用する時だけtrueにする
+				$bool = (SOYShop_ShopConfig::load()->getAllowLoginIdLogin() != 0);
+			}
 			DisplayPlugin::toggle($key, $bool);
 		}
     }
@@ -189,5 +194,9 @@ class RegisterPage extends WebPage{
     		"value" => $user->getJobFaxNumber(),
     		"size" => 30
     	));
+	}
+
+	function getBreadcrumb(){
+		return BreadcrumbComponent::build(SHOP_USER_LABEL . "の追加", array("User" => SHOP_USER_LABEL . "管理"));
 	}
 }

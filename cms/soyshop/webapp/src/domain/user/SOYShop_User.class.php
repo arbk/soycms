@@ -52,6 +52,7 @@ class SOYShop_User {
 
 	private $name;
 	private $nickname;
+	private $honorific;
 	private $reading;
 
 	/**
@@ -81,6 +82,7 @@ class SOYShop_User {
 	private $area;
 	private $address1;
 	private $address2;
+	private $address3;
 
 	/**
 	 * @column telephone_number
@@ -91,12 +93,12 @@ class SOYShop_User {
 	 * @column fax_number
 	 */
 	private $faxNumber;
-	private $url;
 
 	/**
 	 * @column cellphone_number
 	 */
 	private $cellphoneNumber;
+	private $url;
 
 	/**
 	 * @column job_name
@@ -122,6 +124,11 @@ class SOYShop_User {
 	 * @column job_address2
 	 */
 	private $jobAddress2;
+
+	/**
+	 * @column job_address3
+	 */
+	private $jobAddress3;
 
 	/**
 	 * @column job_telephone_number
@@ -231,6 +238,12 @@ class SOYShop_User {
 	function setName($name) {
 		$this->name = $name;
 	}
+	function getHonorific(){
+		return $this->honorific;
+	}
+	function setHonorific($honorific){
+		$this->honorific = $honorific;
+	}
 	function getNickname(){
 		return $this->nickname;
 	}
@@ -266,18 +279,18 @@ class SOYShop_User {
 		return $this->gender;
 	}
 	function setGender($gender) {
-		if(strlen($gender) == 0){
+		if(!isset($gender) || !strlen($gender)){
 			$this->gender = null;
-		}elseif(!is_numeric($gender)){
-			if(stripos($gender, "M") === 0 || strpos($gender, "男") === 0){
+		}else if(is_numeric($gender)){
+			$this->gender = (int)$gender;
+		}else{
+			if(is_numeric(stripos($gender, "M")) || is_numeric(strpos($gender, "男"))){
 				$this->gender = self::USER_SEX_MALE;
-			}elseif(stripos($gender, "F") === 0 || stripos($gender, "W") === 0 || strpos($gender, "女") === 0){
+			}else if(is_numeric(stripos($gender, "F")) || is_numeric(stripos($gender, "W")) || is_numeric(strpos($gender, "女"))){
 				$this->gender = self::USER_SEX_FEMALE;
 			}else{
-				$this->gender = null;
+				$this->gender = $gender;
 			}
-		}else{
-			$this->gender = $gender;
 		}
 	}
 
@@ -363,6 +376,12 @@ class SOYShop_User {
 	function setAddress2($address2) {
 		$this->address2 = $address2;
 	}
+	function getAddress3() {
+		return $this->address3;
+	}
+	function setAddress3($address3) {
+		$this->address3 = $address3;
+	}
 	function getTelephoneNumber() {
 		return $this->telephoneNumber;
 	}
@@ -375,17 +394,17 @@ class SOYShop_User {
 	function setFaxNumber($faxNumber) {
 		$this->faxNumber = $faxNumber;
 	}
-	function getUrl(){
-		return $this->url;
-	}
-	function setUrl($url){
-		$this->url = $url;
-	}
 	function getCellphoneNumber() {
 		return $this->cellphoneNumber;
 	}
 	function setCellphoneNumber($cellphoneNumber) {
 		$this->cellphoneNumber = $cellphoneNumber;
+	}
+	function getUrl(){
+		return $this->url;
+	}
+	function setUrl($url){
+		$this->url = $url;
 	}
 	function getJobName() {
 		return $this->jobName;
@@ -417,6 +436,12 @@ class SOYShop_User {
 	}
 	function setJobAddress2($jobAddress2) {
 		$this->jobAddress2 = $jobAddress2;
+	}
+	function getJobAddress3() {
+		return $this->jobAddress3;
+	}
+	function setJobAddress3($jobAddress3) {
+		$this->jobAddress3 = $jobAddress3;
 	}
 	function getJobTelephoneNumber() {
 		return $this->jobTelephoneNumber;
@@ -546,6 +571,7 @@ class SOYShop_User {
 				"area" => $this->getArea(),
 				"address1" => $this->getAddress1(),
 				"address2" => $this->getAddress2(),
+				"address3" => $this->getAddress3(),
 				"telephoneNumber" => $this->getTelephoneNumber(),
 				"office" => $this->getJobName(),
 			);
@@ -604,6 +630,7 @@ class SOYShop_User {
 			"area" => "",
 			"address1" => "",
 			"address2" => "",
+			"address3" => "",
 			"telephoneNumber" => "",
 			"office" => ""
 		);
@@ -719,12 +746,7 @@ class SOYShop_User {
 	}
 
 	function getDisplayName(){
-		$display = $this->getNickname();
-		if(strlen($display) == 0){
-			$display = $this->getName();
-		}
-
-		return $display;
+		return (strlen($this->getNickname())) ? $this->getNickname() : $this->getName();
 	}
 
 	//一覧に表示させる時のメソッド
@@ -773,8 +795,33 @@ class SOYShop_User {
 	function isValidEmail(){
 		static $logic;
 		if(!$logic) $logic = SOY2Logic::createInstance("logic.mail.MailLogic");
-		return $logic->isValidEmail($this->getMailAddress());
+		return $logic->isValidEmail($this->mailAddress);
 	}
+
+	/**
+	 * ダミーではないメールアドレスであるか？
+	 */
+	function isUsabledEmail(){
+		static $isUse;
+		if(is_null($isUse)){
+			$isUse = false;
+			if(strlen($this->mailAddress) && self::isValidEmail()){
+				preg_match('/@' . DUMMY_MAIL_ADDRESS_DOMAIN . '$/', $this->mailAddress, $tmp);
+				$isUse = (!isset($tmp[0]));
+			}
+		}
+		return $isUse;
+	}
+
+	/**
+     * 公開ユーザであるかどうか
+     *
+     * @return boolean
+     */
+    function isPublished(){
+		if((int)$this->isDisabled === self::USER_IS_DISABLED || (int)$this->isPublish !== self::USER_IS_PUBLISH) return false;
+		return true;
+    }
 
 	/* パスワードの暗号化関連 */
 
@@ -789,12 +836,11 @@ class SOYShop_User {
 		$array = explode("/", $stored);
 		if(count($array) == 3){
 			list($algo, $salt, $hash) = $array;
-			return ( $stored == self::hashString($input, $salt, $algo) );
+			return ( $stored == self::_hashString($input, $salt, $algo) );
 
 		//EC CUBEで使われている暗号化の仕組みでパスワードのチェックを行う
 		}else{
-			$hash = self::hashStringEcCube($input);
-			return ($stored == $hash);
+			return ($stored == self::_hashStringEcCube($input));
 		}
 	}
 
@@ -811,10 +857,10 @@ class SOYShop_User {
 
 		if(function_exists("hash")){
 			// hash関数があればSHA512で
-			return self::hashString($rawPassword, $salt, "sha512");
+			return self::_hashString($rawPassword, $salt, "sha512");
 		}else{
 			// なければMD5
-			return self::hashString($rawPassword, $salt, "md5");
+			return self::_hashString($rawPassword, $salt, "md5");
 		}
 	}
 
@@ -826,7 +872,7 @@ class SOYShop_User {
 	 * @param String ハッシュ化アルゴリズム
 	 * @return String ハッシュ化された文字列（algo/salt/hash）
 	 */
-	private static function hashString($string, $salt, $algo){
+	private static function _hashString($string, $salt, $algo){
 		$algo = strtolower($algo);
 
 		if($algo == "md5"){
@@ -839,7 +885,7 @@ class SOYShop_User {
 		return "$algo/$salt/$hash";
 	}
 
-	private function hashStringEcCube($input){
+	private function _hashStringEcCube($input){
 		if(!isset($input) || !is_string($input)) return "";	//想定していないタイミングで読まれることがある
 
 		//ec cubeから移行した会員のパスワードをそのまま使用するためのチェック

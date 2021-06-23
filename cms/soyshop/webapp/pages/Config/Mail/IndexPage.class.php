@@ -9,15 +9,22 @@ class IndexPage extends WebPage{
 	function __construct(){
 		parent::__construct();
 
+		$this->addLabel("user_label", array("text" => SHOP_USER_LABEL));
+
 		$this->createAdd("mail_plugin_list", "_common.Plugin.MailPluginListComponent", array(
-    		"list" => self::getMailPluginList()
+    		"list" => self::_getMailPluginList("order"),
+			"mode" => "order"
     	));
 
+		$this->createAdd("user_mail_plugin_list", "_common.Plugin.MailPluginListComponent", array(
+    		"list" => self::_getMailPluginList("user"),
+			"mode" => "user"
+    	));
 	}
 
-	private function getMailPluginList(){
+	private function _getMailPluginList($mode="order"){
     	SOYShopPlugin::load("soyshop.order.detail.mail");
-    	$mailList = SOYShopPlugin::invoke("soyshop.order.detail.mail", array())->getList();
+    	$mailList = SOYShopPlugin::invoke("soyshop.order.detail.mail", array("mode" => $mode))->getList();
     	if(!count($mailList)) return array();
 
     	$list = array();
@@ -30,4 +37,8 @@ class IndexPage extends WebPage{
 
     	return $list;
     }
+
+	function getBreadcrumb(){
+		return BreadcrumbComponent::build("メール設定", array("Config" => "設定"));
+	}
 }

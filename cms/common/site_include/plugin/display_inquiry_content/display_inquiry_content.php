@@ -26,7 +26,7 @@ class DisplayInquiryContentPlugin{
 			"modifier"=>"Tsuyoshi Saito",
 			"url"=>"https://saitodev.co",
 			"mail"=>"tsuyoshi@saitodev.co",
-			"version"=>"0.9"
+			"version"=>"0.10"
 		));
 
 		if(CMSPlugin::activeCheck(self::PLUGIN_ID)){
@@ -34,13 +34,18 @@ class DisplayInquiryContentPlugin{
 			CMSPlugin::addPluginConfigPage(self::PLUGIN_ID,array(
 				$this,"config"));
 
-			CMSPlugin::setEvent('onOutput', self::PLUGIN_ID, array($this, "onOutput"), array("filter" => "all"));
-			CMSPlugin::setEvent('onEntryOutput', self::PLUGIN_ID, array($this, "display"));
+			//公開側
+			if(defined("_SITE_ROOT_")){
+				CMSPlugin::setEvent('onOutput', self::PLUGIN_ID, array($this, "onOutput"), array("filter" => "all"));
+				CMSPlugin::setEvent('onEntryOutput', self::PLUGIN_ID, array($this, "onEntryOutput"));
+			//管理画面側
+			}else{
+				CMSPlugin::setEvent('onAdminTop', self::PLUGIN_ID, array($this, "onAdminTop"));
+			}
 		}
 	}
 
 	function onOutput($arg){
-
 		//アプリケーションページでお問い合わせフォームの完了ページを読み込んでいることを確認
 		if(isset($_GET["complete"]) && isset($_GET["trackid"]) && get_class($arg["webPage"]->page) === "ApplicationPage" && $arg["webPage"]->page->getApplicationId() === "inquiry"){
 
@@ -55,8 +60,17 @@ class DisplayInquiryContentPlugin{
 					CMSPlugin::savePluginConfig($this->getId(), $this);
 				}
 			}
+		//記事の自動生成
+		}else{
+			self::_createEntryAuto();
 		}
+	}
 
+	function onAdminTop(){
+		self::_createEntryAuto();	//管理画面でも記事の自動生成を行えるようにした
+	}
+
+	private function _createEntryAuto(){
 		//時々最終お問い合わせの日を確認しにいくためのフラグ
 		$r = (int)mt_rand(1,10);
 
@@ -69,6 +83,9 @@ class DisplayInquiryContentPlugin{
 		//お問い合わせのデータベースから記事を登録する
 		if($this->lastEntryImportTime < $this->lastInquiryTime && count($this->connects)){
 			SOY2::import("site_include.plugin.display_inquiry_content.util.DisplayInquiryContentUtil");
+
+			DisplayInquiryContentUtil::defineInquiryDsn();
+
 			$v = DisplayInquiryContentUtil::getInquiryContentsAndDateByFormIdAfterSpecifiedTime($this->getFormId(), $this->lastEntryImportTime);
 			$numbers = $v[0];
 			$contents = $v[1];
@@ -122,7 +139,15 @@ class DisplayInquiryContentPlugin{
 
 							//通常のカラム
 							if(isset($data[$columnId])){
-								$attr->setValue(htmlspecialchars($data[$columnId], ENT_QUOTES, "UTF-8"));
+								$val = $data[$columnId];
+								preg_match('/\(\d*KB\)$/', $val, $tmp);
+								if(isset($tmp[0])){	// 画像の場合は絶対パスに変換
+									$val = trim(str_replace($tmp[0], "", $val));
+									$val = self::_getFilePath($val, $numbers[$i]);
+									if(is_null($val)) $val = $data[$columnId];
+
+								}
+								$attr->setValue(nl2br(htmlspecialchars($val, ENT_QUOTES, "UTF-8")));
 							//お問い合わせ番号
 							}else if($columnId == "tracking_number"){
 								$attr->setValue($numbers[$i]);
@@ -155,7 +180,47 @@ class DisplayInquiryContentPlugin{
 		}
 	}
 
-	function display($arg){
+	//画像の場合はファイルパスを取得
+	private function _getFilePath($filename, $trackingNumber){
+		$old["dsn"] = SOY2DAOConfig::dsn();
+		$old["user"] = SOY2DAOConfig::user();
+		$old["pass"] = SOY2DAOConfig::pass();
+
+		SOY2DAOConfig::dsn(DISPLAY_INQUIRY_CONTENT_DSN);
+		SOY2DAOConfig::user(DISPLAY_INQUIRY_CONTENT_USER);
+		SOY2DAOConfig::pass(DISPLAY_INQUIRY_CONTENT_PASS);
+
+		$dao = new SOY2DAO();
+		try{
+			$res = $dao->executeQuery(
+				"SELECT com.content FROM soyinquiry_comment com ".
+				"INNER JOIN soyinquiry_inquiry inq ".
+				"ON com.inquiry_id = inq.id ".
+				"WHERE com.content LIKE :con ".
+				"AND inq.tracking_number = :num",
+				array(
+					":con" => "%" . $filename . "%",
+					":num" => $trackingNumber
+				)
+			);
+		}catch(Exception $e){
+			$res = array();
+		}
+
+		$path = null;
+		if(isset($res[0]["content"])){
+			preg_match('/<a href="(.*?)">/', $res[0]["content"], $tmp);
+			if(isset($tmp[1])) $path = $tmp[1];
+		}
+
+		SOY2DAOConfig::dsn($old["dsn"]);
+		SOY2DAOConfig::user($old["user"]);
+		SOY2DAOConfig::pass($old["pass"]);
+
+		return $path;
+	}
+
+	function onEntryOutput($arg){
 		if(isset($this->connects["create_date"])){
 			$entryId = $arg["entryId"];
 			$htmlObj = $arg["SOY2HTMLObject"];
@@ -215,9 +280,7 @@ class DisplayInquiryContentPlugin{
 
 	public static function register(){
 		$obj = CMSPlugin::loadPluginConfig(self::PLUGIN_ID);
-		if(is_null($obj)){
-			$obj = new DisplayInquiryContentPlugin();
-		}
+		if(is_null($obj)) $obj = new DisplayInquiryContentPlugin();
 		CMSPlugin::addPlugin(self::PLUGIN_ID,array($obj,"init"));
 	}
 }

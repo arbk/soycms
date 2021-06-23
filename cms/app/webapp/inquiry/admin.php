@@ -51,6 +51,15 @@ class SOYInquiryApplication{
 			))->init();
 		}
 
+		//DBの初期化に失敗することが多いので再度作成を試みる。エラーが出るFormとInquiryのページに限定
+		if((strpos($_SERVER["REQUEST_URI"], "/Inquiry") || strpos($_SERVER["REQUEST_URI"], "/Form"))){
+			if(is_bool(strpos($_SERVER["REQUEST_URI"], "/Detail/"))){
+				SOY2Logic::createInstance("logic.InitLogic", array(
+					"initCheckFile" => SOYINQUIRY_DB_FILE,
+				))->checkAndCreateTable();
+			}
+		}
+
 		//SOY2HTMLの設定
 		SOY2HTMLPlugin::addPlugin("page","PagePlugin");
 		SOY2HTMLPlugin::addPlugin("link","LinkPlugin");
@@ -69,11 +78,11 @@ class SOYInquiryApplication{
 
 	function main(){
 
-		//アップグレードバッチ
-		if(isset($_GET["bat"]) && file_exists(dirname(__FILE__) . "/src/bat/" . $_GET["bat"] . ".php")){
-			include(dirname(__FILE__) . "/src/bat/" . $_GET["bat"] . ".php");
-			exit;
-		}
+		//アップグレードバッチ→廃止
+		// if(isset($_GET["bat"]) && file_exists(dirname(__FILE__) . "/src/bat/" . $_GET["bat"] . ".php")){
+		// 	include(dirname(__FILE__) . "/src/bat/" . $_GET["bat"] . ".php");
+		// 	exit;
+		// }
 
 		$arguments = CMSApplication::getArguments();
 
@@ -121,7 +130,7 @@ class SOYInquiryApplication{
 		}
 
 		if(!SOY2HTMLFactory::pageExists($classPath)){
-			return $classPath;
+			return htmlspecialchars($classPath, ENT_QUOTES, "UTF-8");
 		}
 
 		$webPage = &SOY2HTMLFactory::createInstance($classPath, array(

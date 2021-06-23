@@ -10,7 +10,9 @@ class IndexPage extends WebPage{
 	function __construct(){
 		parent::__construct();
 
-		$this->cmsElFinderPath = str_replace("/soyshop/", "/soycms/", SOY2PageController::createRelativeLink("./js/"));
+		if(!defined("SOYCMS_ADMIN_URI")) define("SOYCMS_ADMIN_URI", "soycms");
+		if(!defined("SOYSHOP_ADMIN_URI")) define("SOYSHOP_ADMIN_URI", "soyshop");
+		$this->cmsElFinderPath = str_replace("/" . SOYSHOP_ADMIN_URI . "/", "/" . SOYCMS_ADMIN_URI . "/", SOY2PageController::createRelativeLink("./js/"));
 
 		$this->addLabel("base_dir_path", array(
 			"text" => $this->cmsElFinderPath . "elfinder/"
@@ -23,6 +25,10 @@ class IndexPage extends WebPage{
 
 		DisplayPlugin::toggle("normal_template_area", (!isset($_GET["display_mode"]) || $_GET["display_mode"] != "free"));
 		DisplayPlugin::toggle("free_template_area", (isset($_GET["display_mode"]) && $_GET["display_mode"] == "free"));
+	}
+
+	function getBreadcrumb(){
+		return BreadcrumbComponent::build("ファイル管理");
 	}
 
 	/** ここからelfinder **/

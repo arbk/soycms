@@ -15,25 +15,25 @@ class ItemListComponent extends HTMLList {
 			"value" => 1
 		));
 
-		$itemExists = (method_exists($item, "getCode") && $itemId > 0 && strlen($item->getCode()) > 0);
+		$itemExists = (method_exists($item, "getCodeOnAdmin") && $itemId > 0 && strlen($item->getCodeOnAdmin()) > 0);
 		$this->addLink("item_id", array(
-			"text" => $itemExists ? $item->getCode() : "",
+			"text" => $itemExists ? $item->getCodeOnAdmin() : "",
 			"link" => $itemExists ? SOY2PageController::createLink("Item.Detail." . $entity->getItemId()) : "",
 		));
 		$this->addLabel("item_id_text", array(
-			"text" => $itemExists ? $item->getCode() : "",
+			"text" => $itemExists ? $item->getCodeOnAdmin() : "",
 		));
 		$this->addInput("item_id_hidden", array(
 			"name" => "Item[$id][itemId]",
 			"value" => $entity->getItemId(),
-				));
+		));
 
 		$this->addInput("item_name", array(
 			"name" => "Item[$id][itemName]",
 			"value" => $entity->getItemName(),
 		));
 		$this->addLabel("item_name_text", array(
-			"text" => $entity->getItemName(),
+			"text" => $entity->getItemNameOnAdmin(),
 		));
 
 		$this->addLink("change_link", array(
@@ -58,7 +58,16 @@ class ItemListComponent extends HTMLList {
 			"value" => $entity->getItemPrice(),
 		));
 		$this->addLabel("item_price_text", array(
-			"text" => number_format($entity->getItemPrice()),
+			"text" => soy2_number_format($entity->getItemPrice()),
+		));
+
+		//仕入値
+		$this->addModel("is_purchase_price", array(
+			"visible" => self::_isPurchasePrice()
+		));
+
+		$this->addLabel("purchase_price", array(
+			"text" => soy2_number_format($item->getPurchasePrice())
 		));
 
 		$this->addInput("item_count", array(
@@ -66,11 +75,11 @@ class ItemListComponent extends HTMLList {
 			"value" => $entity->getItemCount(),
 		));
 		$this->addLabel("item_count_text", array(
-			"text" => number_format($entity->getItemCount()),
+			"text" => soy2_number_format($entity->getItemCount()),
 		));
 
 		$this->addLabel("item_total_price", array(
-			"text" => number_format($entity->getTotalPrice())
+			"text" => soy2_number_format($entity->getTotalPrice())
 		));
 
 		$opts = (get_class($entity) == "SOYShop_ItemOrder") ? self::getOptionList($entity) : array();
@@ -176,6 +185,12 @@ class ItemListComponent extends HTMLList {
 		static $on;
 		if(is_null($on)) $on = ((int)SOYShop_ShopConfig::load()->getIgnoreStock() == 1);
 		return $on;
+	}
+
+	private function _isPurchasePrice(){
+		static $cnf;
+		if(is_null($cnf)) $cnf = SOYShop_ShopConfig::load()->getDisplayPurchasePriceOnAdmin();
+		return $cnf;
 	}
 
 	private function itemLogic(){

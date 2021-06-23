@@ -59,8 +59,8 @@ create table EntryTrackback(
 )ENGINE = InnoDB;
 
 create table EntryAttribute(
-	entry_id integer,
-	entry_field_id VARCHAR(255),
+	entry_id integer NOT NULL,
+	entry_field_id VARCHAR(255) NOT NULL,
 	entry_value TEXT,
 	entry_extra_values TEXT,
 	unique(entry_id, entry_field_id)
@@ -132,6 +132,13 @@ create table SiteConfig(
 	siteConfig TEXT,
 	charset integer default 1
 )ENGINE = InnoDB;
+
+CREATE TABLE CmsMemo(
+	id INTEGER PRIMARY KEY AUTO_INCREMENT,
+	content TEXT,
+	create_date INTEGER NOT NULL,
+	update_date INTEGER NOT NULL
+) ENGINE=InnoDB;
 
 create index entry_udate on Entry(udate desc);
 

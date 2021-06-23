@@ -3,6 +3,7 @@ SOY2::import("domain.config.SOYShop_ShopConfig");
 class DetailPage extends WebPage{
 
 	function doPost(){
+		if(!AUTH_OPERATE || !AUTH_CHANGE) return;	//操作権限がないアカウントの場合は以後のすべての動作を封じる
 
 		if(!empty($_FILES) && empty($_POST)){
 			$dao = SOY2DAOFactory::create("shop.SOYShop_ItemDAO");
@@ -224,6 +225,8 @@ class DetailPage extends WebPage{
 
 		parent::__construct();
 
+		$this->addLabel("user_label", array("text" => SHOP_USER_LABEL));
+
 		//詳細ページを開いた時に何らかの処理をする
 		SOYShopPlugin::load("soyshop.item");
 		SOYShopPlugin::invoke("soyshop.item", array(
@@ -240,19 +243,13 @@ class DetailPage extends WebPage{
 
 		$this->addForm("update_form");
 
-		self::buildForm($this->id);
+		self::_buildForm($this->id);
 		//入荷通知周り
 		self::buildNoticeButton();
 		self::buildFavoriteButton();
 	}
 
-	private function buildForm($id){
-
-		$session = SOY2ActionSession::getUserSession();
-		$appLimit = $session->getAttribute("app_shop_auth_limit");
-
-		//appLimitがfalseの場合は、在庫以外の項目をreadOnlyにする
-		$readOnly = (!$appLimit) ? true : false;
+	private function _buildForm($id){
 
 		$item = ($this->obj) ? $this->obj : soyshop_get_item_object($id);
 		if(is_null($item->getId())){
@@ -265,7 +262,7 @@ class DetailPage extends WebPage{
 			SOY2PageController::jump("Item");
 		}
 
-		$pageDAO = SOY2DAOFactory::create("site.SOYShop_PageDAO");
+		$readOnly = (!AUTH_OPERATE);
 
 		$this->addLabel("open_text", array(
 			"text" => "[" . $item->getPublishText() . "]",
@@ -300,7 +297,8 @@ class DetailPage extends WebPage{
 		DisplayPlugin::toggle("item_stock", !$isIgnoreStock);
 		$this->addInput("item_stock", array(
 			"name" => "Item[stock]",
-			"value" => $item->getStock()
+			"value" => $item->getStock(),
+			"readonly" => (SOYShopPluginUtil::checkIsActive("reserve_calendar"))
 		));
 
 		$this->addInput("item_unit", array(
@@ -311,7 +309,14 @@ class DetailPage extends WebPage{
 
 		//注文数
 		$this->addLabel("item_order_count", array(
-			"text" => $this->getOrderConunt($item)
+			"text" => self::_getOrderCount($item)
+		));
+
+		//仕入値
+		$this->addInput("item_purchase_price", array(
+			"name" => "Item[price]",
+			"value" => $item->getPurchasePrice(),
+			"readonly" => $readOnly
 		));
 
 		//通常価格
@@ -353,20 +358,24 @@ class DetailPage extends WebPage{
 			"list" => SOYShopPlugin::invoke("soyshop.price.option", array("item" => $item))->getContents()
 		));
 
-		$detailPages = $pageDAO->getByType(SOYShop_Page::TYPE_DETAIL);
+		try{
+			$detailPages = SOY2DAOFactory::create("site.SOYShop_PageDAO")->getByType(SOYShop_Page::TYPE_DETAIL);
+		}catch(Exception $e){
+			$detailPages = array();
+		}
+
 		DisplayPlugin::toggle("detail_page_id_select", count($detailPages));
 
 		$editable = false;
 		$url = "";
 
 		if(count($detailPages)){
-			$detailPageId = $item->getDetailPageId();
-			try{
-				$page = $pageDAO->getById($detailPageId);
+			$page = soyshop_get_page_object($item->getDetailPageId());
+			if(is_numeric($page->getId())){
 				$url = soyshop_get_page_url($page->getUri(), $item->getAlias());
 				$url = str_replace($item->getAlias(), "<b>" . $item->getAlias() . "</b>", $url);
 				$editable = true;
-			}catch(Exception $e){
+			}else{
 				$url = MessageManager::get("ERROR_ITEM_SELECT_DETAIL_PAGE");
 			}
 		}
@@ -395,6 +404,9 @@ class DetailPage extends WebPage{
 
 		/* category */
 		$categories = soyshop_get_category_objects();
+		$categoryCount = count($categories);
+		DisplayPlugin::toggle("has_category", $categoryCount);
+		DisplayPlugin::toggle("no_category", !$categoryCount);
 		$this->createAdd("category_tree","_base.MyTreeComponent", array(
 			"list" => $categories,
 			"selected" => array($item->getCategory())
@@ -408,7 +420,7 @@ class DetailPage extends WebPage{
 
 		$category = (isset($categories[$item->getCategory()])) ? $categories[$item->getCategory()] : new SOYShop_Category();
 		$this->addLabel("item_category_choice", array(
-			"text" => self::getCategoryRelation($category),
+			"text" => self::_getCategoryRelation($category),
 			"attr:id" => "item_category_text"
 		));
 
@@ -448,11 +460,23 @@ class DetailPage extends WebPage{
 		$this->addLink("add_child_item", array(
 			"link" => SOY2PageController::createLink("Item.Create") . "?" . $getParam . "=" . $item->getId()
 		));
+
+		$children = soyshop_get_item_children($item->getId());
+
+		DisplayPlugin::toggle("children", count($children));
 		$this->createAdd("child_item_list","HTMLList", array(
-			"list" => SOY2DAOFactory::create("shop.SOYShop_ItemDAO")->getByTypeNoDisabled($item->getId()),
-			'populateItem:function($entity,$key)' => '$this->createAdd("item_detail_link","HTMLLink", array(' .
+			"list" => $children,
+			'populateItem:function($entity,$key)' => '$itemName = $entity->getName();'.
+				'if($entity->getIsOpen() != 1) $itemName = "(非公開)" . $itemName;'.
+				'if($entity->getIsDisabled() != 0) $itemName .= "(削除)" . $itemName;'.
+				'if($entity->getIsOpen() != 1 || $entity->getIsDisabled() != 0) $itemName = "<span style=\"color:#787878;font-size:0.9em;\">" . $itemName . "</span>";'.
+				'$this->createAdd("item_detail_link","HTMLLink", array(' .
 					'"link" => "'.SOY2PageController::createLink("Item.Detail").'/" . $entity->getId(),' .
-					'"text" => $entity->getName()));'
+					'"html" => $itemName
+				));'.
+				'$this->addLabel("item_price", array(' .
+					'"text" => soy2_number_format($entity->getPrice())
+				));'
 		));
 
 		/* config */
@@ -500,12 +524,15 @@ class DetailPage extends WebPage{
 		$this->addForm("upload_form");
 
 		$this->createAdd("image_list","_common.Item.ItemImageListComponent", array(
-			"list" => $this->getAttachments($item)
+			"list" => self::_getAttachments($item)
 		));
 
 		//管理制限の権限を取得し、権限がない場合は表示しない
 		foreach(range(1,4) as $i){
-			DisplayPlugin::toggle("app_limit_function_" . $i, $appLimit);
+			DisplayPlugin::toggle("app_limit_function_" . $i, AUTH_OPERATE);
+		}
+		foreach(range(1,2) as $i){
+			DisplayPlugin::toggle("app_limit_function_change_" . $i, AUTH_CHANGE);
 		}
 
 
@@ -537,13 +564,6 @@ class DetailPage extends WebPage{
 			"value" => soyshop_convert_date_string($item->getOpenPeriodEnd()),
 			"id" => "open_period_end",
 			"readonly" => true
-		));
-
-		$histories = $this->getHistories($item);
-		DisplayPlugin::toggle("change_history", count($histories));
-
-		$this->createAdd("history_list", "_common.Item.ChangeHistoryListComponent", array(
-			"list" => $histories
 		));
 	}
 
@@ -582,37 +602,32 @@ class DetailPage extends WebPage{
 	/**
 	 * 添付ファイル取得
 	 */
-	function getAttachments(SOYShop_Item $item){
+	private function _getAttachments(SOYShop_Item $item){
 		return $item->getAttachments();
 	}
 
-	function getOrderConunt(SOYShop_Item $item){
+	private function _getOrderCount(SOYShop_Item $item){
 
-		$logic = SOY2Logic::createInstance("logic.order.OrderLogic");
-		$childItemStock = $this->config->getChildItemStock();
+		if(!$this->config->getChildItemStock()) return $item->getOrderCount();
 
 		//子商品の在庫管理設定をオン(子商品の注文数合計を取得する)
-		if($childItemStock){
-			//子商品のIDを取得する
-			$ids = $this->getChildItemIds($item->getId());
-			$count = 0;
-			if(count($ids) > 0){
+		//子商品のIDを取得する
+		$ids = self::_getChildItemIds($item->getId());
+		if(!count($ids)) return 0;
 
-				foreach($ids as $id){
-					try{
-						$count = $count + $logic->getOrderCountByItemId($id);
-					}catch(Exception $e){
-
-					}
-				}
-				return $count;
+		$count = 0;
+		$logic = SOY2Logic::createInstance("logic.order.OrderLogic");
+		foreach($ids as $id){
+			try{
+				$count += $logic->getOrderCountByItemId($id);
+			}catch(Exception $e){
+				//
 			}
 		}
-
-		return $logic->getOrderCountByItemId($item->getId());
+		return $count;
 	}
 
-	function getChildItemIds($itemId){
+	private function _getChildItemIds($itemId){
 
 		$ids = array();
 
@@ -632,36 +647,22 @@ class DetailPage extends WebPage{
 		return $ids;
 	}
 
-	//拡張ポイントのsoyshop.item.update関連の処理
-	function getHistories(SOYShop_Item $item){
-		SOYShopPlugin::load("soyshop.item.update");
-		$delegate = SOYShopPlugin::invoke("soyshop.item.update", array(
-			"item" => $item
-		));
-
-		$histories = array();
-		if(is_array($delegate->getList()) && count($delegate->getList()) > 0){
-			foreach($delegate->getList() as $key => $values){
-				if(isset($values)){
-					foreach($values as $value){
-						$array = array("date" => $value->getCreateDate(), "content" => $value->getMemo());
-						$histories[] = $array;
-					}
-				}
-			}
+	function getSubMenu(){
+		try{
+			return SOY2HTMLFactory::createInstance("Item.SubMenu.DetailMenuPage", array(
+				"arguments" => array($this->id)
+			))->getObject();
+		}catch(Exception $e){
+			//
+			return null;
 		}
-
-		return $histories;
 	}
 
-	function getSubMenu(){
-		$key = "Item.SubMenu.DetailMenuPage";
-
+	function getFooterMenu(){
 		try{
-			$subMenuPage = SOY2HTMLFactory::createInstance($key, array(
+			return SOY2HTMLFactory::createInstance("Item.FooterMenu.DetailFooterMenuPage", array(
 				"arguments" => array($this->id)
-			));
-			return $subMenuPage->getObject();
+			))->getObject();
 		}catch(Exception $e){
 			//
 			return null;
@@ -673,7 +674,9 @@ class DetailPage extends WebPage{
 		return array(
 			$root . "ImageSelect.js",
 			$root . "jquery/treeview/jquery.treeview.pack.js",
-			$root . "tools/soy2_date_picker.pack.js"
+			//$root . "tools/soy2_date_picker.pack.js"
+			$root . "tools/datepicker-ja.js",
+			$root . "tools/datepicker.js"
 		);
 	}
 
@@ -682,7 +685,7 @@ class DetailPage extends WebPage{
 		return array(
 			$root . "jquery/treeview/jquery.treeview.css",
 			$root . "tree.css",
-			$root . "tools/soy2_date_picker.css"
+			//$root . "tools/soy2_date_picker.css"
 		);
 	}
 
@@ -768,7 +771,7 @@ class DetailPage extends WebPage{
 		return implode(",",$array);
 	}
 
-	private function getCategoryRelation(SOYShop_Category $category){
+	private function _getCategoryRelation(SOYShop_Category $category){
 		$dao = SOY2DAOFactory::create("shop.SOYShop_CategoryDAO");
 
 		$array = array();
@@ -796,5 +799,9 @@ class DetailPage extends WebPage{
 		}
 
 		return $text;
+	}
+
+	function getBreadcrumb(){
+		return BreadcrumbComponent::build("商品詳細", array("Item" => "商品管理"));
 	}
 }

@@ -37,6 +37,13 @@ class ReserveLogic extends SOY2LogicBase{
 		return self::dao()->getReservedScheduleListByUserIdAndPeriod($userId, $year, $month, $isTmp);
 	}
 
+	//指定の日から○日分の予定を取得する
+	function getReservedCountListFromDaysByItemId($itemId, $now=null, $days=30){
+		if(is_null($now)) $now = time();
+		$now = soyshop_shape_timestamp($now);	//整形
+		return self::dao()->getReservedCountListFromDaysByItemId($itemId, $now, $days);
+	}
+
 	function checkIsUnsoldSeatByScheduleId($scheduleId){
 		//boolean
 		return self::dao()->checkIsUnsoldSeatByScheduleId($scheduleId);
@@ -48,7 +55,8 @@ class ReserveLogic extends SOY2LogicBase{
 		try{
 			$reserve = $resDao->getById($reserveId);
 		}catch(Exception $e){
-			var_dump($e);
+			error_log($e, 0);
+			return false;
 		}
 
 		$resDao->begin();
@@ -60,24 +68,31 @@ class ReserveLogic extends SOY2LogicBase{
 		try{
 			$resDao->update($reserve);
 		}catch(Exception $e){
-			var_dump($e);
+			$resDao->rollback();
+			error_log($e, 0);
+			return false;
 		}
 
 		//注文状態を受付中にする
-		$orderDao = SOY2DAOFactory::create("order.SOYShop_OrderDAO");
-		try{
-			$order = $orderDao->getById($reserve->getorderId());
-		}catch(Exception $e){
-			var_dump($e);
-		}
+		$order = soyshop_get_order_object($reserve->getorderId());
 		$order->setStatus(SOYShop_Order::ORDER_STATUS_RECEIVED);
 		try{
-			$orderDao->update($order);
+			SOY2DAOFactory::create("order.SOYShop_OrderDAO")->update($order);
 		}catch(Exception $e){
-			var_dump($e);
+			$resDao->rollback();
+			error_log($e, 0);
+			return false;
 		}
 
 		$resDao->commit();
+
+		SOYShopPlugin::load("soyshop.order.status.update");
+		SOYShopPlugin::invoke("soyshop.order.status.update", array(
+			"order" => $order,
+			"mode" => "reserve"
+		));
+
+		return true;
 	}
 
 	function getTokensByOrderId($orderId){

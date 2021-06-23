@@ -3,6 +3,24 @@
 //Load SOY2 settings
 include(dirname(__FILE__) . "/common.conf.php");
 
+//管理画面URLの隠蔽
+$commonDir = dirname(dirname(dirname(dirname(__FILE__)))) . "/common/";
+if(!strpos($_SERVER["REQUEST_URI"], "index.php") && !defined("SOYSHOP_ADMIN_URI") && file_exists($commonDir . "config/admin.uri.config.php")){
+	include($commonDir . "config/admin.uri.config.php");
+	if(is_numeric(strpos($_SERVER["REQUEST_URI"], "soyshop")) && SOYSHOP_ADMIN_URI != "soyshop"){
+		$redirect = str_replace("/soyshop/", "/" . SOYSHOP_ADMIN_URI . "/", $_SERVER["REQUEST_URI"]);
+		header("Location:" . $redirect);
+		exit;
+	}
+}
+
+//CMS名の隠蔽
+if(!defined("SOYCMS_CMS_NAME") && file_exists($commonDir . "config/advanced.config.php")){
+	include($commonDir . "config/advanced.config.php");
+}
+
+unset($commonDir);
+
 //Load functions and utilily classes
 SOY2::import("base.func.admin",".php");
 SOY2::imports("util.*");
@@ -73,6 +91,13 @@ if(!defined("SOYSHOP_CONSUMPTION_TAX_MODE")){
 	define("SOYSHOP_CONSUMPTION_TAX_INCLUSIVE_PRICING_MODE", ($config->getConsumptionTaxInclusivePricing() == SOYShop_ShopConfig::CONSUMPTION_TAX_MODE_ON));
 }
 
+//libディレクトリ内のcomposerのautoload
+define("COMPOSER_LIB_DIR", SOYSHOP_WEBAPP . "lib/vendor/");
 
 //ダミーのメールアドレス用のドメイン(管理画面用:一応、公開側と分けておく)
 if(!defined("DUMMY_MAIL_ADDRESS_DOMAIN")) define("DUMMY_MAIL_ADDRESS_DOMAIN", "dummy.soyshop.net");
+
+//CartLogicの内容の一部をSQLite DBに移行するモード
+//define("SOYSHOP_USE_CART_TABLE_MODE", false && extension_loaded("sqlite3") && extension_loaded("pdo_sqlite"));
+define("SOYSHOP_USE_CART_TABLE_MODE", false);
+if(SOYSHOP_USE_CART_TABLE_MODE) SOY2::import("base.cart.db", ".php");

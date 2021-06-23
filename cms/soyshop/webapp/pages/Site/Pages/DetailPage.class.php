@@ -9,10 +9,9 @@ class DetailPage extends WebPage{
     function doPost(){
 
         if(soy2_check_token()){
-            $dao = SOY2DAOFactory::create("site.SOYShop_PageDAO");
             $logic = SOY2Logic::createInstance("logic.site.page.PageLogic");
 
-            $page = $dao->getById($this->id);
+            $page = soyshop_get_page_object($this->id);
             $obj = (object)$_POST["Page"];
             SOY2::cast($page, $obj);
             if(isset($_POST["Page"]["uri"])){
@@ -25,6 +24,12 @@ class DetailPage extends WebPage{
                 if(is_null($page->getUri())) $page->setUri(SOYShop_Page::URI_HOME);
 
                 $logic->update($page);
+
+				SOYShopPlugin::load("soyshop.page.update");
+				SOYShopPlugin::invoke("soyshop.page.update", array(
+					"pageId" => $page->getId()
+				));
+
                 SOY2PageController::jump("Site.Pages.Detail." . $this->id . "?updated");
             }
 
@@ -48,15 +53,14 @@ class DetailPage extends WebPage{
 
         $this->addForm("update_form");
 
-        $this->buildForm();
+        self::_buildForm();
     }
 
-    function buildForm(){
+    private function _buildForm(){
         $logic = SOY2Logic::createInstance("logic.site.page.PageLogic");
-        $dao = SOY2DAOFactory::create("site.SOYShop_PageDAO");
 
         try{
-            $obj = ($this->page) ? $this->page : $dao->getById($this->id);
+            $obj = ($this->page) ? $this->page : soyshop_get_page_object($this->id);
         }catch(Exception $e){
             SOY2PageController::jump("Site.Pages");
             exit;
@@ -72,7 +76,7 @@ class DetailPage extends WebPage{
         $this->addInput("uri", array(
             "name" => "Page[uri]",
             "value" => $obj->getUri(),
-            "disabled" => $obj->getUri() == SOYSHOP_TOP_PAGE_MARKER || $obj->getUri() == SOYSHOP_404_PAGE_MARKER,
+            "disabled" => ($obj->getUri() == SOYSHOP_TOP_PAGE_MARKER || $obj->getUri() == SOYSHOP_404_PAGE_MARKER || $obj->getUri() == SOYSHOP_MAINTENANCE_PAGE_MARKER),
         ));
 
         //_home
@@ -89,6 +93,14 @@ class DetailPage extends WebPage{
         ));
         $this->addLabel("SOYSHOP_404_PAGE_MARKER", array(
             "text" => SOYSHOP_404_PAGE_MARKER,
+        ));
+
+		//_maintenance
+        $this->addModel("caution_for_maintenance", array(
+            "visible" => $obj->getUri() == SOYSHOP_MAINTENANCE_PAGE_MARKER,
+        ));
+        $this->addLabel("SOYSHOP_MAINTENANCE_PAGE_MARKER", array(
+            "text" => SOYSHOP_MAINTENANCE_PAGE_MARKER,
         ));
 
         $this->addLabel("type_text", array(
@@ -156,7 +168,7 @@ class DetailPage extends WebPage{
         ));
 
         $this->addLabel("canonical_format_description", array(
-            "text" => $obj->getPageObject()->getCanonicalFormatDescription()
+            "html" => $obj->getPageObject()->getCanonicalFormatDescription()
         ));
 
         $this->addInput("title_format", array(
@@ -165,7 +177,7 @@ class DetailPage extends WebPage{
         ));
 
         $this->addLabel("title_format_description", array(
-            "text" => $obj->getPageObject()->getTitleFormatDescription()
+            "html" => $obj->getPageObject()->getTitleFormatDescription()
         ));
 
         $this->addSelect("charset_list", array(
@@ -198,6 +210,10 @@ class DetailPage extends WebPage{
         }
     }
 
+	function getBreadcrumb(){
+		return BreadcrumbComponent::build("ページ設定", array("Site.Pages" => "ページ管理"));
+	}
+
     function getSubMenu(){
         $key = "Site.Pages.SubMenu.SubMenuPage";
 
@@ -211,4 +227,3 @@ class DetailPage extends WebPage{
         }
     }
 }
-?>

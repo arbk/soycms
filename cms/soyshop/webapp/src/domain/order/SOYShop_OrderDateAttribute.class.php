@@ -156,6 +156,8 @@ class SOYShop_OrderDateAttributeConfig{
 	private $attributeYearStart;
 	private $attributeYearEnd;
 
+	private $orderSearchItem;	//管理画面の注文一覧の検索項目として追加する
+
 	private $defaultValue;
 	private $emptyValue;
 	private $config;
@@ -194,23 +196,31 @@ class SOYShop_OrderDateAttributeConfig{
 		$this->attributeName = $attributeName;
 	}
 	function getAttributeDescription(){
-		return $this->config["attributeDescription"];
+		return (isset($this->config["attributeDescription"])) ? $this->config["attributeDescription"] : null;
 	}
 	function setAttributeDescription($attributeDescription){
 		$this->attributeDescription = $attributeDescription;
 	}
 	function getAttributeYearStart(){
-		return $this->config["attributeYearStart"];
+		return (isset($this->config["attributeYearStart"])) ? $this->config["attributeYearStart"] : null;
 	}
 	function setAttributeYearStart($attributeYearStart){
 		$this->attributeYearStart = $attributeYearStart;
 	}
 	function getAttributeYearEnd(){
-		return $this->config["attributeYearEnd"];
+		return (isset($this->config["attributeYearEnd"])) ? $this->config["attributeYearEnd"] : null;
 	}
 	function setAttributeYearEnd($attributeYearEnd){
 		$this->attributeYearEnd = $attributeYearEnd;
 	}
+
+	function getOrderSearchItem(){
+		return (isset($this->config["orderSearchItem"])) ? $this->config["orderSearchItem"] : null;
+	}
+	function setOrderSearchItem($orderSearchItem){
+		$this->orderSearchItem = $orderSearchItem;
+	}
+
 	function getFormName(){
 		return 'customfield_module[' . $this->getFieldId() . ']';
 	}
@@ -225,69 +235,77 @@ class SOYShop_OrderDateAttributeConfig{
 
 		switch($this->getType()){
 			case "date":
-				$date = $values["date"];
+				$date = (isset($values["date"])) ? $values["date"] : null;
+				$year = (isset($values["year"])) ? (int)$values["year"] : null;
+				$month = (isset($values["month"])) ? (int)$values["month"] : null;
+				$day = (isset($values["day"])) ? (int)$values["day"] : null;
+
 
 				$body = '<select'
 					   .' id="' . $h_formID . '"'
 					   .' name="' . $h_formName . '[date][year]"'
 					   .'>' . "\n"
-					   .$this->getYearForm($date["year"]) . "\n"
+					   .$this->getYearForm($year) . "\n"
 					   .'</select>年' . "\n"
 					   .'<select'
 					   .' id="' . $h_formID . '"'
 					   .' name="' . $h_formName . '[date][month]"'
 					   .'>' . "\n"
-					   .$this->getMonthForm($date["month"]) . "\n"
+					   .$this->getMonthForm($month) . "\n"
 					   .'</select>月' . "\n"
 					   .'<select'
 					   .' id="' . $h_formID . '"'
 					   .' name="' . $h_formName . '[date][day]"'
 					   .'>' . "\n"
-					   .$this->getDayForm($date["day"]) . "\n"
+					   .$this->getDayForm($day) . "\n"
 					   .'</select>日' . "\n";
 
 				break;
 
 			case "period":
-				$start = $values["start"];
-				$end = $values["end"];
+				$startYear = (isset($values["start"]["year"])) ? $values["start"]["year"] : null;
+				$startMonth = (isset($values["start"]["month"])) ? $values["start"]["month"] : null;
+				$startDay = (isset($values["start"]["day"])) ? $values["start"]["day"] : null;
+				$endYear = (isset($values["end"]["year"])) ? $values["end"]["year"] : null;
+				$endMonth = (isset($values["end"]["month"])) ? $values["end"]["month"] : null;
+				$endDay = (isset($values["end"]["day"])) ? $values["end"]["day"] : null;
 
 				$body = '<select'
 					   .' id="' . $h_formID . '"'
 					   .' name="' . $h_formName . '[start][year]"'
 					   .'>' . "\n"
-					   .$this->getYearForm($start["year"]) . "\n"
+					   .$this->getYearForm($startYear) . "\n"
 					   .'</select>年' . "\n"
 					   .'<select'
 					   .' id="' . $h_formID . '"'
 					   .' name="' . $h_formName . '[start][month]"'
 					   .'>' . "\n"
-					   .$this->getMonthForm($start["month"]) . "\n"
+					   .$this->getMonthForm($startMonth) . "\n"
 					   .'</select>月' . "\n"
 					   .'<select'
 					   .' id="' . $h_formID . '"'
 					   .' name="' . $h_formName . '[start][day]"'
 					   .'>' . "\n"
-					   .$this->getDayForm($start["day"]) . "\n"
+					   .$this->getDayForm($startDay) . "\n"
 					   .'</select>日' . "\n"
 					   .'～'
 					   .'<select'
 					   .' id="' . $h_formID . '"'
 					   .' name="' . $h_formName . '[end][year]"'
 					   .'>' . "\n"
-					   .$this->getYearForm($end["year"]) . "\n"
+					   .$this->getYearForm($endYear) . "\n"
 					   .'</select>年' . "\n"
 					   .'<select'
 					   .' id="' . $h_formID . '"'
 					   .' name="' . $h_formName . '[end][month]"'
 					   .'>' . "\n"
-					   .$this->getMonthForm($end["month"]) . "\n"
+					   .$this->getMonthForm($endMonth) . "\n"
 					   .'</select>月' . "\n"
 					   .'<select'
 					   .' id="' . $h_formID . '"'
 					   .' name="' . $h_formName . '[end][day]"'
 					   .'>' . "\n"
-					   .$this->getDayForm($end["day"]) . "\n"
+					   .$this->getDayForm($endDay) . "\n"
 					   .'</select>日' . "\n";
 				break;
 			default:
@@ -321,7 +339,7 @@ class SOYShop_OrderDateAttributeConfig{
 		$value = (isset($value)) ? $value : date("Y", time());
 
 		$html = array();
-		for($i=0; $i < $count; $i++){
+		for($i=0; $i < $count; ++$i){
 			$year = $start + $i;
 			if($year == $value){
 				$html[] = '<option value="' . $year . '" selected="selected">' . $year . '</option>';
@@ -338,7 +356,7 @@ class SOYShop_OrderDateAttributeConfig{
 		$value = (isset($value)) ? $value : date("n", time());
 
 		$html = array();
-		for($i=1; $i < 13; $i++){
+		for($i=1; $i <= 12; ++$i){
 			if($i == $value){
 				$html[] = '<option value="' . $i . '" selected="selected">' . $i . '</option>';
 			}else{
@@ -354,7 +372,7 @@ class SOYShop_OrderDateAttributeConfig{
 		$value = (isset($value)) ? $value : date("j", time());
 
 		$html = array();
-		for($i=1; $i < 32; $i++){
+		for($i=1; $i <= 31; ++$i){
 			if($i == $value){
 				$html[] = '<option value="' . $i . '" selected="selected">' . $i . '</option>';
 			}else{

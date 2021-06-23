@@ -5,6 +5,7 @@ class EntryLogic extends SOY2LogicBase{
 	private $offset;
 	private $limit;
 	private $reverse = false;//逆順にする（DisplayOrder以外のcdate,idの部分のみ）
+	private $blockClass;	//ブロックのクラス
 	private $totalCount;
 
 	function __construct(){
@@ -24,38 +25,47 @@ class EntryLogic extends SOY2LogicBase{
 		$this->reverse  =$reverse;
 	}
 
+	function setBlockClass($blockClass){
+		$this->blockClass = $blockClass;
+	}
+
 	/**
 	 * エントリーを新規作成
 	 */
-	function create($bean){
+	 /**
+ 	 * エントリーを新規作成
+ 	 */
+ 	function create(Entry $bean){
 
-		$dao = self::entryDao();
+ 		$dao = self::entryDao();
 
-		$bean->setContent($this->cleanupMCETags($bean->getContent()));
-		$bean->setMore($this->cleanupMCETags($bean->getMore()));
+ 		$bean->setContent($this->cleanupMCETags($bean->getContent()));
+ 		$bean->setMore($this->cleanupMCETags($bean->getMore()));
 
-		//数値以外（空文字列を含む）がcdateに入っていれば現在時刻を作成日時にする
-		if(!is_numeric($bean->getCdate())){
-			$bean->setCdate(SOYCMS_NOW);
-		}
+ 		//数値以外（空文字列を含む）がcdateに入っていれば現在時刻を作成日時にする
+ 		if(!is_numeric($bean->getCdate())){
+ 			$bean->setCdate(SOYCMS_NOW);
+ 		}
 
-		if(UserInfoUtil::hasEntryPublisherRole() != true){
-			$bean->setOpenPeriodEnd(CMSUtil::encodeDate(null,false));
-			$bean->setOpenPeriodStart(CMSUtil::encodeDate(null,true));
+ 		if(UserInfoUtil::hasEntryPublisherRole() != true){
+ 			$bean->setOpenPeriodEnd(CMSUtil::encodeDate(null,false));
+ 			$bean->setOpenPeriodStart(CMSUtil::encodeDate(null,true));
 
-			$bean->setIsPublished(false);
-		}
+ 			$bean->setIsPublished(false);
+ 		}
 
-		$id = $dao->insert($bean);
+ 		//仮で今の時間を入れておく カスタムエイリアス　SQLite対策
+ 		if($bean->getId() == $bean->getAlias()) $bean->setAlias(time());
+ 		$id = $dao->insert($bean);
 
-		if($bean->isEmptyAlias()){
-			$bean->setId($id);//updateを実行するため
-			$bean->setAlias($this->getUniqueAlias($id,$bean->getTitle()));
-			$dao->update($bean);
-		}
+ 		//if($bean->isEmptyAlias()){	//ここのif文は必要ない
+ 			$bean->setId($id);//updateを実行するため
+ 			$bean->setAlias($this->getUniqueAlias($id,$bean->getTitle()));
+ 			$dao->update($bean);
+ 		//}
 
-		return $id;
-	}
+ 		return $id;
+ 	}
 
 	/**
 	 * エントリーを更新
@@ -329,6 +339,7 @@ class EntryLogic extends SOY2LogicBase{
 	 */
 	function getOpenEntryByLabelIds($labelIds,$isAnd = true, $start = null, $end = null){
 		$dao = self::labeledEntryDao();
+		$dao->setBlockClass($this->blockClass);
 
 		if($isAnd){
 			//$labelIdsのラベルがすべて設定されている記事のみ取得
@@ -392,6 +403,30 @@ class EntryLogic extends SOY2LogicBase{
 		}
 
 		return $entry;
+	}
+
+	function getBlogEntryWithoutExecption($blogLabelId,$entryId){
+		$dao = self::entryDao();
+		if(is_numeric($entryId)){
+			try{
+				return $dao->getOpenEntryById($entryId,SOYCMS_NOW);
+			}catch(Exception $e){
+				//記事IDで取得できなければ、エイリアスの方でも取得を試みる
+				try{
+					return $dao->getOpenEntryByAlias($entryId,SOYCMS_NOW);
+				}catch(Exception $e){
+					//
+				}
+
+			}
+		}else{
+			try{
+				return $dao->getOpenEntryByAlias($entryId,SOYCMS_NOW);
+			}catch(Exception $e){
+				//
+			}
+		}
+		return new Entry();
 	}
 
 	/**

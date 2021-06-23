@@ -92,17 +92,87 @@ window.zip2address = zip2address;
 
 
 (function(){
-	document.querySelector(".search-btn").addEventListener("click", function(e){
-		var zip = document.querySelector(".input-zip1").value + document.querySelector(".input-zip2").value;
-
-		zip2address(zip, function(address) {
-			if (address) {
-				document.querySelector(".input-pref").value = prefs[address.pref - 1];
-				document.querySelector(".input-city").value = address.city;
-				document.querySelector(".input-town").value = address.town;
-			} else {
-				alert('正しい郵便番号を入力して下さい。');
+	if(document.querySelector(".search-btn")){
+		document.querySelector(".search-btn").addEventListener("click", function(e){
+			if(document.querySelector(".input-zip")){
+				var zip = inquiry_convert_zipcode(document.querySelector(".input-zip").value);
+			}else{
+				var zip = document.querySelector(".input-zip1").value + document.querySelector(".input-zip2").value;
 			}
+
+
+			zip2address(zip, function(address) {
+				if (address) {
+					document.querySelector(".input-pref").value = prefs[address.pref - 1];
+					document.querySelector(".input-city").value = address.city;
+					document.querySelector(".input-town").value = address.town;
+				} else {
+					alert('正しい郵便番号を入力して下さい。');
+				}
+			});
 		});
-	});
+	//自動検索モード
+	}else{
+		if(document.querySelector(".input-zip")){
+			document.querySelector(".input-zip").addEventListener("keyup", function(e){
+				inquiry_search_address();
+			});
+		}
+
+		if(document.querySelector(".input-zip1")){
+			document.querySelector(".input-zip1").addEventListener("keyup", function(e){
+				inquiry_search_address();
+			});
+		}
+
+		if(document.querySelector(".input-zip2")){
+			document.querySelector(".input-zip2").addEventListener("keyup", function(e){
+				inquiry_search_address();
+			});
+		}
+	}
 }());
+
+function inquiry_search_address(){
+	if((document.querySelector(".input-zip"))){
+		var zip = (document.querySelector(".input-zip")) ? inquiry_convert_zipcode(document.querySelector(".input-zip").value) : "";
+
+		if(zip.length === 7){
+			inquiry_zip2address(zip);
+		}else{
+			inquiry_insert_empty_values();
+		}
+	}else if(document.querySelector(".input-zip1")){
+		var zip1 = (document.querySelector(".input-zip1")) ? document.querySelector(".input-zip1").value : "";
+		var zip2 = (document.querySelector(".input-zip2")) ? document.querySelector(".input-zip2").value : "";
+
+		if(zip1.length === 3 && zip2.length === 4){
+			inquiry_zip2address(zip1 + zip2);
+		}else{
+			inquiry_insert_empty_values();
+		}
+	}
+}
+
+function inquiry_zip2address(zip){
+	zip2address(zip, function(address) {
+		if (address) {
+			document.querySelector(".input-pref").value = prefs[address.pref - 1];
+			document.querySelector(".input-city").value = address.city;
+			document.querySelector(".input-town").value = address.town;
+		}
+	});
+}
+
+function inquiry_insert_empty_values(){
+	document.querySelector(".input-pref").value = "";
+	document.querySelector(".input-city").value = "";
+	zdocument.querySelector(".input-town").value = "";
+}
+
+function inquiry_convert_zipcode(zip){
+	if(zip.length === 0) return "";
+	if(zip.indexOf("-") >= 0) zip = zip.replace("-", "");
+	if(zip.indexOf("ー") >= 0) zip = zip.replace("ー", "");
+	return zip;
+}

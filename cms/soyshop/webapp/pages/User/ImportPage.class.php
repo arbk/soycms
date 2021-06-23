@@ -9,16 +9,13 @@ class ImportPage extends WebPage{
 
 		SOY2::import("domain.config.SOYShop_ShopConfig");
 
-    	//管理制限の権限を取得
-		$session = SOY2ActionSession::getUserSession();
-		$appLimit = $session->getAttribute("app_shop_auth_limit");
-
 		//権限がない場合は顧客トップにリダイレクト
-		if(!$appLimit){
-			SOY2PageController::jump("User");
-		}
+		if(!AUTH_OPERATE) SOY2PageController::jump("User");
 
     	parent::__construct();
+
+		$this->addLabel("user_label", array("text" => SHOP_USER_LABEL));
+
     	self::buildForm();
 
 		DisplayPlugin::toggle("fail", (isset($_GET["fail"])));
@@ -47,6 +44,11 @@ class ImportPage extends WebPage{
     	));
 
 		$config = SOYShop_ShopConfig::load();
+
+		//ログインIDの名称変更
+		$this->addLabel("account_id_item_name", array(
+			"text" => $config->getAccountIdItemName()
+		));
 
 		//項目の非表示用タグ
 		foreach($config->getCustomerAdminConfig() as $key => $bool){
@@ -277,5 +279,18 @@ class ImportPage extends WebPage{
     function getCustomSearchFieldList(){
 		SOY2::import("module.plugins.user_custom_search_field.util.UserCustomSearchFieldUtil");
 		return UserCustomSearchFieldUtil::getConfig();
+	}
+
+	function getBreadcrumb(){
+		return BreadcrumbComponent::build(SHOP_USER_LABEL . "情報CSVインポート", array("User" => SHOP_USER_LABEL . "管理"));
+	}
+
+	function getFooterMenu(){
+		try{
+			return SOY2HTMLFactory::createInstance("User.FooterMenu.UserFooterMenuPage")->getObject();
+		}catch(Exception $e){
+			//
+			return null;
+		}
 	}
 }

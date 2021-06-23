@@ -3,6 +3,7 @@
 class CreatePage extends WebPage{
 
 	function doPost(){
+		if(!AUTH_OPERATE) return;	//操作権限がないアカウントの場合は以後のすべての動作を封じる
 
 		if(isset($_POST["Item"]) && soy2_check_token()){
 			$item = (object)$_POST["Item"];
@@ -11,6 +12,7 @@ class CreatePage extends WebPage{
 			$logic = SOY2Logic::createInstance("logic.shop.item.ItemLogic");
 
 			$item = SOY2::cast("SOYShop_Item",$item);
+			if(is_null($item->getStock())) $item->setStock(0);
 			$item->setType($_POST["ItemType"]);
 
 			//
@@ -58,25 +60,16 @@ class CreatePage extends WebPage{
 	var $errors = array();
 
     function __construct() {
-
-    	$session = SOY2ActionSession::getUserSession();
-		$appLimit = $session->getAttribute("app_shop_auth_limit");
-
-    	//管理制限者で商品の追加を開こうとしたとき、商品一覧にリダイレクト
-		if($appLimit == false){
-			SOY2PageController::jump("Item");
-		}
-
 		MessageManager::addMessagePath("admin");
 
     	parent::__construct();
 
-		$this->addForm("create_form");
-
-    	self::buildForm();
+    	self::_buildForm();
     }
 
-    private function buildForm(){
+    private function _buildForm(){
+
+		$this->addForm("create_form");
 
 		$dao = SOY2DAOFactory::create("shop.SOYShop_ItemDAO");
 		$obj = ($this->obj) ? $this->obj : new SOYShop_Item();
@@ -108,9 +101,13 @@ class CreatePage extends WebPage{
     		"value" => $obj->getCode()
     	));
 
+		$cnf = SOYShop_ShopConfig::load();
+		$isIgnoreStock = ($cnf->getIgnoreStock() && $cnf->getIsHiddenStockCount());
+		DisplayPlugin::toggle("item_stock", !$isIgnoreStock);
     	$this->addInput("item_stock", array(
     		"name" => "Item[stock]",
-    		"value" => $obj->getStock()
+    		"value" => $obj->getStock(),
+			"readonly" => (SOYShopPluginUtil::checkIsActive("reserve_calendar"))
     	));
 
 		$this->addInput("item_unit", array(
@@ -125,7 +122,7 @@ class CreatePage extends WebPage{
     	));
 
 		SOY2::import("domain.config.SOYShop_ShopConfig");
-		DisplayPlugin::toggle("item_description", SOYShop_ShopConfig::load()->getDisplayItemDescription());
+		DisplayPlugin::toggle("item_description", $cnf->getDisplayItemDescription());
 
 		$config = $obj->getConfigObject();
     	$this->addTextArea("item_description", array(
@@ -239,6 +236,10 @@ class CreatePage extends WebPage{
 			));
 		}
     }
+
+	function getBreadcrumb(){
+		return BreadcrumbComponent::build("商品の追加", array("Item" => "商品管理"));
+	}
 
     function getScripts(){
 		$root = SOY2PageController::createRelativeLink("./js/");

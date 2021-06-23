@@ -8,6 +8,7 @@ SOY2::import("domain.config.SOYShop_ShopConfig");
 class IndexPage extends WebPage{
 
 	function doPost(){
+		if(!AUTH_OPERATE) return;	//操作権限がないアカウントの場合は以後のすべての動作を封じる
 
 		if(!soy2_check_token()) SOY2PageController::jump("Item");
 
@@ -42,8 +43,6 @@ class IndexPage extends WebPage{
 
 		MessageManager::addMessagePath("admin");
 
-		$appLimit = SOY2ActionSession::getUserSession()->getAttribute("app_shop_auth_limit");
-
 		parent::__construct();
 
 		//一覧ページを開いた時に何らかの処理をする
@@ -52,14 +51,9 @@ class IndexPage extends WebPage{
 			"mode" => "list"
 		));
 
-		//管理制限の権限を取得し、権限がない場合は表示しない
-		$this->addModel("app_limit_function", array(
-			"visible" => $appLimit
-		));
-
 		$this->addLink("create_link", array(
 			"link" => SOY2PageController::createLink("Item.Create"),
-			"visible" => $appLimit
+			"visible" => AUTH_OPERATE
 		));
 
 		if(isset($_GET["reset"])){
@@ -86,10 +80,11 @@ class IndexPage extends WebPage{
 		$searchLogic->setLimit($limit);
 		$searchLogic->setOffset($offset);
 		$searchLogic->setOrder($sort);
+		$searchLogic->setSearchCondition(array());
 
 		//データ取得
-		$total = $searchLogic->getTotalCount();
-		$items = $searchLogic->getItems();
+		$total = (int)$searchLogic->getTotalCount();
+		$items = ($total > 0) ? $searchLogic->getItems() : array();
 
 		/*表示*/
 
@@ -111,22 +106,15 @@ class IndexPage extends WebPage{
 
 		$pager->buildPager($this);
 
+		//在庫数と注文数を事前に取得しておく
+		list($stocks, $orders) = self::_getStocksAndOrders($items);
+
 		//ItemListの準備
-		$categories = soyshop_get_category_objects();
-
-		$itemOrderDAO = SOY2DAOFactory::create("order.SOYShop_ItemOrderDAO");
-		$categoriesDAO = SOY2DAOFactory::create("shop.SOYShop_CategoriesDAO");
-
-		$config = SOYShop_ShopConfig::load();
 		$this->createAdd("item_list", "_common.Item.ItemListComponent", array(
 			"list" => $items,
-			"itemOrderDAO" => $itemOrderDAO,
-			"categoriesDAO" => $categoriesDAO,
-			"detailLink" => SOY2PageController::createLink("Item.Detail."),
-			"categories" => $categories,
-			"config" => $config,
-			"multi" => $config->getMultiCategory(),
-			"appLimit" => $appLimit
+			"itemStocks" => $stocks,
+			"orderCounts" => $orders,
+			"detailLink" => SOY2PageController::createLink("Item.Detail.")
 		));
 
 		$this->addLink("reset_link", array(
@@ -136,6 +124,23 @@ class IndexPage extends WebPage{
 
 		//操作周り
 		$this->addForm("item_form");
+	}
+
+	//在庫数と注文数を事前に取得しておく
+	private function _getStocksAndOrders($items){
+		if(!count($items)) return array(array(), array());
+
+		$itemIds = array();
+		foreach($items as $item){
+			$itemIds[] = $item->getId();
+		}
+
+		if(!count($itemIds)) return array(array(), array());
+
+		$stocks = SOY2Logic::createInstance("logic.shop.item.ItemLogic")->getStockListByItemIds($itemIds);
+		$orders = SOY2Logic::createInstance("logic.order.OrderLogic")->getOrderCountListByItemIds($itemIds);
+
+		return array($stocks, $orders);
 	}
 
 	function getParameter($key){
@@ -168,6 +173,21 @@ class IndexPage extends WebPage{
 				"title" => $title,
 				"class" => ($sort === $key) ? "sorter_selected" : "sorter"
 			));
+		}
+	}
+
+	function getBreadcrumb(){
+		return BreadcrumbComponent::build("商品管理");
+	}
+
+	function getFooterMenu(){
+		try{
+			return SOY2HTMLFactory::createInstance("Item.FooterMenu.ItemFooterMenuPage", array(
+				"arguments" => array(null)
+			))->getObject();
+		}catch(Exception $e){
+			//
+			return null;
 		}
 	}
 }

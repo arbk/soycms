@@ -123,8 +123,9 @@ class SearchLogic extends SOY2LogicBase{
             if(isset($params["item_name"]) && strlen($params["item_name"])) {
                 //日本語検索
                 if(SOYSHOP_PUBLISH_LANGUAGE == "jp"){
-                    $this->where["item_name"] = "i.item_name LIKE :item_name";
+                    $this->where["item_name"] = "(i.item_name LIKE :item_name OR i.item_subtitle LIKE :item_subtitle)";
                     $this->binds[":item_name"] = "%" . trim($params["item_name"]) . "%";
+					$this->binds[":item_subtitle"] = $this->binds[":item_name"];
                 //多言語検索
                 }else{
                     $this->where["item_name"] = "id IN (SELECT item_id FROM soyshop_item_attribute WHERE item_field_id = 'item_name_" . SOYSHOP_PUBLISH_LANGUAGE . "' AND item_value LIKE :item_name)";
@@ -293,6 +294,13 @@ class SearchLogic extends SOY2LogicBase{
 						$freeSubQueries[] = "s." . $key . " LIKE :csffree" . $key . $i;
 						$this->binds[":csffree" . $key . $i] = "%" . $word . "%";
 					}
+
+					//商品名等
+					foreach(array("item_name", "item_subtitle", "item_code") as $key){
+						$freeSubQueries[] = "i." . $key . " LIKE :csffree" . $key . $i;
+						$this->binds[":csffree" . $key . $i] = "%" . $word . "%";
+					}
+
 					if(count($freeSubQueries)){
 						$freeQueries[] = "(" . implode(" OR ", $freeSubQueries) . ")";
 					}

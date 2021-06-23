@@ -9,8 +9,8 @@ class DiscountFreeCouponConfigFormPage extends WebPage{
 	private $categoryLogic;
 
 	function __construct() {
-		SOY2::imports("module.plugins.discount_free_coupon.domain.*");
-		SOY2::imports("module.plugins.discount_free_coupon.util.*");
+		SOY2::import("module.plugins.discount_free_coupon.domain.SOYShop_CouponDAO");
+		SOY2::import("module.plugins.discount_free_coupon.util.DiscountFreeCouponUtil");
 		SOY2::import("module.plugins.discount_free_coupon.component.CouponListComponent");
 		$this->dao = SOY2DAOFactory::create("SOYShop_CouponDAO");
 		$this->categoryLogic = SOY2Logic::createInstance("module.plugins.discount_free_coupon.logic.CouponCategoryLogic");
@@ -57,19 +57,11 @@ class DiscountFreeCouponConfigFormPage extends WebPage{
 			}
 
 			if(isset($_POST["Register"])){
-				$register = $_POST["Register"];
-
-				if(self::checkValidate($register, true)){
-
-					$dao = $this->dao;
-
-					$register = DiscountFreeCouponUtil::convertObject($register);
-
-					$coupon = SOY2::cast("SOYShop_Coupon", (object)$register);
-
+				if(self::_checkValidate($_POST["Register"], true)){
+					$coupon = SOY2::cast("SOYShop_Coupon", (object)DiscountFreeCouponUtil::convertObject($_POST["Register"]));
 					$coupon->setIsDelete(SOYShop_Coupon::NOT_DELETED);
 					try{
-						$dao->insert($coupon);
+						$this->dao->insert($coupon);
 						$this->config->redirect("issued");
 					}catch(Exception $e){
 						//
@@ -85,23 +77,13 @@ class DiscountFreeCouponConfigFormPage extends WebPage{
 
 			//idを取得できなかった場合は処理を終了
 			if(isset($edit["id"])){
-				$id = $edit["id"];
-
-				if(self::checkValidate($edit)){
-
-					$edit = DiscountFreeCouponUtil::convertObject($edit);
-					$dao = $this->dao;
+				if(self::_checkValidate($edit)){
+					$coupon = self::_getCouponById($edit["id"]);
+					if(is_null($coupon->getId())) $this->config->redirect("error");
+					$coupon = SOY2::cast($coupon, (object)DiscountFreeCouponUtil::convertObject($edit));
 
 					try{
-						$coupon = $dao->getById($id);
-					}catch(Exception $e){
-						$this->config->redirect("error");
-					}
-
-					$coupon = SOY2::cast($coupon, (object)$edit);
-
-					try{
-						$dao->update($coupon);
+						$this->dao->update($coupon);
 						$this->config->redirect("updated");
 					}catch(Exception $e){
 						$this->config->redirect("error");
@@ -116,23 +98,15 @@ class DiscountFreeCouponConfigFormPage extends WebPage{
 
 			//idを取得できなかった場合は処理を終了
 			if(isset($edit["id"])){
-				$id = $edit["id"];
-
-				$dao = $this->dao;
-
-				try{
-					$coupon = $dao->getById($id);
-				}catch(Exception $e){
-					$this->config->redirect("error");
-				}
+				$coupon = self::_getCouponById($edit["id"]);
+				if(is_null($coupon->getId())) $this->config->redirect("error");
 
 				//削除フラグをアクティブにする
-				$coupon->setCouponCode(self::renameCode($coupon->getCouponCode()));
+				$coupon->setCouponCode(self::_renameCode($coupon->getCouponCode()));
 				$coupon->setIsDelete(SOYShop_Coupon::DELETED);
 
 				try{
-					$dao->update($coupon);
-					$this->config->redirect("deleted");
+					$this->dao->update($coupon);
 				}catch(Exception $e){
 					$this->config->redirect("error");
 				}
@@ -175,21 +149,22 @@ class DiscountFreeCouponConfigFormPage extends WebPage{
 			"link" => SOY2PageController::createLink("Config.Detail?plugin=discount_free_coupon&category")
 		));
 
-		self::buildList();
+		self::_buildSearchForm();
+		self::_buildList();
 
 		$this->addForm("form", array(
 			"action" => SOY2PageController::createLink("Config.Detail?plugin=discount_free_coupon"),
 			"method" => "post"
 		));
 
-		self::buildRegisterForm();
+		self::_buildRegisterForm();
 
 		foreach(array("issued", "error", "deleted") as $t){
 			DisplayPlugin::toggle($t, isset($_GET[$t]));
 		}
 
-		self::buildConfigForm();
-		self::buildError();
+		self::_buildConfigForm();
+		self::_buildError();
 
 		$this->addLabel("category_code_js", array(
 			"html" => $this->categoryLogic->createCodePrefixList()
@@ -200,10 +175,63 @@ class DiscountFreeCouponConfigFormPage extends WebPage{
 		));
 	}
 
-	private function buildList(){
+	private function _buildSearchForm(){
+		$cnds = self::_getSearchCondition();
 
-		$coupons = self::getCoupons();
-		DisplayPlugin::toggle("has_coupon", (count($coupons) > 0));
+		$this->addModel("search_form_area", array(
+			"attr:id" => "search_form",
+			"style" => (count($cnds)) ? "display:block;" : "display:none;"
+		));
+
+		$this->addForm("search_form", array(
+			"method" => "get",
+			"action" => SOY2PageController::createLink("Config.Detail")
+		));
+
+		foreach(array("name", "code", "name_or_code") as $t){
+			$this->addInput("search_coupon_" . $t, array(
+				"name" => "Search[" . $t . "]",
+				"value" => (isset($cnds[$t])) ? $cnds[$t] : ""
+			));
+		}
+
+		//クーポンの種類
+		foreach(SOYShop_Coupon::getCouponTypeList() as $idx => $label){
+			$this->addCheckBox("search_coupon_type_" . $idx, array(
+				"name" => "Search[coupon_type][]",
+				"value" => $idx,
+				"selected" => (isset($cnds["coupon_type"]) && is_numeric(array_search($idx, $cnds["coupon_type"]))),
+				"label" => $label
+			));
+		}
+
+		//期限切れ
+		$this->addCheckBox("search_expired", array(
+			"name" => "Search[expired]",
+			"value" => 1,
+			"selected" => (isset($cnds["expired"]) && $cnds["expired"] == 1),
+			"label" => "期限切れのクーポンを表示する"
+		));
+
+		$pluginId = (isset($_GET["plugin"])) ? $_GET["plugin"] : "";
+		$this->addInput("plugin_id", array(
+			"name" => "plugin",
+			"value" => $pluginId
+		));
+
+		$this->addLink("reset_link", array(
+			"link" => SOY2PageController::createLink("Config.Detail?plugin=" . $pluginId)
+		));
+
+	}
+
+	private function _buildList(){
+		$searchLogic = SOY2Logic::createInstance("module.plugins.discount_free_coupon.logic.SearchCouponLogic");
+		$searchLogic->setCondition(self::_getSearchCondition());
+		$coupons = $searchLogic->search();
+		$total = $searchLogic->getTotal();
+		DisplayPlugin::toggle("coupon", $total > 0);
+		DisplayPlugin::toggle("coupon_list", $total > 0);
 
 		/** CSVフォーム **/
 
@@ -225,12 +253,24 @@ class DiscountFreeCouponConfigFormPage extends WebPage{
 
 		$this->createAdd("coupon_list", "CouponListComponent", array(
 			"list" => $coupons,
-			"dao" => SOY2DAOFactory::create("SOYShop_CouponHistoryDAO"),
 			"categoryList" => $this->categoryLogic->getCategoryList()
 		));
 	}
 
-	private function getCoupons(){
+	private function _getSearchCondition(){
+		// @ToDo いずれはセッションで管理
+		return (isset($_GET["Search"]) && is_array($_GET["Search"])) ? $_GET["Search"] : array();
+	}
+
+	private function _getCouponById($id){
+		try{
+			return $this->dao->getById($id);
+		}catch(Exception $e){
+			return new SOYShop_Coupon();
+		}
+	}
+
+	private function _getCoupons(){
 		try{
 			return $this->dao->getNotDeleted();
 		}catch(Exception $e){
@@ -238,7 +278,7 @@ class DiscountFreeCouponConfigFormPage extends WebPage{
 		}
 	}
 
-	private function buildRegisterForm(){
+	private function _buildRegisterForm(){
 
 		//カテゴリが登録されているか？
 		$categoryList = $this->categoryLogic->getCategoryList();
@@ -323,7 +363,7 @@ class DiscountFreeCouponConfigFormPage extends WebPage{
 		));
 	}
 
-	private function buildConfigForm(){
+	private function _buildConfigForm(){
 
 		$config = DiscountFreeCouponUtil::getConfig();
 
@@ -342,17 +382,17 @@ class DiscountFreeCouponConfigFormPage extends WebPage{
 		$this->addInput("config_code_disits_min", array(
 			"name" => "Config[disitsMin]",
 			"value" => DiscountFreeCouponUtil::getDisitsMin(),
-			"style" => "ime-mode:inactive;width:40px;"
+			"style" => "ime-mode:inactive;width:80px;"
 		));
 
 		$this->addInput("config_code_disits_max", array(
 			"name" => "Config[disitsMax]",
 			"value" => DiscountFreeCouponUtil::getDisitsMax(),
-			"style" => "ime-mode:inactive;width:40px;"
+			"style" => "ime-mode:inactive;width:80px;"
 		));
 	}
 
-	private function buildError(){
+	private function _buildError(){
 
 		foreach(array(
 			"name", "count", "coupon_length", "coupon_reg", "coupon", "discount",
@@ -364,7 +404,7 @@ class DiscountFreeCouponConfigFormPage extends WebPage{
 	}
 
 	//クーポンを削除する時にリネームする
-	private function renameCode($code){
+	private function _renameCode($code){
 		$i = 0;
 		for(;;){
 			$check = $code . "_delete_" . $i++;
@@ -379,7 +419,7 @@ class DiscountFreeCouponConfigFormPage extends WebPage{
 	}
 
 	//isCodeCheckは更新の際、クーポンコードの入力がないため、クーポンコードのチェックを省くためのフラグ
-	private function checkValidate($values, $isCodeCheck=false){
+	private function _checkValidate($values, $isCodeCheck=false){
 
 		//クーポン名が入力されていない場合
 		if(strlen($values["name"]) == 0){

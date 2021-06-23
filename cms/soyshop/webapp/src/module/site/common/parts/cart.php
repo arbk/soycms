@@ -28,12 +28,8 @@ function soyshop_parts_cart($html, $page){
 		"soy2prefix" => SOYSHOP_SITE_PREFIX
 	));
 
-	$count = 0;
-	foreach($items as $item){
-		$count = $count + (int)$item->getItemCount();
-	}
 	$obj->addLabel("item_total", array(
-		"text" => $count,
+		"text" => $cart->getOrderItemCount(),
 		"soy2prefix" => SOYSHOP_SITE_PREFIX
 	));
 
@@ -90,17 +86,17 @@ class SOYShop_CartItemList extends HTMLList{
 		));
 
 		$this->addLabel("item_price", array(
-			"text" => number_format($entity->getItemPrice()),
+			"text" => soy2_number_format($entity->getItemPrice()),
 			"soy2prefix" => SOYSHOP_SITE_PREFIX
 		));
 
 		$this->addLabel("item_count", array(
-			"text" => number_format($entity->getItemCount()),
+			"text" => soy2_number_format($entity->getItemCount()),
 			"soy2prefix" => SOYSHOP_SITE_PREFIX
 		));
 
 		$this->addLabel("item_total_price", array(
-			"text" => number_format($entity->getTotalPrice()),
+			"text" => soy2_number_format($entity->getTotalPrice()),
 			"soy2prefix" => SOYSHOP_SITE_PREFIX
 		));
 	}

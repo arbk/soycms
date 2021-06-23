@@ -7,7 +7,7 @@ class IndexPage extends MainMyPagePageBase{
 	function doPost(){
 
 		//保存
-		if(soy2_check_token()){
+		if(soy2_check_token() && soy2_check_referer()){
 
 			if(isset($_POST["confirm"]) || isset($_POST["confirm_x"])){
 
@@ -29,7 +29,7 @@ class IndexPage extends MainMyPagePageBase{
 					SOYShopPlugin::invoke("soyshop.user.customfield", array(
 						"mode" => "post",
 						"app" => $mypage,
-						"param" => $_POST["user_customfield"]
+						"param" => (isset($_POST["user_customfield"])) ? $_POST["user_customfield"] : array()
 					));
 				}
 

@@ -3,26 +3,21 @@ class CMSPageController extends SOY2PageController{
 
 	var $args;
 	var $siteConfig;
-	var $dao;
 	var $pageType;
-	public $webPage;
+	var $webPage;	//プラグインで使用する
 
 	function execute(){
 		$start = microtime(true);
 
-		$pathBuilder = $this->getPathBuilder();
-
 		//デフォルトページ
-		$siteConfigDao = SOY2DAOFactory::create("cms.SiteConfigDAO");
-		$siteConfig = $siteConfigDao->get();
-
-		$dao = SOY2DAOFactory::create("cms.PageDAO");
-		//onNotFound()でdaoが取れないとでてるので、ここで保存。
-		$this->dao = $dao;
+		$siteConfig = SOY2DAOFactory::create("cms.SiteConfigDAO")->get();
 
 		//パスからURIと引数に変換
+		SOY2::import("site_include.CMSPathInfoBuilder");
+		$pathBuilder = new CMSPathInfoBuilder();
 		$uri  = $pathBuilder->getPath();
 		$args = $pathBuilder->getArguments();
+		unset($pathBuilder);
 
 		//保存
 		$this->args = $args;
@@ -42,29 +37,14 @@ class CMSPageController extends SOY2PageController{
 		//header("Content-Language: ja");
 
 		try{
-			try{
-				$page = $dao->getActivePageByUri($uri);
-				if($page->isActive() < 0){
-					throw new Exception("out of date.");
-				}
-			}catch(Exception $e){
-				//ブログページのURLが空で各ページのどれかのURIも空の時対策
-				try{
-					$tmp = $dao->getActivePageByUri("");
-				}catch(Exception $e){
-					$tmp = new Page();
-				}
-
-				//仮で取得したページがブログページでなかった場合は、空のPageオブジェクトを返す
-				if($tmp->getPageType() == Page::PAGE_TYPE_BLOG){
-					$page = $tmp;
-					$uri = "";	//以後の処理は$uriが空の状態で進める
-				}else{
-					$page = new Page();
-				}
-			}
+			$page = self::_getPage($uri);
 
 			try{
+				//404ページでも下記の値を使用する
+				$_SERVER["SOYCMS_PAGE_URI"] = $page->getUri();
+				$_SERVER["SOYCMS_PAGE_ID"] = $page->getId();
+
+				if($page->isActive() < 0) throw new Exception("out of date.");
 
 				//閲覧制限チェック
 				if($this->siteConfig && $this->siteConfig->isShowOnlyAdministrator()){
@@ -80,16 +60,12 @@ class CMSPageController extends SOY2PageController{
 					}
 				}
 
-				$_SERVER["SOYCMS_PAGE_URI"] = $page->getUri();
-				$_SERVER["SOYCMS_PAGE_ID"] = $page->getId();
-
 				$this->pageType = $page->getPageType();
 
 				switch($page->getPageType()){
-
-
 					case Page::PAGE_TYPE_BLOG:
-						$webPage = &SOY2HTMLFactory::createInstance("CMSBlogPage", array(
+						SOY2::import('site_include.CMSBlogPage');
+						$this->webPage = &SOY2HTMLFactory::createInstance("CMSBlogPage", array(
 							"arguments" => array($page->getId(), $args, $siteConfig),
 							"siteRoot" => SOY2PageController::createLink("")
 						));
@@ -97,14 +73,16 @@ class CMSPageController extends SOY2PageController{
 						break;
 
 					case Page::PAGE_TYPE_MOBILE:
-						$webPage = &SOY2HTMLFactory::createInstance("CMSMobilePage", array(
+						SOY2::import('site_include.CMSMobilePage');
+						$this->webPage = &SOY2HTMLFactory::createInstance("CMSMobilePage", array(
 							"arguments" => array($page->getId(), $args, $siteConfig),
 							"siteRoot" => SOY2PageController::createLink("")
 						));
 						break;
 
 					case Page::PAGE_TYPE_APPLICATION:
-						$webPage = &SOY2HTMLFactory::createInstance("CMSApplicationPage", array(
+						SOY2::import('site_include.CMSApplicationPage');
+						$this->webPage = &SOY2HTMLFactory::createInstance("CMSApplicationPage", array(
 							"arguments" => array($page->getId(), $args, $siteConfig),
 							"siteRoot" => SOY2PageController::createLink("")
 						));
@@ -120,46 +98,48 @@ class CMSPageController extends SOY2PageController{
 							throw new Exception("存在しないページ");
 						}
 
-						$webPage = &SOY2HTMLFactory::createInstance("CMSPage", array(
+						SOY2::import('site_include.CMSPage');
+						$this->webPage = &SOY2HTMLFactory::createInstance("CMSPage", array(
 							"arguments" => array($page->getId(), $args, $siteConfig),
 							"siteRoot" => SOY2PageController::createLink("")
 						));
 						break;
 				}
 
-				$this->webPage = $webPage;
-				$webPage->main();
+				$this->webPage->main();
 
 				//プラグインonLoadイベントの呼び出し
-				$onLoad = CMSPlugin::getEvent('onPageLoad');
-				foreach($onLoad as $plugin){
-					$func = $plugin[0];
-					$filter = $plugin[1]['filter'];
-					switch($filter){
-						case 'all':
-							call_user_func($func, array('page' => &$page, 'webPage' => &$webPage));
-							break;
-						case 'blog':
-							if($page->getPageType() == Page::PAGE_TYPE_BLOG){
-								call_user_func($func, array('page' => &$page, 'webPage' => &$webPage));
-							}
-							break;
-						case 'page':
-							if($page->getPageType() == Page::PAGE_TYPE_NORMAL){
-								call_user_func($func, array('page' => &$page, 'webPage' => &$webPage));
-							}
-							break;
+				$onLoads = CMSPlugin::getEvent('onPageLoad');
+				if(is_array($onLoads) && count($onLoads)){
+					foreach($onLoads as $plugin){
+						$func = $plugin[0];
+						$filter = $plugin[1]['filter'];
+						switch($filter){
+							case 'all':
+								call_user_func($func, array('page' => &$page, 'webPage' => &$this->webPage));
+								break;
+							case 'blog':
+								if($page->getPageType() == Page::PAGE_TYPE_BLOG){
+									call_user_func($func, array('page' => &$page, 'webPage' => &$this->webPage));
+								}
+								break;
+							case 'page':
+								if($page->getPageType() == Page::PAGE_TYPE_NORMAL){
+									call_user_func($func, array('page' => &$page, 'webPage' => &$this->webPage));
+								}
+								break;
+						}
 					}
 				}
 
-				$webPage->parseTime = microtime(true) - $start;
+				$this->webPage->parseTime = microtime(true) - $start;
 
 				//出力
-				$html = $this->getOutput($page, $webPage);
+				$html = $this->getOutput($page);
 				//プラグイン
-				$html = $this->onOutput($html, $page, $webPage);
+				$html = $this->onOutput($html, $page);
 				//文字コード変換
-				$html = $this->convertCharset($html, $webPage);
+				$html = $this->convertCharset($html);
 
 				//改行コードを統一しておく
 				$html = strtr($html, array("\r\n" => "\n", "\r" => "\n"));
@@ -181,13 +161,21 @@ class CMSPageController extends SOY2PageController{
 		}
 	}
 
+	private function _getPage($uri){
+		try{
+			return SOY2DAOFactory::create("cms.PageDAO")->getActivePageByUri($uri);
+		}catch(Exception $e){
+			return new Page();
+		}
+	}
+
 	/**
 	 * 出力内容を取得
 	 */
-	function getOutput($page, $webPage){
+	function getOutput($page){
 		ob_start();
 		CMSPlugin::callEventFunc("beforeOutput");
-		$webPage->display();
+		$this->webPage->display();
 		CMSPlugin::callEventFunc("afterOutput");
 		$html = ob_get_contents();
 		ob_end_clean();
@@ -198,11 +186,12 @@ class CMSPageController extends SOY2PageController{
 	/**
 	 * onOutputのプラグインを呼び出す。
 	 */
-	function onOutput($html, $page, $webPage){
-		$onLoad = CMSPlugin::getEvent('onOutput');
-		foreach($onLoad as $plugin){
+	function onOutput($html, $page){
+		$onLoads = CMSPlugin::getEvent('onOutput');
+		if(!is_array($onLoads) || !count($onLoads)) return $html;
+		foreach($onLoads as $plugin){
 			$func = $plugin[0];
-			$res = call_user_func($func, array('html' => $html, 'page' => &$page, 'webPage' => &$webPage));
+			$res = call_user_func($func, array('html' => $html, 'page' => &$page, 'webPage' => &$this->webPage));
 			if(!is_null($res) && is_string($res)) $html = $res;
 		}
 		return $html;
@@ -211,36 +200,36 @@ class CMSPageController extends SOY2PageController{
 	/**
 	 * 文字コード変換
 	 */
-	function convertCharset($html, $webPage){
-		$html = $webPage->beforeConvert($html);
+	function convertCharset($html){
+		$html = $this->webPage->beforeConvert($html);
 		$html = $this->siteConfig->convertToSiteCharset($html);
-		$html = $webPage->afterConvert($html);
+		$html = $this->webPage->afterConvert($html);
 		return $html;
 	}
 
 	function onNotFound($path = NULL, $args = NULL, $classPath = NULL){
 
-		$page = $this->dao->getErrorPage();
+		$page = SOY2DAOFactory::create("cms.PageDAO")->getErrorPage();
 		$this->pageType = $page->getPageType();
 
-		$webPage = &SOY2HTMLFactory::createInstance("CMSPage", array(
+		SOY2::import('site_include.CMSPage');
+		$this->webPage = &SOY2HTMLFactory::createInstance("CMSPage", array(
 			"arguments" => array($page->getId(),$this->args,$this->siteConfig),
 			"siteRoot" => SOY2PageController::createLink("")
 		));
 
-		$this->webPage = $webPage;
-		$webPage->main();
+		$this->webPage->main();
 
 		//出力
-		$html = $this->getOutput($page, $webPage);
+		$html = $this->getOutput($page);
 		//プラグイン
 		try{
-			$html = $this->onOutput($html, $page, $webPage);
+			$html = $this->onOutput($html, $page);
 		}catch(Exception $e){
 			//プラグインでの例外は無視
 		}
 		//文字コード変換
-		$html = $this->convertCharset($html, $webPage);
+		$html = $this->convertCharset($html);
 
 		//404NotFoundが表示される直前で読み込まれる
 		CMSPlugin::callEventFunc('onSite404NotFound');
@@ -249,16 +238,6 @@ class CMSPageController extends SOY2PageController{
 		header("Content-Type: text/html; charset=" . $this->siteConfig->getCharsetText());
 		header("Content-Length: " . strlen($html));
 		echo $html;
-	}
-
-	function &getPathBuilder(){
-		static $builder;
-
-		if(!$builder){
-			$builder = new CMS_PathInfoBuilder();
-		}
-
-		return $builder;
 	}
 
 	/**
@@ -313,119 +292,5 @@ class CMSPageController extends SOY2PageController{
 	 */
 	function getPageType(){
 		return $this->pageType;
-	}
-}
-
-class CMS_PathInfoBuilder extends SOY2_PathInfoPathBuilder{
-
-	var $path;
-	var $arguments;
-
-	function __construct(){
-		$pathInfo = (isset($_SERVER['PATH_INFO'])) ? $_SERVER['PATH_INFO'] : "";
-
-		//先頭の「/」と末尾の「/」は取り除く
-		$pathInfo = preg_replace('/^\/|\/$/', "", $pathInfo);
-
-		list($this->path, $this->arguments) = self::parsePath($pathInfo);
-	}
-
-	/**
-	 * パスからページのURI部分とパラメータ部分を抽出する
-	 */
-	public static function parsePath($path){
-		static $dao;
-		if(!$dao) $dao = SOY2DAOFactory::create("cms.PageDAO");
-
-		$_uri = explode("/", $path);
-
-		$uri = "";
-		$args = array();
-
-		while(count($_uri)){
-			$baseuri = implode("/", $_uri);
-
-			$testUri = $baseuri;
-			if($dao->checkUri($testUri)){
-				$uri = $testUri;
-				break;
-			}
-
-			// path/index.htmlも試す
-			$testUri = $baseuri."/index.html";
-			if($dao->checkUri($testUri)){
-				$uri = $testUri;
-				break;
-			}
-
-			// path/index.htmも試す
-			$testUri = $baseuri . "/index.htm";
-			if($dao->checkUri($testUri)){
-				$uri = $testUri;
-				break;
-			}
-
-			//uriの末尾をargsに移す
-			array_unshift($args, array_pop($_uri));
-		}
-
-		return array($uri, $args);
-	}
-
-	/**
-	 * フロントコントローラーからの相対パスを解釈してURLを生成する
-	 */
-	function createLinkFromRelativePath($path, $isAbsoluteUrl = false){
-		//scheme
-		$scheme = (isset($_SERVER["HTTPS"]) || defined("SOY2_HTTPS") && SOY2_HTTPS) ? "https" : "http";
-
-		//port
-		if( $_SERVER["SERVER_PORT"] == "80" && !isset($_SERVER["HTTPS"]) || $_SERVER["SERVER_PORT"] == "443" && isset($_SERVER["HTTPS"]) ){
-			$port = "";
-		}elseif(strlen($_SERVER["SERVER_PORT"]) > 0){
-			$port = ":" . $_SERVER["SERVER_PORT"];
-		}else{
-			$port = "";
-		}
-
-		//host (domain)
-		$host = $_SERVER["SERVER_NAME"];
-
-		/**
-		 * 絶対URLが渡されたらそのまま返す
-		 */
-		if(preg_match("/^https?:/", $path)){
-			return $path;
-		}
-
-		/**
-		 * 絶対パスが渡されたときもそのまま返す
-		 */
-		if(preg_match("/^\//", $path)){
-			if($isAbsoluteUrl){
-				return $scheme . "://" . $host . $port . $path;
-			}else{
-				return $path;
-			}
-		}
-
-		/**
-		 * 相対パス（絶対URL、絶対パス以外）のとき
-		 */
-		//フロントコントローラーのURLでの絶対パス（ファイル名index.phpは削除する）
-		$scriptPath = (isset($_SERVER['SCRIPT_NAME']) && strlen($_SERVER['SCRIPT_NAME']) != 0) ? $_SERVER['SCRIPT_NAME'] : "/";
-		if($scriptPath[strlen($scriptPath) - 1] == "/"){
-			//サーバーによってはindex.phpが付かないところもあるようだ（Ablenet）
-		}else{
-			$scriptPath = preg_replace("/" . basename($scriptPath) . "\$/", "", $scriptPath);
-		}
-
-		$url = self::convertRelativePathToAbsolutePath($path, $scriptPath);
-
-		if($isAbsoluteUrl){
-			return $scheme . "://" . $host . $port . $url;
-		}else{
-			return $url;
-		}
 	}
 }

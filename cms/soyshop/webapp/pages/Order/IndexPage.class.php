@@ -43,6 +43,11 @@ class IndexPage extends WebPage{
 			self::setParameter("search", array());
 		}
 
+		$this->addLink("order_register_link", array(
+			"link" => (AUTH_ADMINORDER) ? SOY2PageController::createLink("Order.Register") : null,
+			"visible" => AUTH_ADMINORDER
+		));
+
 		/*引数など取得*/
 		//表示件数
 		$limit = 15;
@@ -77,8 +82,8 @@ class IndexPage extends WebPage{
 		$searchLogic->setLimit($limit);
 		$searchLogic->setOffset($offset);
 		$searchLogic->setOrder($sort);
-		$total = $searchLogic->getTotalCount();
-		$orders = $searchLogic->getOrders();
+		$total = (int)$searchLogic->getTotalCount();
+		$orders = ($total > 0) ? $searchLogic->getOrders() : array();
 
 		//表示順リンク
 		self::buildSortLink($searchLogic,$sort);
@@ -140,38 +145,23 @@ class IndexPage extends WebPage{
 
 		//注文結果を出力
 		$this->createAdd("order_list", "_common.Order.OrderListComponent", array(
-			"list" => $orders
+			"list" => $orders,
+			"userNameList" => SOY2Logic::createInstance("logic.user.UserLogic")->getUserNameListByUserIds(soyshop_get_user_ids_by_orders($orders))
 		));
 
 		$orderCnt = count($orders);
-		$this->addModel("order_exists", array(
-			"visible" => ($orderCnt > 0)
-		));
-
-		$this->addModel("no_result", array(
-			"visible" => ($orderCnt === 0 && !empty($search))
-		));
+		DisplayPlugin::toggle("order_exists", ($orderCnt > 0));
+		DisplayPlugin::toggle("no_result", ($orderCnt === 0 && !empty($search)));
 
 		$this->addLink("reset_link", array(
 			"link" => SOY2PageController::createLink("Order") . "?reset",
 			"visible" => (!empty($search))
 		));
 
-		/* 出力用 */
-		$this->createAdd("module_list", "_common.Order.ExportModuleListComponent", array(
-			"list" => self::getExportModuleList()
-		));
-
-		$this->addForm("export_form", array(
-			"action" => SOY2PageController::createLink("Order.Export")
-		));
-
 		$this->addInput("query", array(
 			"name" => "search",
 			"value" => (isset($_GET["search"])) ? http_build_query($_GET["search"]) : ""
 		));
-
-		self::buildExtensionArea();
 	}
 
 	/**
@@ -188,19 +178,6 @@ class IndexPage extends WebPage{
 		$this->add("search_form", $form);
 
 		return $form;
-	}
-
-	private function buildExtensionArea(){
-		SOYShopPlugin::load("soyshop.order.upload");
-		$list = SOYShopPlugin::invoke("soyshop.order.upload", array(
-			"mode" => "list"
-		))->getList();
-
-		DisplayPlugin::toggle("upload_list", count($list));
-
-		$this->createAdd("upload_extension_list", "_common.Order.UploadExtensionListComponent", array(
-			"list" => $list
-		));
 	}
 
 	private function getParameter($key){
@@ -237,28 +214,31 @@ class IndexPage extends WebPage{
 		}
 	}
 
-	private function getExportModuleList(){
-		SOYShopPlugin::load("soyshop.order.export");
-		$list = SOYShopPlugin::invoke("soyshop.order.export", array(
-			"mode" => "list"
-		))->getList();
-
-		DisplayPlugin::toggle("export_module_menu", (count($list) > 0));
-
-		return $list;
+	function getBreadcrumb(){
+		return BreadcrumbComponent::build("注文管理");
 	}
 
-	function getCSS(){
-		$root = SOY2PageController::createRelativeLink("./js/");
-		return array(
-			$root . "tools/soy2_date_picker.css"
-		);
+	function getFooterMenu(){
+		try{
+			return SOY2HTMLFactory::createInstance("Order.FooterMenu.OrderFooterMenuPage")->getObject();
+		}catch(Exception $e){
+			//
+			return null;
+		}
 	}
+
+	// function getCSS(){
+	// 	$root = SOY2PageController::createRelativeLink("./js/");
+	// 	return array(
+	// 		$root . "tools/soy2_date_picker.css"
+	// 	);
+	// }
 
 	function getScripts(){
 		$root = SOY2PageController::createRelativeLink("./js/");
 		return array(
-			$root . "tools/soy2_date_picker.pack.js"
+			$root . "tools/datepicker-ja.js",
+			$root . "tools/datepicker.js"
 		);
 	}
 }

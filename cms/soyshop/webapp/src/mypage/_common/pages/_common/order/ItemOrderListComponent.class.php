@@ -13,11 +13,11 @@ class ItemOrderListComponent extends HTMLList{
 		));
 
 		$this->addLink("item_code", array(
-			"text" => (strlen($item->getCode()) > 0) ? $item->getCode() : "deleted item " . $itemOrder->getItemId(),
+			"text" => (is_string($item->getCode()) && strlen($item->getCode()) > 0) ? $item->getCode() : "deleted item " . $itemOrder->getItemId(),
 		));
 
 		$this->addLabel("item_code_plain", array(
-			"text" => (strlen($item->getCode()) > 0) ? $item->getCode() : "deleted item " . $itemOrder->getItemId()
+			"text" => (is_string($item->getCode()) && strlen($item->getCode()) > 0) ? $item->getCode() : "deleted item " . $itemOrder->getItemId()
 		));
 
 		$this->addImage("item_small_image", array(
@@ -38,11 +38,11 @@ class ItemOrderListComponent extends HTMLList{
 		));
 
 		$this->addLabel("item_price", array(
-			"text" => number_format($itemOrder->getItemPrice())
+			"text" => soy2_number_format($itemOrder->getItemPrice())
 		));
 
 		$this->addLabel("item_count", array(
-			"text" => number_format($itemOrder->getItemCount())
+			"text" => soy2_number_format($itemOrder->getItemCount())
 		));
 
 		$this->addInput("item_count_input", array(
@@ -63,7 +63,7 @@ class ItemOrderListComponent extends HTMLList{
 		));
 
 		$this->addLabel("item_total_price", array(
-			"text" => number_format($itemOrder->getTotalPrice())
+			"text" => soy2_number_format($itemOrder->getTotalPrice())
 		));
 
 		//子商品

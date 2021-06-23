@@ -4,7 +4,7 @@ class PageLogic extends SOY2LogicBase{
 
 	private $errors = array();
 
-    function validate($obj){
+    function validate(SOYShop_Page $obj){
 
 		$errors = array();
 
@@ -32,17 +32,15 @@ class PageLogic extends SOY2LogicBase{
 		return (empty($errors));
     }
 
-    function update($obj){
-		$dao = SOY2DAOFactory::create("site.SOYShop_PageDAO");
-		$dao->update($obj);
-
-		$this->onUpdate($obj);
+    function update(SOYShop_Page $obj){
+		SOY2DAOFactory::create("site.SOYShop_PageDAO")->update($obj);
+		self::onUpdate($obj);
     }
 
-    function onUpdate($obj){
-    	$this->generatePageDirectory($obj);
-		$this->updatePageObject($obj);
-		$this->updatePageMapping();
+    function onUpdate(SOYShop_Page $obj){
+    	self::_generatePageDirectory($obj);
+		self::updatePageObject($obj);
+		self::_updatePageMapping();
     }
 
     function getErrors() {
@@ -52,10 +50,14 @@ class PageLogic extends SOY2LogicBase{
     	$this->errors = $errors;
     }
 
+	function generatePageDirectory(SOYShop_Page $obj, $force = false){
+		self::_generatePageDirectory($obj, $force);
+	}
+
 	/**
 	 * ディレクトリを自動で生成する
 	 */
-    function generatePageDirectory($obj, $force = false){
+    private function _generatePageDirectory(SOYShop_Page $obj, $force = false){
 
 		/* プログラムファイル出力 */
 		$classFilePath = SOYSHOP_SITE_DIRECTORY . ".page/" . $obj->getCustomClassFileName();
@@ -75,7 +77,7 @@ class PageLogic extends SOY2LogicBase{
 	/**
 	 * generate css file
 	 */
-	function generateCSSFile($obj, $force = false){
+	private function _generateCSSFile(SOYShop_Page $obj, $force = false){
 		/* CSSの出力 */
     	$uri = $obj->getUri();
 
@@ -109,9 +111,8 @@ class PageLogic extends SOY2LogicBase{
 		file_put_contents($filepath, json_encode($plain));
 	}
 
-	function updatePageMapping(){
-		$dao = SOY2DAOFactory::create("site.SOYShop_PageDAO");
-		$pages = $dao->get();
+	private function _updatePageMapping(){
+		$pages = SOY2DAOFactory::create("site.SOYShop_PageDAO")->get();
 
 		$mapping = array();
 		foreach($pages as $id => $page){
@@ -124,4 +125,3 @@ class PageLogic extends SOY2LogicBase{
 		SOYShop_DataSets::put("site.url_mapping", $mapping);
 	}
 }
-?>

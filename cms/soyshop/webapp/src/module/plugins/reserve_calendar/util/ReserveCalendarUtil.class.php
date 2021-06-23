@@ -5,6 +5,9 @@ class ReserveCalendarUtil{
 	const IS_TMP = 1;	//注文時の仮登録あり
 	const NO_TMP = 0;	//注文時の仮登録なし
 
+	const IS_SEND = 1;		//仮登録時にメール文面に本登録用のURLを含める
+	const NO_SEND = 0;		//仮登録時にメール文面に本登録用のURLを含めない
+
 	const IS_ONLY = 1;	//注文時の商品個数が1個のみに制限
 	const NO_ONLY = 0;
 
@@ -13,6 +16,8 @@ class ReserveCalendarUtil{
 
 	const RESERVE_LIMIT = 0;
 	const RESERVE_LIMIT_IGNORE = 1;	//管理画面で残席数以上の予約を行うことが出来る
+	const RESERVE_DISPLAY_CANCEL_BUTTON = 1;	//管理画面の予約詳細でキャンセルボタンを表示する
+
 
 /* sync customfield config */
 	const DELIVERY_TWO_DAYS = "1～2営業日";
@@ -35,18 +40,26 @@ class ReserveCalendarUtil{
 	}
 
 	public static function getConfig(){
-		return SOYShop_DataSets::get("reserve_calendar.config", array(
+		$cnf = SOYShop_DataSets::get("reserve_calendar.config", array(
 			"tmp" => self::NO_TMP,
+			"send_at_time_tmp" => self::IS_SEND,
 			"only" => self::NO_ONLY,
 			"show_price" => self::NO_SHOW,
-			"ignore" => self::RESERVE_LIMIT
+			"ignore" => self::RESERVE_LIMIT,
+			"cancel_button" => self::RESERVE_DISPLAY_CANCEL_BUTTON
 		));
+
+		if(!isset($cnf["send_at_time_tmp"])) $cnf["send_at_time_tmp"] = self::IS_SEND;
+
+		return $cnf;
 	}
 
 	public static function saveConfig($values){
-		$values["tmp"] = (isset($values["tmp"])) ? (int)$values["tmp"] : 0;
+		$values["tmp"] = (isset($values["tmp"])) ? (int)$values["tmp"] : self::NO_TMP;
+		$values["send_at_time_tmp"] = (isset($values["send_at_time_tmp"])) ? (int)$values["send_at_time_tmp"] : self::NO_SEND;
 		$values["only"] = (isset($values["only"])) ? (int)$values["only"] : self::NO_ONLY;
 		$values["ignore"] = (isset($values["ignore"])) ? (int)$values["ignore"] : self::RESERVE_LIMIT;
+		$values["cancel_button"] = (isset($values["cancel_button"])) ? (int)$values["cancel_button"] : self::RESERVE_DISPLAY_CANCEL_BUTTON;
 		SOYShop_DataSets::put("reserve_calendar.config", $values);
 	}
 
@@ -226,7 +239,7 @@ class ReserveCalendarUtil{
 
 		if(isset($results[$schedule->getId()])) return $results[$schedule->getId()];
 
-		return $schedule->getUnsoldSeat() - self::_reserveLogic()->getReservedCountByScheduleId($schedule->getId());
+		return $schedule->getUnsoldSeat() - self::_reserveLogic()->getReservedCountByScheduleId($schedule->getId(), false, true);
 	}
 
 	private static function _reserveLogic(){

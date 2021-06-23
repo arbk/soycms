@@ -47,7 +47,7 @@ body.sub{
 	padding: 0;
 }
 .navbar-top-links li p, .navbar-top-links li a{
-	padding: 0 15px;
+	padding: 0 15px 0 0;
 	margin: 0;
 	height: 80px;/* ロゴに合わせる */
 	line-height: 80px;
@@ -311,6 +311,17 @@ h1{
   width: 64px;
   height: 64px;
   cursor: pointer;
+}
+
+/** ラベルの使用状況 **/
+.label_info{
+	margin-top: 30px;
+}
+.label_info .alert-info .list-group-item{
+	color: #333;
+}
+.label_info .list-group-item .badge.custom{
+	float: none; font-size: 14px;
 }
 
 .entry_list_functions{

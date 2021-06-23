@@ -2,24 +2,17 @@
 
 class ReGeneratePage extends WebPage{
 
-	var $id;
-
     function __construct($args) {
-    	$this->id = $args[0];
+		if(!isset($args[0]) || !is_numeric($args[0])) SOY2PageController::jump("Site.Pages");
+    	$page = soyshop_get_page_object($args[0]);
 
-		if($this->id){
-
-			$dao = SOY2DAOFactory::create("site.SOYShop_PageDAO");
-			$logic = SOY2Logic::createInstance("logic.site.page.PageLogic");
-
-			$page = $dao->getById($this->id);
-
+		try{
 			//強制再生成
-			$logic->generatePageDirectory($page,true);
-
+			SOY2Logic::createInstance("logic.site.page.PageLogic")->generatePageDirectory($page, true);
+		}catch(Exception $e){
+			//
 		}
 
-		SOY2PageController::jump("Site.Pages.Detail." . $this->id . "?updated=regenerated");
+		SOY2PageController::jump("Site.Pages.Detail." . $page->getId() . "?updated=regenerated");
     }
 }
-?>

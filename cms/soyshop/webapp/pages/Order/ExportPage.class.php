@@ -23,34 +23,24 @@ class ExportPage extends WebPage{
 		$_POST["search"] = $search;
 
 		//統計、集計プラグインの場合は、注文一覧の検索を無視する
-		if(strpos($plugin, "aggregate") !== false || strpos($plugin, "analytics") !== false ){
+		if(strpos($plugin, "common_aggregate") !== false || strpos($plugin, "analytics") !== false ){
 			$orders = array();
 		}else{
-			$orders = self::getOrders();
+			$orders = self::_getOrders();
 		}
 
-
-		$dao = SOY2DAOFactory::create("plugin.SOYShop_PluginConfigDAO");
-    	$logic = SOY2Logic::createInstance("logic.plugin.SOYShopPluginLogic");
-
-		try{
-	    	$this->module = $dao->getByPluginId($plugin);
-
-			SOYShopPlugin::load("soyshop.order.export", $this->module);
-			$delegate = SOYShopPlugin::invoke("soyshop.order.export", array(
+		$plugin = soyshop_get_plugin_object($plugin);
+		if(!is_null($plugin->getId())){
+			SOYShopPlugin::load("soyshop.order.export", $plugin);
+			SOYShopPlugin::invoke("soyshop.order.export", array(
 				"mode" => "export"
-			));
-
-			$delegate->export($orders);
-
-		}catch(Exception $e){
-			//
+			))->export($orders);
 		}
 
 		exit;
     }
 
-    private function getOrders(){
+    private function _getOrders(){
 		//検索用のロジック作成
 		$searchLogic = SOY2Logic::createInstance("logic.order.SearchOrderLogic");
 
@@ -64,7 +54,7 @@ class ExportPage extends WebPage{
 		SOY2::import("domain.config.SOYShop_ShopConfig");
 		$limit = (int)SOYShop_ShopConfig::load()->getOrderCSVExportLimit();
 		if(!is_numeric($limit)) $limit = 1000;
-		
+
 		//検索条件の投入と検索実行
 		$searchLogic->setSearchCondition($search);
 		$searchLogic->setLimit($limit);

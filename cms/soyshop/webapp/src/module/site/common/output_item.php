@@ -12,13 +12,29 @@ function soyshop_output_item($htmlObj, SOYShop_Item $item, $obj=null){
 
     //グループの場合の処理
     $childItems = array();
-    if($item->getType() == SOYShop_Item::TYPE_GROUP || $item->getType() == SOYShop_Item::TYPE_DOWNLOAD_GROUP){
-        $type = (method_exists($obj, "getSortType")) ? $obj->getSortType() : "item_code";
-        $order = (method_exists($obj, "getSortOrder") && $obj->getSortOrder() == 1) ? $type . " desc" : $type . " asc";
-        $logic = SOY2Logic::createInstance("logic.shop.item.SearchItemUtil", array(
-        ));
-        $childItems = $logic->getChildItems($item->getId(), $order);
-    }
+
+	//子商品の検索をなくして高速化
+	$isChildren = true;
+	if(defined("SOYSHOP_PAGE_TYPE")){
+		switch(SOYSHOP_PAGE_TYPE){
+			case "SOYShop_ListPage":
+				if($shopConfig->getSearchChildItemOnListPage() != 1) $isChildren = false;
+				break;
+			case "SOYShop_DetailPage":
+				if($shopConfig->getSearchChildItemOnDetailPage() != 1) $isChildren = false;
+				break;
+			default:
+				//
+		}
+	}
+
+	if($isChildren){
+		if($item->getType() == SOYShop_Item::TYPE_GROUP || $item->getType() == SOYShop_Item::TYPE_DOWNLOAD_GROUP){
+	        $type = ($obj instanceof SOYShop_DetailPage && method_exists($obj, "getSortType")) ? $obj->getSortType() : "item_code";
+	        $order = ($obj instanceof SOYShop_DetailPage && method_exists($obj, "getSortOrder") && $obj->getSortOrder() == 1) ? $type . " desc" : $type . " asc";
+	        $childItems = SOY2Logic::createInstance("logic.shop.item.SearchItemUtil", array())->getChildItems($item->getId(), $order);
+	    }
+	}
     if(!$htmlObj instanceof SOYShop_ChildItemListComponent){
         $htmlObj->createAdd("child_item_list", "SOYShop_ChildItemListComponent", array(
             "list" => $childItems,
@@ -37,6 +53,17 @@ function soyshop_output_item($htmlObj, SOYShop_Item $item, $obj=null){
         "soy2prefix" => SOYSHOP_SITE_PREFIX
     ));
 
+	//商品名サブタイトル
+	$htmlObj->addLabel("item_subtitle", array(
+		"text" => $item->getSubtitle(),
+		"soy2prefix" => SOYSHOP_SITE_PREFIX
+	));
+
+	//商品名サブタイトル
+	$htmlObj->addLabel("item_subtitle_visible", array(
+		"text" => (strlen($item->getSubtitle())),
+		"soy2prefix" => SOYSHOP_SITE_PREFIX
+	));
 
     //表示価格が0円以上の場合は表示する
     $htmlObj->addModel("item_price_visible", array(

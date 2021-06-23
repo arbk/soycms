@@ -39,15 +39,16 @@ class ReserveCalendarOption extends SOYShopItemOptionBase{
     }
 
     function doPost($index, CartLogic $cart){
-
         if(isset($_REQUEST["item_option"]["schedule_id"])){
             $items = $cart->getItems();
-            if(isset($items[$index])){
+			if(isset($items[$index])){
                 $itemId = $items[$index]->getItemId();
 
                 $obj = ReserveCalendarUtil::getCartAttributeId("schedule_id", $index, $itemId);
                 $cart->setAttribute($obj, $_REQUEST["item_option"]["schedule_id"]);
-            }
+            }else{	//存在していない時
+
+			}
         }
     }
 
@@ -66,9 +67,7 @@ class ReserveCalendarOption extends SOYShopItemOptionBase{
 
         $itemId = $items[$index]->getItemId();
 
-        $obj = ReserveCalendarUtil::getCartAttributeId("schedule_id", $index, $itemId);
-        $schId = $cart->getAttribute($obj);
-
+        $schId = $cart->getAttribute(ReserveCalendarUtil::getCartAttributeId("schedule_id", $index, $itemId));
         $list = SOY2Logic::createInstance("module.plugins.reserve_calendar.logic.Calendar.LabelLogic")->getLabelList($itemId);
 
         $sch = self::getScheduleById($schId);
@@ -115,7 +114,7 @@ class ReserveCalendarOption extends SOYShopItemOptionBase{
         try{
             $resId = $resDao->insert($res);
         }catch(Exception $e){
-            var_dump($e);
+            //
         }
 
         //注文属性にも入れておく

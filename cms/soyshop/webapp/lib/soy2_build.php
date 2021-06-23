@@ -1166,7 +1166,7 @@ class SOY2Mail_POPLogic extends SOY2Mail implements SOY2Mail_ReceiverInterface{
 			$boundary = $tmp[1];
 			$bodies = explode("--". $boundary, $body);
 			$attachCount = count($bodies);
-			for($i=0;$i<$attachCount;$i++){
+			for($i=0;$i<$attachCount;++$i){
 				$tmpHeader = substr($bodies[$i], 0, strpos($bodies[$i], "\r\n\r\n"));
 				$tmpBody = substr($bodies[$i], strpos($bodies[$i], "\r\n\r\n")+4);
 				$tmpHeaders = $this->parseHeaders($tmpHeader);
@@ -2708,7 +2708,7 @@ class SOY2ActionSession {
      * @return SOY2UserSession
      */
     public static function &getUserSession(){
-    	@session_start();
+		if(session_status() == PHP_SESSION_NONE) session_start();
     	if(!isset($_SESSION[self::session_user_key])){
     		$_SESSION[self::session_user_key] = new SOY2UserSession();
     	}
@@ -2718,7 +2718,7 @@ class SOY2ActionSession {
      * @return SOY2FlashSession
      */
     public static function &getFlashSession(){
-    	@session_start();
+		if(session_status() == PHP_SESSION_NONE) session_start();
     	static $_request;
     	if(is_null($_request)){
     		$_request = true;
@@ -2733,8 +2733,8 @@ class SOY2ActionSession {
     	return $_SESSION[self::session_flash_key];
     }
     public static function regenerateSessionId(){
-    	@session_start();
-    	session_regenerate_id(true);
+		if(session_status() == PHP_SESSION_NONE) session_start();
+		session_regenerate_id(true);
     }
 }
 /**
@@ -3296,7 +3296,7 @@ class SOY2DAO{
 			}
 		}else{
 			if(!is_null($this->_offset)){
-				for($i=0; $i<$this->_offset; $i++){
+				for($i=0; $i<$this->_offset; ++$i){
 					if($stmt->fetch() == false)break;
 					$counter++;
 				}
@@ -3800,7 +3800,11 @@ class SOY2DAOFactoryImpl extends SOY2DAOFactory {
 		$params = array();
 		foreach($parameters as $param){
 			$str = "";
-			$class = $param->getClass();
+			if(method_exists($param, "getType")){
+				$class = (!is_null($param->getType()) && !$param->getType()->isBuiltin()) ? new ReflectionClass($param->getType()->getName()) : null;
+			}else{
+				$class = (method_exists($param, "getClass")) ? $param->getClass() : "";	//ReflectionParameter::getClass() is deprecated in PHP8
+			}
 			if($class){
 				$str .= $class->getName()." ";
 			}
@@ -4759,6 +4763,7 @@ class SOY2HTMLBase{
 	 *
 	 */
 	function __call($name,$args){
+		/** PHP7.4対策で廃止
 		if(method_exists($this,"createAdd") && preg_match('/^add([A-Za-z]+)$/',$name,$tmp) && count($args)>0){
 			$class = "HTML" . $tmp[1];
 			if(class_exists($class)){
@@ -4778,6 +4783,7 @@ class SOY2HTMLBase{
 				return;
 			}
 		}
+		**/
 
 		if(!$this->functionExists($name) && $name != "HTMLPage" && $name != "WebPage"){
 			throw new SOY2HTMLException("Method not found: ".$name);
@@ -4787,7 +4793,8 @@ class SOY2HTMLBase{
 		$argments = $func['args'];
 		$variant = "";
 		if(is_array($argments)){
-			for($i = 0; $i < count($argments); $i++){
+			$argsCnt = count($argments);
+			for($i = 0; $i < $argsCnt; ++$i){
 				$variant .= $argments[$i].' = $args['.$i.'];';
 			}
 		}
@@ -5591,37 +5598,40 @@ class SOY2HTMLFactory extends SOY2HTMLBase{
 		}else{
 			$class = new $className();
 		}
-		foreach($attributes as $key => $value){
-			if($key == "id"){
-				$class->setAttribute($key,$value);
-				continue;
-			}
-			if(strpos($key,"attr:") !== false){
-				$key = substr($key,5);
-				$class->setAttribute($key,$value);
-				continue;
-			}
-			if(method_exists($class,"set".ucwords($key))  || $class->functionExists("set".ucwords($key))){
-				$func = "set".ucwords($key);
-				$class->$func($value);
-				continue;
-			}
-			if(stristr($key,':function')){
-				$key = trim($key);
-				$funcName = str_replace(strstr($key,":function"),"",$key);
-				$argsRegex = '/:function\s*\((.*)\)$/';
-				$tmp = array();
-				if(preg_match($argsRegex,$key,$tmp)){
-					$args = explode(",",$tmp[1]);
-				}else{
+		if(is_array($attributes)){
+			foreach($attributes as $key => $value){
+				if($key == "id"){
+					$class->setAttribute($key,$value);
 					continue;
 				}
-				$code = $value;
-				$class->addFunction($funcName,$args,$code);
-				continue;
+				if(strpos($key,"attr:") !== false){
+					$key = substr($key,5);
+					$class->setAttribute($key,$value);
+					continue;
+				}
+				if(method_exists($class,"set".ucwords($key))  || $class->functionExists("set".ucwords($key))){
+					$func = "set".ucwords($key);
+					$class->$func($value);
+					continue;
+				}
+				if(stristr($key,':function')){
+					$key = trim($key);
+					$funcName = str_replace(strstr($key,":function"),"",$key);
+					$argsRegex = '/:function\s*\((.*)\)$/';
+					$tmp = array();
+					if(preg_match($argsRegex,$key,$tmp)){
+						$args = explode(",",$tmp[1]);
+					}else{
+						continue;
+					}
+					$code = $value;
+					$class->addFunction($funcName,$args,$code);
+					continue;
+				}
+				$class->setAttribute($key,$value);
 			}
-			$class->setAttribute($key,$value);
 		}
+
 		return $class;
 	}
 	/**
@@ -5832,7 +5842,10 @@ class SOYBodyComponentBase extends SOY2HTML{
 	 * @see HTMLPage.add
 	 */
 	function createAdd($id,$className,$array = array()){
-		if(!isset($array["soy2prefix"]) && $this->_childSoy2Prefix)$array["soy2prefix"] = $this->_childSoy2Prefix;
+		if(!isset($array["soy2prefix"]) && $this->_childSoy2Prefix) {
+			if(!is_array($array)) $array = array();
+			$array["soy2prefix"] = $this->_childSoy2Prefix;
+		}
 		$this->add($id,SOY2HTMLFactory::createInstance($className,$array));
 	}
 	function getStartTag(){
@@ -5866,6 +5879,43 @@ class SOYBodyComponentBase extends SOY2HTML{
 	function isMerge(){
 		return true;
 	}
+
+	/** PHP7.4対応 SOY2HTMLBaseの__call()の廃止 **/
+	function addForm($id, $array=array()){self::createAdd($id, "HTMLForm", $array);}
+	function addUploadForm($id, $array=array()){self::createAdd($id, "HTMLUploadForm", $array);}
+	function addModel($id, $array=array()){self::createAdd($id, "HTMLModel", $array);}
+	function addLabel($id, $array=array()){self::createAdd($id, "HTMLLabel", $array);}
+	function addImage($id, $array=array()){self::createAdd($id, "HTMLImage", $array);}
+	function addLink($id, $array=array()){self::createAdd($id, "HTMLLink", $array);}
+	function addActionLink($id, $array=array()){self::createAdd($id, "HTMLActionLink", $array);}
+	function addInput($id, $array=array()){
+		self::createAdd($id, "HTMLInput", $array);
+		self::addText($id, $array);
+	}
+	function addTextArea($id, $array=array()){
+		self::createAdd($id, "HTMLTextArea", $array);
+		self::addText($id, $array);
+	}
+	function addCheckBox($id, $array=array()){
+		self::createAdd($id, "HTMLCheckBox", $array);
+		self::addText($id, $array);
+	}
+	function addSelect($id, $array=array()){
+		self::createAdd($id, "HTMLSelect", $array);
+		self::addText($id, $array);
+	}
+	function addHidden($id, $array=array()){self::createAdd($id, "HTMLHidden", $array);}
+	function addScript($id, $array=array()){self::createAdd($id, "HTMLScript", $array);}
+	function addCSS($id, $array=array()){self::createAdd($id, "HTMLCSS", $array);}
+	function addCSSLink($id, $array=array()){self::createAdd($id, "HTMLCSSLink", $array);}
+	function addText($id, $array=array()){
+		$new = array();
+		if(isset($array["soy2prefix"]) && strlen($array["soy2prefix"])) $new["soy2prefix"] = $array["soy2prefix"];
+		$new["text"] = (isset($array["value"])) ? $array["value"] : null;
+		if(!strlen($new["text"]) && isset($array["text"]) && strlen($array["text"])) $new["text"] = $array["text"]; //addTextAreaの場合
+		self::createAdd($id. "_text", "HTMLLabel", $new);
+	}
+	function addList($id, $array=array()){self::createAdd($id, "HTMLList", $array);}
 }
 /**
  * @package SOY2.SOY2HTML
@@ -6363,9 +6413,7 @@ class HTMLCheckBox extends HTMLInput {
 	}
 	function execute(){
 		parent::execute();
-		if(!$this->elementId){
-			$this->elementId = "label_" . @md5(crypt((string)$this->value));
-		}
+		if(!$this->elementId) $this->elementId = "label_" . md5((string)$this->value.(string)$this->name.(string)rand(0,1));
 		$this->setAttribute("id",$this->elementId);
 		$checked = ($this->selected) ? "checked" : null;
 		$this->setAttribute("checked",$checked, false);
@@ -7026,16 +7074,21 @@ class HTMLPage extends SOYBodyComponentBase{
 		$filePath = $this->getCacheFilePath();
 		$this->createCacheFile();
 		$this->createPermanentAttributesCache();
-		$page = &HTMLPage::getPage();
-		if($this->getId()){
-			$page[$this->getId()] = $this->_soy2_page;
+		if(file_exists($filePath)){	//キャッシュファイルを作成できなかった場合
+			$page = &HTMLPage::getPage();
+			if($this->getId()){
+				$page[$this->getId()] = $this->_soy2_page;
+			}else{
+				$page = $this->_soy2_page;
+			}
+			ob_start();
+			include($filePath);
+			$html = ob_get_contents();
+			ob_end_clean();
 		}else{
-			$page = $this->_soy2_page;
+			$html = "";
 		}
-		ob_start();
-		include($filePath);
-		$html = ob_get_contents();
-		ob_end_clean();
+
 		$layoutDir = SOY2HTMLConfig::LayoutDir();
 		$layout = $this->getLayout();
 		if($layoutDir && is_file($layoutDir . $layout)){
@@ -7095,12 +7148,19 @@ class HTMLPage extends SOYBodyComponentBase{
 			$dir = str_replace($pageDir,$templateDir,$dir);
 		}
 		$lang = SOY2HTMLConfig::Language();
-		$lang_html = $dir . get_class($this) . "_" . $lang . ".html";
-		$default_html = $dir . get_class($this) . ".html";
-		if(strlen($lang)>0 && file_exists($lang_html)){
-			return $lang_html;
+		if(strlen($lang) > 0){
+			$lang_html = $dir . get_class($this) . "_" . $lang . ".html";
+			if(file_exists($lang_html)){
+				return $lang_html;
+			}
 		}
-		return $default_html;
+		//隠しモード：同名のHTMLファイルのファイル名の頭に_(アンダースコア)を付与すると優先的に読み込む
+		$hidden_mode_html = $dir . "_" . get_class($this) . ".html";
+		if(file_exists($hidden_mode_html)){
+			return $hidden_mode_html;
+		}
+
+		return $dir . get_class($this) . ".html";
 	}
 	/**
 	 * キャッシュファイルのパス
@@ -8533,7 +8593,8 @@ class SOY2Logger_RotationFileLogger extends SOY2Logger_FileLogger{
 			$logs[] = $nextFilePath;
 		}
 		$logs = array_reverse($logs);
-		for($i=0;$i<count($logs)-1;$i++){
+		$logsCnt = count($logs)-1;
+		for($i=0;$i<$logsCnt;++$i){
 			@unlink($dirname.$logs[$i]);
 			rename($dirname.$logs[($i+1)],$dirname.$logs[$i]);
 		}
@@ -9053,6 +9114,10 @@ function soy2_resizeimage($filepath,$savepath,$width = null,$height = null){
 }
 function soy2_image_resizeimage_gd($filepath,$savepath,$width = null,$height = null){
 	$info = pathinfo($filepath); //php version is 5.2.0 use pathinfo($filepath,PATHINFO_EXTENSION);
+	if(!isset($info["extension"])) {
+		trigger_error("Failed [Type is empty] " . __FILE__ . ":" . __LINE__,E_USER_ERROR);
+		return -1;
+	}
 	$type = strtolower($info["extension"]);
 	if($type == "jpg")$type = "jpeg";
 	$from = "imagecreatefrom" . $type;
@@ -9147,15 +9212,15 @@ function soy2_unserialize($string){
  * tokenを発行など
  */
 function soy2_get_token(){
-	if(!isset($_SESSION))@session_start();
+	if(session_status() == PHP_SESSION_NONE) session_start();
 	if(!isset($_SESSION["soy2_token"])){
 		$_SESSION["soy2_token"] = soy2_generate_token();
 	}
 	return $_SESSION["soy2_token"];
 }
 function soy2_check_token(){
-	if(!isset($_SESSION))@session_start();
-	if(isset($_SESSION["soy2_token"]) AND isset($_REQUEST["soy2_token"])){
+	if(session_status() == PHP_SESSION_NONE) session_start();
+	if(isset($_SESSION["soy2_token"]) && isset($_REQUEST["soy2_token"])){
 		if($_REQUEST["soy2_token"] === $_SESSION["soy2_token"]){
 			$_SESSION["soy2_token"] = soy2_generate_token();
 			return true;
@@ -9165,4 +9230,69 @@ function soy2_check_token(){
 }
 function soy2_generate_token(){
 	return md5(mt_rand());
+}
+function soy2_check_referer(){
+	$referer = parse_url($_SERVER['HTTP_REFERER']);
+	$port = (isset($referer["port"]) && ($referer["port"] != 80 || $referer["port"] != 443)) ? ":" . $referer["port"] : "";
+	if($referer['host'] . $port !== $_SERVER['HTTP_HOST']) return false;
+
+	$_path = $referer["path"];
+
+	//pathinfoがある時は削除する
+	$queryString = $_SERVER['QUERY_STRING'];
+	if(is_numeric(strpos($queryString, "pathinfo"))){
+		$array = explode("&", $queryString);
+		$params = array();
+		foreach($array as $value){
+			$v = explode("=", $value);
+			if($v[0] == "pathinfo") continue;
+			$params[$v[0]] = $v[1];
+		}
+
+		$queryString = "";
+		if(count($params)){
+			foreach($params as $key => $v){
+				if(strlen($queryString)) $queryString .= "&";
+				$queryString .= $key . "=" . $v;
+			}
+		}
+	}
+
+	if(isset($queryString) && strlen($queryString)) $_path .= "?" . $queryString;
+	return ($_path == $_SERVER['REQUEST_URI']);
+}
+/* function/function.soy2_setcookie.php */
+/*
+ * PHPのバージョンによってsetcookieのオプションの値を変える
+ */
+function soy2_setcookie($key, $value=null, $opts=array()){
+	if(!count($opts)) $opts = session_get_cookie_params();	//optsが空の場合はセッションの設定を用いる
+	if(is_null($value))	$opts["expires"] = time()-1;	//valueがnullの場合はクッキーを削除する
+	if(isset($opts["lifetime"])) unset($opts["lifetime"]);	//lifetimeがある場合は削除
+
+	if(!isset($opts["path"]) || !is_string($opts["path"]) || !strlen($opts["path"])) $opts["path"] = "/";
+	if(!isset($opts["domain"]) || !is_string($opts["domain"]) || !strlen($opts["domain"])) $opts["domain"] = null;
+	if(!isset($opts["expires"]) || !is_numeric($opts["expires"])) $opts["expires"] = 0;
+	if(!isset($opts["httponly"]) || !is_bool($opts["httponly"])) $opts["httponly"] = true;
+	if(!isset($opts["secure"]) || !is_bool($opts["secure"])) $opts["secure"] = (isset($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] == "on");
+
+	$vArr = explode(".", phpversion());
+	if(($vArr[0] >= 8 || ($vArr[0] >= 7 && $vArr[1] >= 3))){	//php 7.3以降 samesiteの指定が出来る
+		if(!isset($opts["samesite"])) {	// SameSiteの値はセッションの設定から取得する
+			$sessParams = session_get_cookie_params();
+			$opts["samesite"] = (isset($sessParams["samesite"]) && strlen($sessParams["samesite"])) ? $sessParams["samesite"] : "Lax";
+			unset($sessParams);
+		}
+		setcookie($key, $value, $opts);
+	}else{
+		setcookie($key, $value , $opts["expires"], $opts["path"], $opts["domain"], $opts["secure"], $opts["httponly"]);
+	}
+}
+/* function/function.soy2_number_format.php */
+/*
+ * number_formatの第一引数が数字ではなかった場合
+ */
+function soy2_number_format($int){
+	if(!is_numeric($int)) return 0;
+	return number_format($int);
 }

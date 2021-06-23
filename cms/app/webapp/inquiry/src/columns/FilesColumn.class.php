@@ -77,7 +77,7 @@ class FilesColumn extends SOYInquiry_ColumnBase{
 	 */
 	function getView(){
 		$values = self::getValues();
-		if(count($values)){
+		if(is_array($values) && count($values)){
 			$html = array();
 			foreach($values as $v){
 				if(isset($v["tmp_name"]) && strlen($v["tmp_name"])){
@@ -97,7 +97,7 @@ class FilesColumn extends SOYInquiry_ColumnBase{
 	 */
 	function getContent(){
 		$values = self::getValues();
-		if(count($values)){
+		if(is_array($values) && count($values)){
 			$html = array();
 			foreach($values as $v){
 				if(isset($v["tmp_name"]) && strlen($v["tmp_name"])){
@@ -133,10 +133,15 @@ class FilesColumn extends SOYInquiry_ColumnBase{
 
 				//拡張子のチェック
 				$pathinfo = pathinfo($v["name"]);
-				$extensions = explode(",", $this->extensions);
-				if(!in_array($pathinfo["extension"], $extensions)){
+				$extensions = self::_shapeExtensions();
+				if(count($extensions)){
+					$res = false;
+					foreach($extensions as $ext){	//大文字小文字関係なく拡張子を確かめる
+						if(!$res && is_numeric(stripos($pathinfo["extension"], $ext))) $res = true;
+					}
+
 					// @ToDo 何らかのエラーを出力したい
-					$v = self::setError($v);
+					if(!$res) $v = self::setError($v);
 				}
 
 				//ファイルサイズチェック
@@ -148,6 +153,10 @@ class FilesColumn extends SOYInquiry_ColumnBase{
 				//一時的にアップロードする
 				if(strlen($v["tmp_name"])) {	//エラーがなければtmp_nameには何らかの文字列が入っている
 					$path_to = SOY_INQUIRY_UPLOAD_TEMP_DIR . md5($v["name"] . time()) . "." . $pathinfo["extension"];
+					for(;;){	//複数フォームを設置して、同名のファイルを送信する際に以前アップロードしたものが上書きされないようにファイル名を変更する
+						if(!file_exists($path_to)) break;
+						$path_to = SOY_INQUIRY_UPLOAD_TEMP_DIR . md5($v["name"] . rand(1, 10) . time()) . "." . $pathinfo["extension"];
+					}
 					$result = move_uploaded_file($v["tmp_name"], $path_to);
 
 					if($result){
@@ -197,7 +206,7 @@ class FilesColumn extends SOYInquiry_ColumnBase{
 	 */
 	function onSend($inquiry){
 		$values = self::getValues();
-		if(count($values)){
+		if(is_array($values) && count($values)){
 			$new_dir = SOY_INQUIRY_UPLOAD_DIR . "/" . $this->getFormId() . "/" . date("Ym") . "/";
 			if(!file_exists($new_dir)) mkdir($new_dir,0777,true);
 
@@ -207,6 +216,15 @@ class FilesColumn extends SOYInquiry_ColumnBase{
 				if(!isset($v["size"]) || $v["size"] == 0) continue;
 				$tmp_name = $v["tmp_name"];
 				$new_name = str_replace(SOY_INQUIRY_UPLOAD_TEMP_DIR, $new_dir, $tmp_name);
+				if(strpos($new_name, "//")) $new_name = str_replace("//", "/", $new_name);
+
+				//同名のファイルがある場合は名前を変更する
+				if(file_exists($new_name)){
+					//拡張子を抜いて、ファイル名を少し変更する
+					$ext = substr($new_name, strrpos($new_name, "."));
+					$new_name = substr($new_name, 0, strrpos($new_name, "."));
+					$new_name .= rand(100, 999) . $ext;
+				}
 
 				if(rename($tmp_name, $new_name)){
 					$v["filepath"] = str_replace("\\","/",realpath($new_name));
@@ -218,8 +236,14 @@ class FilesColumn extends SOYInquiry_ColumnBase{
 					$content .= '<a href="' . htmlspecialchars($v["filepath"], ENT_QUOTES, "UTF-8") . '">' . htmlspecialchars($v["name"], ENT_QUOTES, "UTF-8") . '</a>';
 
 					$pathinfo = pathinfo($v["filepath"]);
-					if(in_array($pathinfo["extension"], array("jpg", "jpeg", "gif", "png"))){
-						$content .= '<br/><img src="' . htmlspecialchars($v["filepath"], ENT_QUOTES, "UTF-8") . '"/>';
+					$extensions = self::_shapeExtensions();
+					if(count($extensions)){
+						$res = false;
+						foreach($extensions as $ext){	//拡張子を大文字小文字関係なく調べる
+							if(!$res && is_numeric(stripos($pathinfo["extension"], $ext))) $res = true;
+						}
+
+						if($res) $content .= '<br/><img src="' . htmlspecialchars($v["filepath"], ENT_QUOTES, "UTF-8") . '"/>';
 					}
 
 					$comment = new SOYInquiry_Comment();
@@ -234,6 +258,19 @@ class FilesColumn extends SOYInquiry_ColumnBase{
 
 			$this->setValue($values);
 		}
+	}
+
+	private function _shapeExtensions(){
+		$array = explode(",", $this->extensions);
+		if(!count($array)) return array();
+		$exts = array();
+
+		foreach($array as $ext){
+			$ext = trim($ext);
+			if(!strlen($ext)) continue;
+			$exts[] = $ext;
+		}
+		return $exts;
 	}
 
 	private function getValues(){

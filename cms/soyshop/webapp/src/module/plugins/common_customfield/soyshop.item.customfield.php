@@ -125,11 +125,13 @@ class CommonItemCustomField extends SOYShopItemCustomFieldBase{
 			$html[] = '}';
 
 			$html[] = 'if(isCategory){';
-			$html[] = '	$("#custom_field_' . $config->getFieldId() . '_dt").show();';
-			$html[] = '	$("#custom_field_' . $config->getFieldId() . '").show();';
+			// $html[] = '	$("#custom_field_' . $config->getFieldId() . '_dt").show();';
+			// $html[] = '	$("#custom_field_' . $config->getFieldId() . '").show();';
+			$html[] = '	$("#custom_field_' . $config->getFieldId() . '_group").show();';
 			$html[] = '}else{';
-			$html[] = '	$("#custom_field_' . $config->getFieldId() . '_dt").hide();';
-			$html[] = '	$("#custom_field_' . $config->getFieldId() . '").hide();';
+			//$html[] = '	$("#custom_field_' . $config->getFieldId() . '_dt").hide();';
+			//$html[] = '	$("#custom_field_' . $config->getFieldId() . '").hide();';
+			$html[] = '	$("#custom_field_' . $config->getFieldId() . '_group").hide();';
 			$html[] = '}';
 		}
 		$html[] = "}, 1000);";
@@ -185,6 +187,16 @@ class CommonItemCustomField extends SOYShopItemCustomFieldBase{
 					$value = soyshop_convert_file_path($value, $item);
 
 					$extraValues = (isset($this->fieldTable[$config->getFieldId()])) ? $this->fieldTable[$config->getFieldId()]->getExtraValuesArray() : array();
+					if(!count($extraValues) && strlen($config->getExtraOutputs())){	//追加属性があるかだけ調べておく
+						$outputs = explode("\n", $config->getExtraOutputs());
+						if(count($outputs)){
+							foreach($outputs as $out){
+								$out = trim($out);
+								if(!strlen($out)) continue;
+								$extraValues[$out] = "";
+							}
+						}
+					}
 					if(strlen($config->getOutput() > 0)){
 						$class = "HTMLModel";
 						$attr = array(
@@ -223,12 +235,12 @@ class CommonItemCustomField extends SOYShopItemCustomFieldBase{
 				case "textarea":
 					if(strlen($config->getOutput()) > 0){
 						$htmlObj->addModel($config->getFieldId(), array(
-							"attr:" . htmlspecialchars($config->getOutput()) => nl2br($value),
+							"attr:" . htmlspecialchars($config->getOutput()) => soyshop_customfield_nl2br($value),
 							"soy2prefix" => SOYSHOP_SITE_PREFIX
 						));
 					}else{
 						$htmlObj->addLabel($config->getFieldId(), array(
-							"html" => nl2br($value),
+							"html" => soyshop_customfield_nl2br($value),
 							"soy2prefix" => SOYSHOP_SITE_PREFIX
 						));
 					}
@@ -236,12 +248,12 @@ class CommonItemCustomField extends SOYShopItemCustomFieldBase{
 				case "link":
 					if(strlen($config->getOutput()) > 0){
 						$htmlObj->addModel($config->getFieldId(), array(
-							"attr:" . htmlspecialchars($config->getOutput()) => nl2br($value),
+							"attr:" . htmlspecialchars($config->getOutput()) => $value,
 							"soy2prefix" => SOYSHOP_SITE_PREFIX
 						));
 					}else{
 						$htmlObj->addLink($config->getFieldId(), array(
-							"link" => nl2br($value),
+							"link" => $value,
 							"soy2prefix" => SOYSHOP_SITE_PREFIX
 						));
 					}

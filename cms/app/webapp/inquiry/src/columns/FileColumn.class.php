@@ -16,15 +16,16 @@ class FileColumn extends SOYInquiry_ColumnBase{
 	 */
 	function getForm($attr = array()){
 
-		$value = $this->getValue();
-		
+		$values = $this->getValue();
+		if(!is_array($values)) $values = array("name" => "", "size" => "");
+
 		$html = array();
-		$isUploaded = is_array($value);
+		$isUploaded = (is_numeric($values["size"]) && (int)$values["size"] > 0);
 
 		//アップロードされていた場合
 		if($isUploaded){
-			$html[] = htmlspecialchars($value["name"], ENT_QUOTES, "UTF-8") . "(".(int)($value["size"] / self::KB_SIZE)."KB)";
-			$new_value = base64_encode(soy2_serialize($value));
+			$html[] = htmlspecialchars($values["name"], ENT_QUOTES, "UTF-8") . "(".(int)($values["size"] / self::KB_SIZE)."KB)";
+			$new_value = base64_encode(soy2_serialize($values));
 			$html[] = '<input type="hidden" name="data['.$this->getColumnId().']" value="'.$new_value.'" />';
 			$html[] = "<br>";
 
@@ -58,13 +59,13 @@ class FileColumn extends SOYInquiry_ColumnBase{
 	 * 確認画面用
 	 */
 	function getView(){
-		$value = $this->getValue();
+		$values = $this->getValue();
 
-		if(is_array($value) && isset($value["name"]) && isset($value["size"])){
+		if(is_array($values) && isset($values["name"]) && isset($values["size"])){
 			$html = "";
 /**
-			if(strpos($value["type"], "image") !== false){
-				$imgPath = str_replace(SOY_INQUIRY_UPLOAD_DIR, "", $value["tmp_name"]);
+			if(strpos($values["type"], "image") !== false){
+				$imgPath = str_replace(SOY_INQUIRY_UPLOAD_DIR, "", $values["tmp_name"]);
 				$siteId = trim(substr(_SITE_ROOT_, strrpos(_SITE_ROOT_, "/")), "/");
 
 				//リサイズ
@@ -74,7 +75,7 @@ class FileColumn extends SOYInquiry_ColumnBase{
 			}
 			**/
 
-			$html .= htmlspecialchars($value["name"] . " (".(int)($value["size"] / self::KB_SIZE)."KB)", ENT_QUOTES, "UTF-8");
+			$html .= htmlspecialchars($values["name"] . " (".(int)($values["size"] / self::KB_SIZE)."KB)", ENT_QUOTES, "UTF-8");
 			return $html;
 		}
 
@@ -85,16 +86,12 @@ class FileColumn extends SOYInquiry_ColumnBase{
 	 * データ投入用
 	 */
 	function getContent(){
-		$value = $this->getValue();
-
-		if(is_array($value) && isset($value["name"]) && isset($value["size"])){
-
+		$values = $this->getValue();
+		if(is_array($values) && isset($values["name"]) && isset($values["size"]) && is_numeric($values["size"])){
 			$html = array();
-			$html[] = $value["name"] . " (".(int)($value["size"] / self::KB_SIZE)."KB)";
-
+			$html[] = $values["name"] . " (".(int)($values["size"] / self::KB_SIZE)."KB)";
 			return implode("\n",$html);
 		}
-
 		return "";
 	}
 
@@ -103,28 +100,43 @@ class FileColumn extends SOYInquiry_ColumnBase{
 	 */
 	function onSend($inquiry){
 
-		$value = $this->getValue();
+		$values = $this->getValue();
 
-		if(is_array($value)){
-			$tmp_name = $value["tmp_name"];
+		if(is_array($values)){
+			$tmp_name = $values["tmp_name"];
 
 			$new_dir = SOY_INQUIRY_UPLOAD_DIR . "/" . $this->getFormId() . "/" . date("Ym") . "/";
 			if(!file_exists($new_dir)) mkdir($new_dir,0777,true);
 
 			$new_name = str_replace(SOY_INQUIRY_UPLOAD_TEMP_DIR, $new_dir, $tmp_name);
+			if(strpos($new_name, "//")) $new_name = str_replace("//", "/", $new_name);
+
+			//同名のファイルがある場合は名前を変更する
+			if(file_exists($new_name)){
+				//拡張子を抜いて、ファイル名を少し変更する
+				$ext = substr($new_name, strrpos($new_name, "."));
+				$new_name = substr($new_name, 0, strrpos($new_name, "."));
+				$new_name .= rand(100, 999) . $ext;
+			}
 
 			if(rename($tmp_name,$new_name)){
-				$value["filepath"] = str_replace("\\","/",realpath($new_name));
-				$value["filepath"] = str_replace(SOY_INQUIRY_UPLOAD_ROOT_DIR,"",$value["filepath"]);
+				$values["filepath"] = str_replace("\\","/",realpath($new_name));
+				$values["filepath"] = str_replace(SOY_INQUIRY_UPLOAD_ROOT_DIR,"",$values["filepath"]);
 				$this->setValue($value);
 
 				//コメントに追加する
 				$content = $this->getLabel() . ":";
-				$content .= '<a href="'.htmlspecialchars($value["filepath"],ENT_QUOTES,"UTF-8").'">'.htmlspecialchars($value["name"],ENT_QUOTES,"UTF-8").'</a>';
+				$content .= '<a href="'.htmlspecialchars($values["filepath"],ENT_QUOTES,"UTF-8").'">'.htmlspecialchars($values["name"],ENT_QUOTES,"UTF-8").'</a>';
 
-				$pathinfo = pathinfo($value["filepath"]);
-				if(in_array($pathinfo["extension"],array("jpg","jpeg","gif","png"))){
-					$content .= '<br/><img src="'.htmlspecialchars($value["filepath"],ENT_QUOTES,"UTF-8").'"/>';
+				$pathinfo = pathinfo($values["filepath"]);
+				$extensions = self::_shapeExtensions();
+				if(count($extensions)){
+					$res = false;
+					foreach($extensions as $ext){	//拡張子を大文字小文字関係なく調べる
+						if(!$res && is_numeric(stripos($pathinfo["extension"], $ext))) $res = true;
+					}
+
+					if($res) $content .= '<br/><img src="'.htmlspecialchars($values["filepath"],ENT_QUOTES,"UTF-8").'"/>';
 				}
 
 				$commentDAO = SOY2DAOFactory::create("SOYInquiry_CommentDAO");
@@ -180,14 +192,21 @@ class FileColumn extends SOYInquiry_ColumnBase{
 		//アップロードしていない場合は終了
 		if(strlen($name)<1)return;
 
-		$pathinfo = pathinfo($name);
-
 		//拡張子チェック
-		$extensions = explode(",", $this->extensions);
-		if(!in_array($pathinfo["extension"], $extensions)){
-			$this->setErrorMessage($this->getLabel()."の形式が不正です。");
-			return false;
+		$pathinfo = pathinfo($name);
+		$extensions = self::_shapeExtensions();
+		if(count($extensions)){
+			$res = false;
+			foreach($extensions as $ext){	//大文字小文字関係なく拡張子を確かめる
+				if(!$res && is_numeric(stripos($pathinfo["extension"], $ext))) $res = true;
+			}
+
+			if(!$res) {
+				$this->setErrorMessage($this->getLabel()."の形式が不正です。");
+				return false;
+			}
 		}
+
 
 		//ファイルサイズチェック
 		if(($this->uploadsize * self::KB_SIZE)< $size){
@@ -200,6 +219,10 @@ class FileColumn extends SOYInquiry_ColumnBase{
 			mkdir(SOY_INQUIRY_UPLOAD_TEMP_DIR);
 		}
 		$path_to = SOY_INQUIRY_UPLOAD_TEMP_DIR . md5($name . time()) . "." . $pathinfo["extension"];
+		for(;;){	//複数フォームを設置して、同名のファイルを送信する際に以前アップロードしたものが上書きされないようにファイル名を変更する
+			if(!file_exists($path_to)) break;
+			$path_to = SOY_INQUIRY_UPLOAD_TEMP_DIR . md5($name . rand(1, 10) . time()) . "." . $pathinfo["extension"];
+		}
 		$result = move_uploaded_file($tmp_name,$path_to);
 
 		//一時アップロードに失敗した場合
@@ -236,6 +259,19 @@ class FileColumn extends SOYInquiry_ColumnBase{
 
 		$new_value = base64_encode(serialize($this->getValue()));
 		$_POST["data"][$this->getColumnId()] = $new_value;
+	}
+
+	private function _shapeExtensions(){
+		$array = explode(",", $this->extensions);
+		if(!count($array)) return array();
+		$exts = array();
+
+		foreach($array as $ext){
+			$ext = trim($ext);
+			if(!strlen($ext)) continue;
+			$exts[] = $ext;
+		}
+		return $exts;
 	}
 
 	/**

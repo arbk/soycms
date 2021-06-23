@@ -9,7 +9,7 @@ abstract class SOYShop_UserDAO extends SOY2DAO{
 	 */
     function insert(SOYShop_User $bean){
     	$password = $bean->getPassword();
-    	if(strlen($password) > 0){
+    	if(strlen($password) > 0 && strlen($password) < 100){	//念の為文字数制限を加えておく
     		$bean->setPassword($bean->hashPassword($password));
     	}
 
@@ -70,6 +70,13 @@ abstract class SOYShop_UserDAO extends SOY2DAO{
      */
     abstract function getByNotDisabled();
 
+	/**
+	 * @index id
+     * @return list
+     * @query is_disabled = 0 AND is_publish = 1
+     */
+    abstract function getIsPublishUsers();
+
     /**
 	 * @return object
 	 */
@@ -125,6 +132,7 @@ abstract class SOYShop_UserDAO extends SOY2DAO{
 	 * @final
 	 */
 	function onInsert($query, $binds){
+		if(!isset($binds[":honorific"]) || !strlen($binds[":honorific"])) $binds[":honorific"] = "様";
 		if(!isset($binds[":userCode"]) || !strlen($binds[":userCode"])) $binds[":userCode"] = null;
 		if((int)$binds[":area"] === 0) $binds[":area"] = null;
 		if(strlen($binds[":accountId"]) === 0) $binds[":accountId"] = null;

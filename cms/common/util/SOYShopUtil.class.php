@@ -321,11 +321,15 @@ class SOYShopUtil {
 		if($root == 1 || $session->getAttribute("isSiteAdministrator")){
 			$level = 1;
 		}else{
-			$level = self::checkSiteAdmin($siteId, $session->getAttribute("userid"));
+			$level = self::_checkSiteAdmin($siteId, $session->getAttribute("userid"));
 		}
 
 		$session->setAttribute("app_shop_auth_level", $level);
-		$url = SOY2PageController::createRelativeLink("../soyshop", true) . "?site_id=" . $siteId;
+
+		// SOY Shopの管理画面のURIを変更する
+		if(file_exists(SOY2::RootDir() . "config/admin.uri.config.php")) include(SOY2::RootDir() . "config/admin.uri.config.php");
+		if(!defined("SOYSHOP_ADMIN_URI")) define("SOYSHOP_ADMIN_URI", "soyshop");
+		$url = SOY2PageController::createRelativeLink("../" . SOYSHOP_ADMIN_URI, true) . "?site_id=" . $siteId;
 		header("Location:" . $url);
 		exit;
 	}
@@ -334,22 +338,12 @@ class SOYShopUtil {
 	 * SOY Shopのサイト権限をチェックする
 	 * @return isLimitUser
 	 */
-	function checkSiteAdmin($siteId,$userId){
-		$siteDao = SOY2DAOFactory::create("admin.SiteDAO");
+	private static function _checkSiteAdmin($siteId, $userId){
 		try{
-			$site = $siteDao->getBySiteId($siteId);
+			$id = SOY2DAOFactory::create("admin.SiteDAO")->getBySiteId($siteId)->getId();
+			return SOY2DAOFactory::create("admin.SiteRoleDAO")->getSiteRole($id, $userId)->getIsLimitUser();
 		}catch(Exception $e){
-			$site = new Site();
+			return 0;
 		}
-
-		$siteRoleDao = SOY2DAOFactory::create("admin.SiteRoleDAO");
-		try{
-			$role = $siteRoleDao->getSiteRole($site->getId(),$userId);
-		}catch(Exception $e){
-			$role = new SiteRole();
-		}
-
-		return $role->getIsLimitUser();
 	}
-
 }

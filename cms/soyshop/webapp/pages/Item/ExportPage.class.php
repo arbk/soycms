@@ -260,6 +260,21 @@ class ExportPage extends WebPage{
         echo implode("\r\n", $lines) . "\r\n";
     }
 
+	function getBreadcrumb(){
+		return BreadcrumbComponent::build("商品情報CSVエクスポート", array("Item" => "商品管理"));
+	}
+
+	function getFooterMenu(){
+		try{
+			return SOY2HTMLFactory::createInstance("Item.FooterMenu.ItemFooterMenuPage", array(
+				"arguments" => array(null)
+			))->getObject();
+		}catch(Exception $e){
+			//
+			return null;
+		}
+	}
+
     function getScripts(){
         $root = SOY2PageController::createRelativeLink("./js/");
         return array(

@@ -12,6 +12,9 @@ class CMSPlugin {
 	 */
 	var $_event = array(
 
+		//PathInfoBuilder
+		"onPathInfoBuilder"=>array(),	//PathInfoBuilder内				array(uri, args) @return array("uri" => "", args => array())
+
 		//ページ関連
 		"onPageLoad"=>array(),			//ページが読み込まれる直前			array(page,webPage)
 		"onPageCreate"=>array(),		//ページが作成される直前			array(page)
@@ -35,10 +38,16 @@ class CMSPlugin {
 		"onEntryCopy"=>array(),			//エントリー複製時に呼び出される	array(oldId,newId)
 		"onSetupWYSIWYG"=>array(),		//WYSIWYGエディタをセットアップしている時 array(entryId, labelIds)
 
+		//記事のCSV
+		"onEntryCSVExImport"=>array(),			//インポート、エクスポート時に対象となるプラグインを探す array()
+		"onEntryCSVExport"=>array(),		//記事データのエクスポート array(entryId)
+		"onEntryCSVImport"=>array(),		//記事データのインポート array(entryId, value)
+
 		//ラベル関連
 		"onLabelCreate"=>array(),		//ラベルが作成される直前			array(label)
 		"onLabelUpdate"=>array(),		//ラベルが更新される直前			array(new_label)
 		"onLabelRemove"=>array(),		//ラベルが削除される直前			array(labelId)
+		"onLabelOutput"=>array(),		//ラベルが呼び出された際に呼ばれる array(labelId,SOYHTMLObject,label)
 		"onLabelSetupWYSIWYG"=>array(),	//ラベル詳細でWYSIWYGエディタをセットアップしている時
 
 		//エントリーラベル関連
@@ -60,6 +69,7 @@ class CMSPlugin {
 		"onSubmitTrackback"=>array(),	//*トラックバックを受信したとき		array(trackback)
 		"afterSubmitTrackback"=>array(),//*トラックバックを挿入した後		array(trackback)
 		"onBlogSetupWYSIWYG"=>array(),	//ブログページ詳細でWYSIWYGエディタをセットアップしている時
+		"onBlogPageUpdate"=>array(),		//ページが更新される直前			array(new_page,old_page)
 
 		//ブロック関連
 		"onBlockLoad"=>array(),			//*ブロックが呼び出される直前(blockId)
@@ -78,6 +88,9 @@ class CMSPlugin {
 		"beforeOutput"=>array(),		//出力される直前
 		"afterOutput"=>array(),			//出力された直後
 		"onOutput"=>array(),			//出力されるHTMLに対して最後に呼ばれるイベント（最終的に出力されるHTML）	array(html,page,webPage),
+
+		//キャッシュの削除
+		"onClearCache"=>array(),			//キャッシュの削除の際
 
 		//アクセス関連
 		"onSiteAccess"=>array(),		//サイトにアクセスがあった場合 array()

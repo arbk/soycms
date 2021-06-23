@@ -1,5 +1,6 @@
 <?php
 function get_report($e){
+	$cmsName = CMSUtil::getCMSName();
 	$str = array();
 
 	$str[] = 'DETECT DATE: '.date('c');
@@ -14,39 +15,47 @@ function get_report($e){
 	$str[] = '';
 	$str[] = 'Server Environment';
 	$str[] = get_environment_report();
-	$str[] = '';
-	$str[] = 'SOY CMS Options';
-	$str[] = get_soycms_options();
+	if($cmsName == "SOY CMS"){
+		$str[] = '';
+		$str[] = $cmsName . ' Options';
+		$str[] = get_soycms_options();
+	}
 
 	return implode("\n",$str);
 }
 
 function get_soycms_report(){
+	$cmsName = CMSUtil::getCMSName();
+
 	$str = array();
 
-	$str[] = 'SOY CMS Version:           '.SOYCMS_VERSION;
-	$str[] = 'SOY CMS Build Date:        '.SOYCMS_BUILD;
-	$str[] = 'SOY CMS DB Type:           '.SOYCMS_DB_TYPE;
-	$str[] = 'SOY2RootDir:               '.SOY2::RootDir();
-	$str[] = 'SOY2_DOCUMENT_ROOT:        '.( (defined("SOY2_DOCUMENT_ROOT")) ? SOY2_DOCUMENT_ROOT : "undefined");
+	$str[] = $cmsName . ' Version:           '.SOYCMS_VERSION;
+	$str[] = $cmsName . ' Build Date:        '.SOYCMS_BUILD;
+	$str[] = $cmsName . ' DB Type:           '.SOYCMS_DB_TYPE;
+	if($cmsName == "SOY CMS"){
+		$str[] = 'SOY2RootDir:               '.SOY2::RootDir();
+		$str[] = 'SOY2_DOCUMENT_ROOT:        '.( (defined("SOY2_DOCUMENT_ROOT")) ? SOY2_DOCUMENT_ROOT : "undefined");
+	}
 
 	return implode("\n",$str);
 }
 
 function get_soycms_options(){
-	$str = array();
+	$cmsName = CMSUtil::getCMSName();
 
-	$str[] = 'SOYCMS_ALLOWED_EXTENSIONS: '.( (defined("SOYCMS_ALLOWED_EXTENSIONS")) ? SOYCMS_ALLOWED_EXTENSIONS : "undefined");
-	$str[] = 'SOYCMS_ALLOW_PHP_SCRIPT:   '.( (defined("SOYCMS_ALLOW_PHP_SCRIPT")) ? SOYCMS_ALLOW_PHP_SCRIPT : "undefined");
-	$str[] = 'SOYCMS_SKIP_MOBILE_RESIZE: '.( (defined("SOYCMS_SKIP_MOBILE_RESIZE")) ? SOYCMS_SKIP_MOBILE_RESIZE : "undefined");
-	$str[] = 'SOYCMS_BLOCK_LIST:         '.( (defined("SOYCMS_BLOCK_LIST")) ? strtr(SOYCMS_BLOCK_LIST,array("," => "\n                           ")) : "undefined");
-	$str[] = 'SOYCMS_TARGET_DIRECTORY:   '.( (defined("SOYCMS_TARGET_DIRECTORY")) ? SOYCMS_TARGET_DIRECTORY : "undefined");
-	$str[] = 'SOYCMS_TARGET_URL:         '.( (defined("SOYCMS_TARGET_URL")) ? SOYCMS_TARGET_URL : "undefined");
-	$str[] = 'SOYCMS_ADMIN_ROOT:         '.( (defined("SOYCMS_ADMIN_ROOT")) ? SOYCMS_ADMIN_ROOT : "undefined");
-	$str[] = 'SOYCMS_LANGUAGE:           '.( (defined("SOYCMS_LANGUAGE")) ? SOYCMS_LANGUAGE : "undefined");
-
-	return implode("\n",$str);
-
+	if($cmsName == "SOY CMS"){
+		$str = array();
+		$str[] = 'SOYCMS_ALLOWED_EXTENSIONS: '.( (defined("SOYCMS_ALLOWED_EXTENSIONS")) ? SOYCMS_ALLOWED_EXTENSIONS : "undefined");
+		$str[] = 'SOYCMS_ALLOW_PHP_SCRIPT:   '.( (defined("SOYCMS_ALLOW_PHP_SCRIPT")) ? SOYCMS_ALLOW_PHP_SCRIPT : "undefined");
+		$str[] = 'SOYCMS_SKIP_MOBILE_RESIZE: '.( (defined("SOYCMS_SKIP_MOBILE_RESIZE")) ? SOYCMS_SKIP_MOBILE_RESIZE : "undefined");
+		$str[] = 'SOYCMS_BLOCK_LIST:         '.( (defined("SOYCMS_BLOCK_LIST")) ? strtr(SOYCMS_BLOCK_LIST,array("," => "\n                           ")) : "undefined");
+		$str[] = 'SOYCMS_TARGET_DIRECTORY:   '.( (defined("SOYCMS_TARGET_DIRECTORY")) ? SOYCMS_TARGET_DIRECTORY : "undefined");
+		$str[] = 'SOYCMS_TARGET_URL:         '.( (defined("SOYCMS_TARGET_URL")) ? SOYCMS_TARGET_URL : "undefined");
+		$str[] = 'SOYCMS_ADMIN_ROOT:         '.( (defined("SOYCMS_ADMIN_ROOT")) ? SOYCMS_ADMIN_ROOT : "undefined");
+		$str[] = 'SOYCMS_LANGUAGE:           '.( (defined("SOYCMS_LANGUAGE")) ? SOYCMS_LANGUAGE : "undefined");
+		return implode("\n",$str);
+	}
+	return "";
 }
 
 function get_exception_report($e){
@@ -67,7 +76,8 @@ function get_exception_trace($e){
 	$str = array();
 
 	$trace = $e->getTrace();
-	for($i = 0; $i < min( 5 , count($e->getTrace()) ); $i++){
+	$traceCnt = count($trace);
+	for($i = 0; $i < min(5 , $traceCnt); ++$i){
 		$str[] = get_trace_report($trace[$i],$i);
 	}
 
@@ -81,7 +91,7 @@ function get_environment_report(){
 	$str[] = '';
 	$str[] = 'PHP SAPI NAME:        '.php_sapi_name();
 	$str[] = 'PHP SAFE MODE:        '.(ini_get("safe_mode")? "Yes" : "No");
-	$str[] = 'MAGIC_QUOTE_GPC:      '.( get_magic_quotes_gpc() ? "Yes" : "No" );
+	//$str[] = 'MAGIC_QUOTE_GPC:      '.( get_magic_quotes_gpc() ? "Yes" : "No" );	//Abolished in PHP8
 	$str[] = 'SHORT_OPEN_TAG:       '.( ini_get("short_open_tag") ? "Yes" : "No" );
 	$str[] = '';
 	$str[] = 'MEMORY_LIMIT:         '.ini_get("memory_limit")." Bytes";
@@ -129,7 +139,7 @@ function get_environment_report(){
 }
 
 function get_exception_message($e){
-	if($e instanceof SOY2DAOException OR $e instanceof PDOException){
+	if(($e instanceof SOY2DAOException || $e instanceof PDOException) && method_exists("getPDOExceptionMessage", $e)){
 		return $e->getMessage()." (".$e->getPDOExceptionMessage().")";
 	}else{
 		return $e->getMessage();
@@ -145,9 +155,13 @@ function get_trace_report($trace,$index){
 	$str = array();
 	$str[] = '-----------------------';
 	@$str[] = $index. ":".$trace["class"].$trace["type"].$trace["function"];
-	for($i = 0; $i<count(@$trace["args"]); $i++){
-		$str[] = "\t".'argument['.$i.']: '.get_argument_string($trace["args"][$i]);
+	if(isset($trace["args"]) && is_array($trace["args"]) && count($trace["args"])){
+		$traceCnt = count($trace["args"]);
+		for($i = 0; $i < $traceCnt; ++$i){
+			$str[] = "\t".'argument['.$i.']: '.get_argument_string($trace["args"][$i]);
+		}
 	}
+
 	$str[] = '';
 	@$str[] = "\t".''.$file."(".$trace["line"].")";
 
@@ -209,5 +223,4 @@ function get_resolve_message($e){
 	}
 
 	return '開発元にご連絡ください。';
-
 }

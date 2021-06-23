@@ -40,6 +40,12 @@ class FooterPage extends CMSWebPageBase{
 			"text" => CMSUtil::getDeveloperName()
 		));
 
+		include_once(dirname(__FILE__) . "/Widget/MemoWidgetComponent.class.php");
+		$component = new MemoWidgetComponent();
+		$this->addLabel("memo_widget", array(
+			"html" => $component->buildWidget()
+		));
+
 		$this->addLabel("jQuery", array(
 			"src" => SOY2PageController::createRelativeLink("./webapp/pages/files/vendor/jquery/jquery.min.js") . "?" . SOYCMS_BUILD_TIME
 		));
@@ -69,6 +75,5 @@ class FooterPage extends CMSWebPageBase{
 		$this->addScript("jquery-cookie",array(
 				"src" => SOY2PageController::createRelativeLink("./webapp/pages/files/vendor/jquery-cookie/jquery.cookie.js") . "?" . SOYCMS_BUILD_TIME
 		));
-
 	}
 }

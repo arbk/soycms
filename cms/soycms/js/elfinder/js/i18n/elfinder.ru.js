@@ -3,7 +3,7 @@
  * @author Dmitry "dio" Levashov <dio@std42.ru>
  * @author Andrew Berezovsky <andrew.berezovsky@gmail.com>
  * @author Alex Yashkin <alex@yashkin.by>
- * @version 2018-08-08
+ * @version 2020-01-24
  */
 (function(root, factory) {
 	if (typeof define === 'function' && define.amd) {
@@ -18,9 +18,9 @@
 		translator : 'Dmitry "dio" Levashov &lt;dio@std42.ru&gt;, Andrew Berezovsky &lt;andrew.berezovsky@gmail.com&gt;, Alex Yashkin &lt;alex@yashkin.by&gt;',
 		language   : 'Русский язык',
 		direction  : 'ltr',
-		dateFormat : 'd M Y H:i', // Mar 13, 2012 05:27 PM
-		fancyDateFormat : '$1 H:i', // will produce smth like: Today 12:25 PM
-		nonameDateFormat : 'ymd-His', // to apply if upload file is noname: 120513172700
+		dateFormat : 'd M Y H:i', // will show like: 24 Янв 2020 15:00
+		fancyDateFormat : '$1 H:i', // will show like: Сегодня 15:00
+		nonameDateFormat : 'ymd-His', // noname upload will show like: 200124-150054
 		messages   : {
 
 			/********************************** errors **********************************/
@@ -116,6 +116,7 @@
 			'errEditorNotFound'    : 'Не найден редактор для этого типа файлов.', // from v2.1.25 added 23.5.2017
 			'errServerError'       : 'Возникла ошибка на стороне сервера.', // from v2.1.25 added 16.6.2017
 			'errEmpty'             : 'Невозможно очистить папку "$1".', // from v2.1.25 added 22.6.2017
+			'moreErrors'           : 'Еще ошибок: $1', // from v2.1.44 added 9.12.2018
 
 			/******************************* commands names ********************************/
 			'cmdarchive'   : 'Создать архив',
@@ -291,7 +292,8 @@
 			'untitled folder'   : 'НоваяПапка',   // added 10.11.2015
 			'Archive'           : 'НовыйАрхив',  // from v2.1 added 10.11.2015
 			'untitled file'     : 'НовыйФайл.$1',  // from v2.1.41 added 6.8.2018
-			'extentionfile'     : '$1 Файл',     // from v2.1.41 added 6.8.2018
+			'extentionfile'     : '$1 Файл',    // from v2.1.41 added 6.8.2018
+			'extentiontype'     : '$1: $2',      // from v2.1.43 added 17.10.2018
 
 			/********************************** messages **********************************/
 			'confirmReq'      : 'Необходимо подтверждение',
@@ -302,6 +304,7 @@
 			'confirmNonUTF8'  : 'Невозможно определить кодировку файла. Необходима предварительная конвертация файла в UTF-8 для дальнейшего редактирования.<br/>Выберите кодировку файла.', // from v2.1.19 added 28.11.2016
 			'confirmNotSave'  : 'Произошли изменения.<br/>Если не сохраните изменения, то потеряете их.', // from v2.1 added 15.7.2015
 			'confirmTrash'    : 'Вы уверены, что хотите переместить файлы в корзину?', //from v2.1.24 added 29.4.2017
+			'confirmMove'     : 'Вы уверены, что хотите переместить файлы в "$1"?', //from v2.1.50 added 27.7.2019
 			'apllyAll'        : 'Применить для всех',
 			'name'            : 'Имя',
 			'size'            : 'Размер',
@@ -441,6 +444,7 @@
 			'clearBrowserData': 'Сбросить настройки для этого браузера', // from v2.1.26 added 28.6.2017
 			'toolbarPref'     : 'Настройки панели', // from v2.1.27 added 2.8.2017
 			'charsLeft'       : '... еще символов: $1.',  // from v2.1.29 added 30.8.2017
+			'linesLeft'       : '... еще строк: $1.',  // from v2.1.52 added 16.1.2020
 			'sum'             : 'Общий размер', // from v2.1.29 added 28.9.2017
 			'roughFileSize'   : 'Приблизительный размер файла', // from v2.1.30 added 2.11.2017
 			'autoFocusDialog' : 'Фокус на элементе диалога при наведении мыши',  // from v2.1.30 added 2.11.2017
@@ -479,6 +483,16 @@
 			'makefileTypes'   : 'Типы файлов в меню "Новый файл"', // from v2.1.41 added 7.8.2018
 			'typeOfTextfile'  : 'Тип текстового файла', // from v2.1.41 added 7.8.2018
 			'add'             : 'Добавить', // from v2.1.41 added 7.8.2018
+			'theme'           : 'Тема', // from v2.1.43 added 19.10.2018
+			'default'         : 'По умолчанию', // from v2.1.43 added 19.10.2018
+			'description'     : 'Описание', // from v2.1.43 added 19.10.2018
+			'website'         : 'Веб-сайт', // from v2.1.43 added 19.10.2018
+			'author'          : 'Автор', // from v2.1.43 added 19.10.2018
+			'email'           : 'Email', // from v2.1.43 added 19.10.2018
+			'license'         : 'Лицензия', // from v2.1.43 added 19.10.2018
+			'exportToSave'    : 'Невозможно сохранить файл. Чтобы не потерять изменения, экспортируйте их на свой ПК.', // from v2.1.44 added 1.12.2018
+			'dblclickToSelect': 'Двойной клик по файлу для его выбора.', // from v2.1.47 added 22.1.2019
+			'useFullscreen'   : 'Использовать полноэкранный режим', // from v2.1.47 added 19.2.2019
 
 			/********************************** mimetypes **********************************/
 			'kindUnknown'     : 'Неизвестный',

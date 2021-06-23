@@ -11,9 +11,9 @@ class LoginPage extends MainMyPagePageBase{
 					$loginId = (isset($_POST["loginId"])) ? trim($_POST["loginId"]) : null;
 					if(is_null($loginId)) $loginId = (isset($_POST["mail"])) ? trim($_POST["mail"]) : null;
 
-					if($this->login($loginId, trim($_POST["password"]))){
+					if(self::_login($loginId, trim($_POST["password"]))){
 						//auto login
-						if(isset($_POST["login_memory"])) $this->autoLogin();
+						if(isset($_POST["login_memory"])) self::_autoLogin();
 
 						//リダイレクト
 						if(isset($_GET["r"]) && strlen($_GET["r"])){
@@ -33,15 +33,23 @@ class LoginPage extends MainMyPagePageBase{
 							exit;
 						}
 
+						$mypage->clearAttribute("login_id_on_form");
 						$this->jumpToTop();
 
 					//ログインできなかった時
 					}else{
+						$params = array();
 						if(isset($_GET["r"]) && strlen($_GET["r"])){
-							$param = soyshop_remove_get_value($_GET["r"]);
-							soyshop_redirect_designated_page($param, "login=error");
-							exit;
+							$params[] = "r=" . soyshop_remove_get_value($_GET["r"]);
 						}
+						$params[] = "login=error";
+
+						$mypage = $this->getMyPage();
+						$mypage->setAttribute("login_id_on_form", $loginId);
+						$mypage->save();
+
+						soyshop_redirect_login_form(implode("&", $params));
+						exit;
 					}
 				}
 			}
@@ -63,17 +71,24 @@ class LoginPage extends MainMyPagePageBase{
 			$mypage->save();
 		}
 
+		$this->addLabel("shop_id", array(
+			"text" => SOYSHOP_ID
+		));
+
 		$this->addForm("login_form");
+
+		$loginId = (isset($_POST["loginId"])) ? $_POST["loginId"] : $mypage->getAttribute("login_id_on_form");
+		$mypage->clearAttribute("login_id_on_form");
 
 		$this->addInput("login_id", array(
 			"name" => "loginId",
-			"value" => (isset($_POST["loginId"])) ? $_POST["loginId"] : ""
+			"value" => $loginId
 		));
 
 		//後方互換
 		$this->addInput("login_mail", array(
 			"name" => "loginId",
-			"value" => (isset($_POST["loginId"])) ? $_POST["loginId"] : ""
+			"value" => $loginId
 		));
 
 		$this->addInput("login_password", array(
@@ -120,14 +135,14 @@ class LoginPage extends MainMyPagePageBase{
 	/**
 	 * ログイン
 	 */
-	function login($userId, $password){
+	private function _login($userId, $password){
 		return $this->getMyPage()->login($userId, $password);
 	}
 
 	/**
 	 * 自動ログイン
 	 */
-	function autoLogin(){
+	private function _autoLogin(){
 		$this->getMyPage()->autoLogin();
 	}
 }

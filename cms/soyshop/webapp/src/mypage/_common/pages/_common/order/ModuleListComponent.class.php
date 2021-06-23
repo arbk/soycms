@@ -2,17 +2,16 @@
 
 class ModuleListComponent extends HTMLList {
 
-	protected function populateItem($item) {
+	protected function populateItem($entity) {
 
 		$this->addLabel("module_name", array(
-			"text" => $item->getName()
-		));
-		
-		$this->addLabel("module_price", array(
-			"text" => number_format($item->getPrice())
+			"text" => $entity->getName()
 		));
 
-		return $item->isVisible();
+		$this->addLabel("module_price", array(
+			"text" => soy2_number_format($entity->getPrice())
+		));
+
+		return ($entity->isVisible());
 	}
 }
-?>

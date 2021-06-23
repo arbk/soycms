@@ -52,7 +52,7 @@ class SOYShopLoginCheckPlugin{
 			"author"=>"日本情報化農業研究所",
 			"url"=>"http://www.n-i-agroinformatics.com",
 			"mail"=>"info@n-i-agroinformatics.com",
-			"version"=>"1.0"
+			"version"=>"1.2"
 		));
 
 		if(CMSPlugin::activeCheck($this->getId())){
@@ -141,7 +141,7 @@ class SOYShopLoginCheckPlugin{
 		));
 
 		//ログアウトリンク
-		$htmlObj->addLink("logout_link", array(
+		$htmlObj->addActionLink("logout_link", array(
 			"soy2prefix" => "cms",
 			"link" => $this->logoutPageUrl
 		));
@@ -274,7 +274,7 @@ class SOYShopLoginCheckPlugin{
 			"name" => "login_memory"
 		));
 
-		$obj->addLink("logout_link", array(
+		$obj->addActionLink("logout_link", array(
 			"soy2prefix" => "s_block",
 			"link" => $this->logoutPageUrl
 		));
@@ -373,11 +373,9 @@ class SOYShopLoginCheckPlugin{
 		$itemLogic = SOY2Logic::createInstance("site_include.plugin.soyshop_login_check.logic.ItemLogic", array("siteId" => $this->siteId));
 
 		$html = array();
-		$html[] = "<div class=\"section custom_field\">";
-		$html[] = "<p class=\"sub\">";
+		$html[] = "<div class=\"form-group\">";
 		$html[] = "<label for=\"" . self::PLUGIN_ID . "_item\">アクセス許可商品</label>";
-		$html[] = "</p>";
-		$html[] = "<div style=\"margin:-0.5ex 0px 0.5ex 1em;\">";
+		$html[] = "<div class=\"form-inline\">";
 
 		//カスタムフィールドの値から配列を生成
 		$array = explode(",", $field->getValue());
@@ -385,7 +383,7 @@ class SOYShopLoginCheckPlugin{
 
 		//SOY Shopに登録されている商品を取得して、ここに表示する
 		foreach($array as $code){
-			$html[] = "<select name=\"" . self::PLUGIN_ID . "[]\">";
+			$html[] = "<select name=\"" . self::PLUGIN_ID . "[]\" style=\"margin-bottom:3px;\">";
 			$html[] = "<option value=\"\"></option>";
 
 			$items = $itemLogic->getItems();
@@ -401,7 +399,7 @@ class SOYShopLoginCheckPlugin{
 		}
 
 		$html[] = "</div>";
-		$html[] = "<div style=\"margin:-0.5ex 0px 0.5ex 1em;\">";
+		$html[] = "<div class=\"form-inline\">";
 
 		try{
 			$typeField = $attributeDao->get($entryId, self::PLUGIN_ID . "Type");
@@ -610,4 +608,3 @@ class SOYShopLoginCheckPlugin{
 		$this->doRedirectAfterRemind = $doRedirectAfterRemind;
 	}
 }
-?>

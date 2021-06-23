@@ -15,19 +15,21 @@ class GenerateBarcodeItemJanCodeItemCustomField extends SOYShopItemCustomFieldBa
 		$jancode = GenerateJancodeUtil::getJancode($item->getId());
 
 		$html = array();
-		$html[] = "<dt>JANコード(13桁)</dt>";
-		$html[] = "<dd>";
+		$html[] = "<div class=\"form-group\">";
+		$html[] = "<label>JANコード(13桁)</label>";
+		$html[] = "<div class=\"form-inline\">";
 
 		$jancodeJpg = GenerateJancodeUtil::getJancodeImagePath($jancode . ".jpg", $item->getCode());
 		if(strlen($jancodeJpg)){
 			$html[] = "<img src=\"" . $jancodeJpg . "\">";
-			$html[] = "&nbsp;<a href=\"" . $jancodeJpg . "\" download=\"" . $jancode . ".jpg\" class=\"button\">ダウンロード</a>";
+			$html[] = "&nbsp;<a href=\"" . $jancodeJpg . "\" download=\"" . $jancode . ".jpg\" class=\"btn btn-default\">ダウンロード</a>";
 			$html[] = "<br>";
 		}
 
 		$html[] = "<input type=\"number\" name=\"jancode\" value=\"" . $jancode . "\" style=\"width:30%;\" placeholder=\"4900000000000\" pattern=\"\d{13}\">";
 
-		$html[] = "</dd>";
+		$html[] = "</div>";
+		$html[] = "</div>";
 		return implode("\n", $html);
 	}
 

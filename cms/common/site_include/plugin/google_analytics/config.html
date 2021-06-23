@@ -27,7 +27,7 @@
 				<!-- /soy:id="has_util_mobile_check" -->
 
 				<tr><td colspan="2">
-					<input type="submit" style="padding:10px 20px;display:block;margin:auto;" value="保存"/>
+					<input type="submit" style="padding:10px 20px;display:block;margin:auto;" id="tag_config_button" value="保存"/>
 				</td></tr>
 			</table>
 		</div>
@@ -39,6 +39,9 @@
 		<legend>挿入箇所（PC、スマートホンのみ有効）</legend>
 		<ul style="margin-bottom: 0;">
 			<li style="list-style:none">
+				<input type="radio" soy:id="insert_into_the_beginning_of_head" />
+			</li>
+			<li style="list-style:none">
 				<input type="radio" soy:id="insert_into_the_end_of_head" />
 			</li>
 			<li style="list-style:none">
@@ -47,8 +50,14 @@
 			<li style="list-style:none">
 				<input type="radio" soy:id="insert_into_the_end_of_body" />
 			</li>
+			<li style="list-style:none">
+				<input type="radio" soy:id="insert_after_the_end_of_body" />
+			</li>
+			<li style="list-style:none">
+				<input type="radio" soy:id="insert_into_the_end_of_html" />
+			</li>
 		</ul>
-		<input type="submit" style="padding:10px 20px;" value="保存" />
+		<input type="submit" style="padding:10px 20px;" id="insert_config_button" value="保存" />
 	</fieldset>
 </form>
 
@@ -87,7 +96,7 @@
 			$("#"+selfId+"-entry").attr("disabled",true);
 		}
 	}
-	
+
 	window.onload = function(){
 		$.each($(".blog"), function(){
 			update_blog_pages(this.id);

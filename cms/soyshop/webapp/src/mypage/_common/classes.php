@@ -9,8 +9,7 @@ class ErrorMessageLabel extends HTMLLabel{
 class NumberFormatLabel extends HTMLLabel{
 
 	function getObject(){
-		$str = parent::getObject();
-		return (strlen($str) > 0) ? number_format($str) : "";
+		return soy2_number_format(parent::getObject());
 	}
 }
 
@@ -94,7 +93,7 @@ class MainMyPagePageBase extends WebPage{
 		return self::getMyPage()->getUserId();
 	}
 
-	function jump($addr){
+	function jump($addr=""){
 		$url = soyshop_get_mypage_url() . "/" . $addr;
 		if(isset($_GET["r"])){
 			$url .= "?r=" . $_GET["r"];
@@ -150,14 +149,8 @@ class MainMyPagePageBase extends WebPage{
 	}
 
 	function getOrderByIdAndUserId($orderId, $userId){
-		static $order;
-		if(is_null($order)){
-			try{
-				$order = SOY2DAOFactory::create("order.SOYShop_OrderDAO")->getForOrderDisplay($orderId, $userId);
-			}catch(Exception $e){
-				$order = new SOYShop_Order();
-			}
-		}
+		$order = soyshop_get_order_object($orderId);
+		if((int)$order->getUserId() !== (int)$userId) $order = new SOYShop_Order();
 		return $order;
 	}
 
@@ -173,21 +166,8 @@ class MainMyPagePageBase extends WebPage{
 		return $itemOrders;
 	}
 
-	function getItemById($itemId){
-		static $items, $dao;
-		if(is_null($items)) $items = array();
-		if(is_null($dao)) $dao = SOY2DAOFactory::create("shop.SOYShop_ItemDAO");
-		if(isset($items[$itemId])) return $items[$itemId];
-		try{
-			$items[$itemId] = $dao->getById($itemId);
-		}catch(Exception $e){
-			$items[$itemId] = new SOYShop_Item();
-		}
-		return $items[$itemId];
-	}
-
 	function getItemCodeByItemId($itemId){
-		return self::getItemById($itemId)->getCode();
+		return soyshop_get_item_object($itemId)->getCode();
 	}
 
 	function getModuleByOrderIdAndUserId($orderId, $userId){
@@ -200,12 +180,7 @@ class MainMyPagePageBase extends WebPage{
 					break;
 				}
 			}
-
-			try{
-				$module = SOY2DAOFactory::create("plugin.SOYShop_PluginConfigDAO")->getByPluginId($moduleId);
-			}catch(Exception $e){
-				$module = new SOYShop_PluginConfig();
-			}
+			$module = soyshop_get_plugin_object($moduleId);
 		}
 		return $module;
 	}
@@ -228,18 +203,6 @@ class MainMyPagePageBase extends WebPage{
 	/** mypage edit common **/
 	function getHistoryText($label, $old, $new){
 		return $label . "を『" . $old . "』から『" . $new . "』に変更しました";
-	}
-
-	function insertHistory($orderId, $content, $more = null){
-		static $historyDAO;
-		if(!$historyDAO) $historyDAO = SOY2DAOFactory::create("order.SOYShop_OrderStateHistoryDAO");
-
-		$history = new SOYShop_OrderStateHistory();
-		$history->setOrderId($orderId);
-		$history->setAuthor("顧客:" . $this->getUser()->getName());	//顧客名
-		$history->setContent($content);
-		$history->setMore($more);
-		$historyDAO->insert($history);
 	}
 
 	/* convert */

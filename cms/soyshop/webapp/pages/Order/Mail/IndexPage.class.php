@@ -19,8 +19,7 @@ class IndexPage extends WebPage{
 		if(isset($_POST["send"]) && isset($_POST["mail_value"])){
 
 			try{
-				$orderDAO = SOY2DAOFactory::create("order.SOYShop_OrderDAO");
-				$order = $orderDAO->getById($this->id);
+				$order = soyshop_get_order_object($this->id);
 
 				//送信メールのタイプによって、注文の状況を変更する
 				switch($this->type){
@@ -49,7 +48,7 @@ class IndexPage extends WebPage{
 							}
 						}
 				}
-				$orderDAO->updateStatus($order);
+				SOY2DAOFactory::create("order.SOYShop_OrderDAO")->updateStatus($order);
 
 				SOYShopPlugin::load("soyshop.order.status.update");
     			SOYShopPlugin::invoke("soyshop.order.status.update", array(
@@ -68,7 +67,7 @@ class IndexPage extends WebPage{
 				$author = (!is_null($session->getAttribute("loginid"))) ? $session->getAttribute("loginid") :  null;
 
 				//ヒストリーに追加
-				$orderLogic->addHistory($this->id, self::getMailText($this->type) . "を送信しました", null, $author);
+				$orderLogic->addHistory($this->id, self::_getMailText($this->type) . "を送信しました", null, $author);
 
 				//ステータスに登録
 				$orderLogic->setMailStatus($this->id, $this->type, time());
@@ -89,20 +88,22 @@ class IndexPage extends WebPage{
 		try{
 			$order = SOY2DAOFactory::create("order.SOYShop_OrderDAO")->getById($this->id);
 		}catch(Exception $e){
-			CMSPageController::jump("Order");
+			SOY2PageController::jump("Order");
 		}
+
+		$user = soyshop_get_user_object($order->getUserId());
+		if(!$user->isUsabledEmail()) SOY2PageController::jump("Order.Detail" . $order->getId());
 
 		$this->mailLogic = SOY2Logic::createInstance("logic.mail.MailLogic");
 
 		//メール送信時の言語設定
-		$this->checkLanguageConfig($order);
+		self::_checkLanguageConfig($order);
 
 		$type = (isset($_GET["type"])) ? $_GET["type"] : SOYShop_Order::SENDMAIL_TYPE_ORDER;
 		$this->type = $type;
 
 		parent::__construct();
 
-		$user = SOY2DAOFactory::create("user.SOYShop_UserDAO")->getById($order->getUserId());
 		$sendTo = $user->getMailAddress();
 
 		$mail = $this->mailLogic->getUserMailConfig($type);
@@ -121,11 +122,11 @@ class IndexPage extends WebPage{
 
 		$this->addTextArea("mail_content", array(
 			"name" => "Mail[content]",
-			"value" => (isset($this->mail["content"])) ? $this->mail["content"] : self::getMailContent($type, $order, $mail, $user),
+			"value" => (isset($this->mail["content"])) ? $this->mail["content"] : self::_getMailContent($type, $order, $mail, $user),
 		));
 
 		$this->addLabel("mail_type_text", array(
-			"text" => self::getMailText($type)
+			"text" => self::_getMailText($type)
 		));
 
 		$this->addLink("order_detail_link", array(
@@ -151,16 +152,16 @@ class IndexPage extends WebPage{
 		));
 	}
 
-	private function checkLanguageConfig($order){
+	private function _checkLanguageConfig($order){
 		$attr = $order->getAttribute("util_multi_language");
 		if(isset($attr["value"]) && strlen($attr["value"])){
-			define("SOYSHOP_MAIL_LANGUAGE", $attr["value"]);
-			define("SOYSHOP_PUBLISH_LANGUAGE", $attr["value"]);
+			if(!defined("SOYSHOP_MAIL_LANGUAGE")) define("SOYSHOP_MAIL_LANGUAGE", $attr["value"]);
+			if(!defined("SOYSHOP_PUBLISH_LANGUAGE")) define("SOYSHOP_PUBLISH_LANGUAGE", $attr["value"]);
 		}
 		MessageManager::addMessagePath("admin");
 	}
 
-	private function getMailText($type){
+	private function _getMailText($type){
 		$array = array(
 			"order" => "注文受付メール",
 			"confirm" => "注文確認メール",
@@ -195,7 +196,7 @@ class IndexPage extends WebPage{
 		return $array["order"];
 	}
 
-	private function getMailContent($type, SOYShop_Order $order, $array, SOYShop_User $user){
+	private function _getMailContent($type, SOYShop_Order $order, $array, SOYShop_User $user){
 
 		//システムからの出力を行うか？
 		if(isset($array["output"]) && $array["output"] === 1){
@@ -221,5 +222,9 @@ class IndexPage extends WebPage{
 
 		//convert
 		return $this->mailLogic->convertMailContent($mailBody, $user, $order);
+	}
+
+	function getBreadcrumb(){
+		return BreadcrumbComponent::build("メール送信", array("Order" => "注文管理", "Order.Detail." . $this->id => "注文詳細"));
 	}
 }

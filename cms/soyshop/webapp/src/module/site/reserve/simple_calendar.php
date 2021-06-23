@@ -8,6 +8,11 @@ function soyshop_simple_calendar($html, $page){
 	$year = (isset($_GET["y"]) && is_numeric($_GET["y"])) ? (int)$_GET["y"] : (int)date("Y");
 	$month = (isset($_GET["m"]) && is_numeric($_GET["m"])) ? (int)$_GET["m"] : (int)date("n");
 
+	//直近の空き予約を調べる
+	if(!isset($_GET["y"]) || !isset($_GET["m"])){
+		list($year, $month) = SOY2Logic::createInstance("module.plugins.reserve_calendar.logic.Schedule.ScheduleLogic")->findLatestScheduleDate($year, $month);
+	}
+
 	$obj->addForm("schedule_calendar_form", array(
 		"soy2prefix" => SOYSHOP_SITE_PREFIX,
 		"method" => "GET"
@@ -38,10 +43,9 @@ function soyshop_simple_calendar($html, $page){
 		if(preg_match('/block:id=\"calendar_' . $itemId . '\".*cms:async=\"(.*?)\"/', $html, $tmp)){
 			if(isset($tmp[1]) && is_numeric($tmp[1]) && (int)$tmp[1] === 1) $sync = false;
 		}
-
 		$obj->addLabel("calendar_" . $itemId, array(
 			"soy2prefix" => "block",
-			"html" => SOY2Logic::createInstance("module.plugins.reserve_calendar.logic.View.CalendarLogic", array("itemId" => $itemId, "sync" => $sync))->build($year, $month)
+			"html" => (soyshop_get_item_object($itemId)->isPublished()) ? SOY2Logic::createInstance("module.plugins.reserve_calendar.logic.View.CalendarLogic", array("itemId" => $itemId, "sync" => $sync))->build($year, $month) : ""
 		));
 	}
 
@@ -66,4 +70,3 @@ function soyshop_simple_calendar($html, $page){
 		ob_end_clean();
 	}
 }
-?>

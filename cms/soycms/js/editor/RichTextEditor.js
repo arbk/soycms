@@ -1,9 +1,10 @@
+//tinymce4
 tinymce.init({
 	mode : "specific_textareas",
 	editor_selector : "mceEditor",
 	theme : "modern",
 	skin : "lightgray",
-	plugins : "save,pagebreak,table,hr,insertdatetime,searchreplace,contextmenu,code,textcolor,paste,directionality,noneditable,charmap,visualchars,nonbreaking,innerlink,insertimage,insertwidget,youTube,emoticons",
+	plugins : "save,pagebreak,table,hr,insertdatetime,searchreplace,contextmenu,code,textcolor,paste,directionality,noneditable,charmap,visualchars,nonbreaking,innerlink,insertimage,insertwidget,media,emoticons",
 	tools : "inserttable",
 	language : soycms.language,
 	height : "400px",
@@ -12,7 +13,7 @@ tinymce.init({
 
 	menubar : false,
 	toolbar1 : "save | cut copy paste pastetext | searchreplace | bold italic underline strikethrough | subscript superscript | forecolor backcolor | alignleft aligncenter alignright | formatselect fontselect fontsizeselect",
-	toolbar2 : "bullist numlist | outdent indent blockquote | undo redo | cleanup removeformat code styleprops attribs | preview | insertdate inserttime | innerlink insertimage youTube insertwidget | emoticons charmap | table",
+	toolbar2 : "bullist numlist | outdent indent blockquote | undo redo | cleanup removeformat code styleprops attribs | preview | insertdate inserttime | innerlink insertimage media insertwidget | emoticons charmap | table",
 
 	init_instance_callback : function(editor) {
 		onInitTinymceEditor(editor.id);
@@ -28,6 +29,17 @@ tinymce.init({
 	entity_encoding : "named",
 	urlconverter_callback : common_convert_urls
 });
+
+//tinymce
+// tinymce.init({
+// 	selector:'textarea',
+// 	height: 400,
+// 	plugins: [
+//     	'advlist autolink lists link image charmap print preview anchor',
+//     	'searchreplace visualblocks code fullscreen',
+//     	'insertdatetime media table paste code help wordcount'
+//   ],
+// });
 
 function applyTemplate(){
 	var template = $("#list_templates").val();

@@ -62,7 +62,12 @@ class PagerLogic extends SOY2LogicBase{
 	}
 
 	function getNextParam(){
-		$link = ($this->total > $this->end) ? $this->pageURL . ($this->page + 1) : $this->pageURL . $this->page;
+		if(strpos($this->pageURL, "?")){	//プラグインの詳細画面でページャを使用したい場合
+			$pageURL = rtrim($this->pageURL, "/") . "&page=";
+			$link = ($this->total > $this->end) ? $pageURL . ($this->page + 1) : $pageURL . $this->page;
+		}else{
+			$link = ($this->total > $this->end) ? $this->pageURL . ($this->page + 1) : $this->pageURL . $this->page;
+		}
 		if(strlen($this->getQuery()))$link .= "?" . $this->getQuery();
 
 		return array(
@@ -71,7 +76,13 @@ class PagerLogic extends SOY2LogicBase{
     	);
 	}
 	function getPrevParam(){
-		$link = ($this->page > 1) ? $this->pageURL . ($this->page - 1) : $this->pageURL . ($this->page);
+		if(strpos($this->pageURL, "?")){	//プラグインの詳細画面でページャを使用したい場合
+			$pageURL = rtrim($this->pageURL, "/") . "&page=";
+			$link = ($this->page > 1) ? $pageURL . ($this->page - 1) : $pageURL . ($this->page);
+		}else{
+			$link = ($this->page > 1) ? $this->pageURL . ($this->page - 1) : $this->pageURL . ($this->page);
+		}
+
 		if(strlen($this->getQuery())) $link .= "?" . $this->getQuery();
 		return array(
     		"link" => $link,
@@ -165,7 +176,7 @@ class PagerLogic extends SOY2LogicBase{
 			"name" => "page",
 			"options" => $pager->getSelectArray(),
 			"selected" => $pager->getPage(),
-			"onchange" => "location.href=this.parentNode.action+this.options[this.selectedIndex].value"
+			"onchange" => "location.href=$('#target_link_0').prop('href').substr(0, $('#target_link_0').prop('href').lastIndexOf('/')) + '/' + this.options[this.options.selectedIndex].value"
 		));
 	}
 
@@ -182,14 +193,19 @@ class SimplePager extends HTMLList{
 	private $current;
 	private $query;
 
-	protected function populateItem($bean){
-		$url = $this->url . $bean;
+	protected function populateItem($bean, $idx){
+		if(strpos($this->url, "?")){	//プラグインの詳細画面でページャを使用したい場合
+			$url = rtrim($this->url, "/") . "&page=" . $bean;
+		}else{
+			$url = $this->url . $bean;
+		}
 		if(strlen($this->query)) $url .= "?" . $this->query;
 
 		$this->addLink("target_link", array(
 			"text" => $bean,
 			"link" => $url,
-			"class" => ($this->current == $bean) ? "pager_current" : ""
+			"class" => ($this->current == $bean) ? "pager_current" : "",
+			"id" => (is_numeric($idx)) ? "target_link_" . $idx : ""
 		));
 	}
 

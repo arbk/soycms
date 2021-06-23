@@ -11,9 +11,9 @@ SOY2DAOConfig::DaoCacheDir(dirname(dirname(__FILE__))."/cache/");
 
 //アイコンのディレクトリ
 define("CMS_LABEL_ICON_DIRECTORY",dirname(dirname(__FILE__))."/image/labelicon/");
-define("CMS_LABEL_ICON_DIRECTORY_URL",SOY2PageController::createRelativeLink("./image/labelicon/"));
+define("CMS_LABEL_ICON_DIRECTORY_URL",SOY2PageController::createRelativeLink("../soycms/image/labelicon/"));
 define("CMS_PAGE_ICON_DIRECTORY",dirname(dirname(__FILE__))."/image/pageicon/");
-define("CMS_PAGE_ICON_DIRECTORY_URL",SOY2PageController::createRelativeLink("./image/pageicon/"));
+define("CMS_PAGE_ICON_DIRECTORY_URL",SOY2PageController::createRelativeLink("../soycms/image/pageicon/"));
 
 //必須コンポーネントのimport
 SOY2::import("base.CMSWebPageBase");
@@ -53,13 +53,13 @@ if(!UserInfoUtil::isLoggined()){
 		SOY2PageController::redirect("../admin/?r=".rawurlencode(SOY2PageController::createRelativeLink($_SERVER["REQUEST_URI"])));
 	}
 }else{
-
-	if(!UserInfoUtil::getSite()){
+	$currentSite = UserInfoUtil::getSite();
+	if(!$currentSite instanceof Site || !is_numeric($currentSite->getId())){
 		//DefaultLogin用にアクセスURIを渡す
 		SOY2PageController::redirect("../admin/?r=".rawurlencode(SOY2PageController::createRelativeLink($_SERVER["REQUEST_URI"])));
 	}
 
-	if(UserInfoUtil::getSite()->getSiteType() == Site::TYPE_SOY_SHOP){
+	if($currentSite->getSiteType() == Site::TYPE_SOY_SHOP){
 		SOY2PageController::redirect("../admin/index.php/Site/Login/0?site_id=".UserInfoUtil::getSite()->getSiteId());
 	}
 
@@ -68,15 +68,17 @@ if(!UserInfoUtil::isLoggined()){
 
 	switch(SOYCMS_DB_TYPE){
 		case "mysql":
-			SOY2DAOConfig::Dsn(UserInfoUtil::getSite()->getDataSourceName());
+			SOY2DAOConfig::Dsn($currentSite->getDataSourceName());
 			SOY2DAOConfig::user(ADMIN_DB_USER);
 			SOY2DAOConfig::pass(ADMIN_DB_PASS);
 			break;
 		case "sqlite":
 		default:
-			SOY2DAOConfig::Dsn("sqlite:".UserInfoUtil::getSiteDirectory().".db/sqlite.db");
+			SOY2DAOConfig::Dsn($currentSite->getDataSourceName());
+			//SOY2DAOConfig::Dsn("sqlite:".UserInfoUtil::getSiteDirectory().".db/sqlite.db");
 			break;
 	}
+	unset($currentSite);
 
 	//初期管理者とそれ以外で表示を変える
 	DisplayPlugin::toggle("for_default_user", UserInfoUtil::isDefaultUser());
@@ -93,6 +95,7 @@ if(!UserInfoUtil::isLoggined()){
 	//記事管理者がアクセスしていいパスのチェック
 	if(! UserInfoUtil::hasSiteAdminRole()){
 		if(defined("SOYCMS_ASP_MODE")){
+			//
 		}else{
 			if(! SOY2Logic::createInstance("logic.site.Filter.EntryAdministratorFilterLogic")->checkAvaiable()){
 				SOY2PageController::jump("Simple");	//トップページに移動

@@ -130,15 +130,11 @@ class IndexPage extends WebPage{
 	}
 
 	function __construct(){
+		if(!AUTH_CONFIG) SOY2PageController::jump("Item");
+
 		parent::__construct();
 
-		$this->addModel("updated", array(
-			"visible" => (isset($_GET["updated"]))
-		));
-
-		$this->addModel("error", array(
-			"visible" => (isset($_GET["error"]))
-		));
+		DisplayPlugin::toggle("error", isset($_GET["error"]));
 
 		$this->addForm("create_form");
 
@@ -156,5 +152,18 @@ class IndexPage extends WebPage{
 			"list" => $config,
 			"types" => $types
 		));
+	}
+
+	function getBreadcrumb(){
+		return BreadcrumbComponent::build("カスタム項目管理", array("Item" => "商品管理"));
+	}
+
+	function getFooterMenu(){
+		try{
+			return SOY2HTMLFactory::createInstance("Item.FooterMenu.ItemCustomfieldFooterMenuPage")->getObject();
+		}catch(Exception $e){
+			//
+			return null;
+		}
 	}
 }

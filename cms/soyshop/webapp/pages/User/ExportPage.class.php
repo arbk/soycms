@@ -7,16 +7,12 @@ class ExportPage extends WebPage{
 
 		SOY2::import("domain.config.SOYShop_ShopConfig");
 
-		//管理制限の権限を取得
-		$session = SOY2ActionSession::getUserSession();
-		$appLimit = $session->getAttribute("app_shop_auth_limit");
-
 		//権限がない場合は顧客トップにリダイレクト
-		if(!$appLimit){
-			SOY2PageController::jump("User");
-		}
+		if(!AUTH_OPERATE) SOY2PageController::jump("User");
 
 		parent::__construct();
+
+		$this->addLabel("user_label", array("text" => SHOP_USER_LABEL));
 
 		self::buildForm();
 
@@ -30,6 +26,12 @@ class ExportPage extends WebPage{
 
 	private function buildForm(){
 		$this->addForm("export_form");
+
+		//ログインIDの名称変更
+		SOY2::import("domain.config.SOYShop_ShopConfig");
+		$this->addLabel("account_id_item_name", array(
+			"text" => SOYShop_ShopConfig::load()->getAccountIdItemName()
+		));
 
 		DisplayPlugin::toggle("user_custom_search_field", SOYShopPluginUtil::checkIsActive("user_custom_search_field"));
 		DisplayPlugin::toggle("point", SOYShopPluginUtil::checkIsActive("common_point_base"));
@@ -55,13 +57,16 @@ class ExportPage extends WebPage{
 	}
 
 	function getLabels(){
+		SOY2::import("domain.config.SOYShop_ShopConfig");
 		$labels = array(
 			"id" => "ID",
 
 			"mailAddress" => "メールアドレス",
-			"userCode" => "顧客コード",
+			"accountId" => SOYShop_ShopConfig::load()->getAccountIdItemName(),	//ログインID
+			"userCode" => SHOP_USER_LABEL . "コード",
 			"name" => "名前",
 			"reading" => "フリガナ",
+			"honorific" => "敬称",
 			"nickname" => "ニックネーム",
 			"isPublish" => "公開状態",
 			"genderText" => "性別",
@@ -71,6 +76,7 @@ class ExportPage extends WebPage{
 			"areaText" => "住所（都道府県）",
 			"address1" => "住所１",
 			"address2" => "住所２",
+			"address3" => "住所３",
 			"telephoneNumber" => "電話番号",
 			"faxNumber" => "FAX番号",
 
@@ -81,6 +87,7 @@ class ExportPage extends WebPage{
 			"jobAreaText" => "勤務先住所（都道府県）",
 			"jobAddress1" => "勤務先住所１",
 			"jobAddress2" => "勤務先住所２",
+			"jobAddress3" => "勤務先住所３",
 
 			"jobTelephoneNumber" => "勤務先電話番号",
 			"jobFaxNumber" => "勤務先FAX番号",
@@ -194,6 +201,19 @@ class ExportPage extends WebPage{
 		if(count($lines) > 0){
 			echo implode("\r\n", $lines);
 			echo "\r\n";
+		}
+	}
+
+	function getBreadcrumb(){
+		return BreadcrumbComponent::build(SHOP_USER_LABEL . "情報CSVエクスポート", array("User" => SHOP_USER_LABEL . "管理"));
+	}
+
+	function getFooterMenu(){
+		try{
+			return SOY2HTMLFactory::createInstance("User.FooterMenu.UserFooterMenuPage")->getObject();
+		}catch(Exception $e){
+			//
+			return null;
 		}
 	}
 }

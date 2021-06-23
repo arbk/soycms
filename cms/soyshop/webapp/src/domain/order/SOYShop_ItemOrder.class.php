@@ -8,6 +8,7 @@ class SOYShop_ItemOrder {
 	const NO_CONFIRM = 0;
 
 	const STATUS_NONE = 0;	//何もない
+	const FLAG_NONE = 0;	//何もない
 
 	/**
 	 * @id
@@ -23,7 +24,6 @@ class SOYShop_ItemOrder {
      * @column item_id
      */
     private $itemId;
-
 
     /**
      * @column item_count
@@ -45,6 +45,7 @@ class SOYShop_ItemOrder {
      */
     private $itemName;
 	private $status = 0;	//商品毎に何らかの状態を保持する
+	private $flag = 0;		//使いみちはstatusと同じ
 
     private $cdate;
 
@@ -118,6 +119,12 @@ class SOYShop_ItemOrder {
 	function setStatus($status){
 		$this->status = $status;
 	}
+	function getFlag(){
+		return $this->flag;
+	}
+	function setFlag($flag){
+		$this->flag = $flag;
+	}
     function getCdate() {
     	if(!$this->cdate) $this->cdate = time();
     	return $this->cdate;
@@ -188,7 +195,7 @@ class SOYShop_ItemOrder {
 	function getOpenItemName(){
 		static $dao;
 		if(is_null($dao)) $dao = SOY2DAOFactory::create("shop.SOYShop_ItemAttributeDAO");
-		if(!defined("SOYSHOP_MAIL_LANGUAGE"))　define("SOYSHOP_MAIL_LANGUAGE", SOYSHOP_PUBLISH_LANGUAGE);
+		if(!defined("SOYSHOP_MAIL_LANGUAGE")) define("SOYSHOP_MAIL_LANGUAGE", SOYSHOP_PUBLISH_LANGUAGE);
 
 		if(SOYSHOP_MAIL_LANGUAGE != "jp"){
 			try{
@@ -199,6 +206,25 @@ class SOYShop_ItemOrder {
 		}else{
 			return $this->itemName;
 		}
+	}
+
+	//管理画面で商品名を出力する時に便利な関数
+	function getItemNameOnAdmin(){
+		if(!self::_isConvertParentNameConfig()) return $this->itemName;
+
+		$parentId = soyshop_get_item_object($this->itemId)->getType();
+		if(!is_numeric($parentId)) return $this->itemName;
+
+		return soyshop_get_item_object($parentId)->getName();
+	}
+
+	private function _isConvertParentNameConfig(){
+		static $cnf;
+		if(is_null($cnf)) {
+			SOY2::import("domain.config.SOYShop_ShopConfig");
+			$cnf = ((int)SOYShop_ShopConfig::load()->getChangeParentItemNameOnAdmin() === 1);
+		}
+		return $cnf;
 	}
 
 	public static function getStatusList(){
@@ -228,6 +254,35 @@ class SOYShop_ItemOrder {
 		$statusList = self::getStatusList();
 		if(!isset($statusList[$status])) $status = self::STATUS_NONE;
 		return $statusList[$status];
+	}
+
+	public static function getFlagList(){
+		static $list;
+		if(is_null($list)){
+			$list[self::FLAG_NONE] = "";
+
+			//拡張ポイント
+			SOYShopPlugin::load("soyshop.itemorder.flag");
+			$adds = SOYShopPlugin::invoke("soyshop.itemorder.flag")->getList();
+
+			if(is_array($adds) && count($adds)){
+				foreach($adds as $add){
+					if(!is_array($add) || !count($add)) continue;
+					foreach($add as $key => $label){
+						if(isset($add[$key])) $list[$key] = $label;
+					}
+				}
+			}
+
+			ksort($list);
+		}
+		return $list;
+	}
+
+	public static function getFlagText($flag){
+		$flagList = self::getFlagList();
+		if(!isset($flagList[$flag])) $flagList = self::FLAG_NONE;
+		return $flagList[$flag];
 	}
 
     /**
